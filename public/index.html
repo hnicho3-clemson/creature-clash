@@ -216,6 +216,14 @@ kbd{font-family:var(--f-body);font-weight:700;font-size:11px;padding:2px 6px;bor
 #devlog{height:180px;overflow-y:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;color:#cfe6c0;background:rgba(0,0,0,.45);border-radius:8px;padding:8px;white-space:pre-wrap;user-select:text}
 #devin{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:8px 10px;border-radius:8px;border:1px solid rgba(184,255,79,.5);background:rgba(0,0,0,.5);color:#eaffd8}
 
+#boot{position:fixed;inset:0;z-index:98;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));color:var(--ink);
+  background:radial-gradient(120% 80% at 20% 0%,rgba(60,30,130,.55),transparent 60%),radial-gradient(90% 70% at 100% 100%,rgba(0,120,160,.35),transparent 60%),var(--void)}
+#boot .bootlogo{font-family:var(--f-display);font-size:clamp(26px,6vw,46px);letter-spacing:.08em;line-height:1.1;margin:0;background:linear-gradient(180deg,#fff,#9fb4e0 55%,#e8f0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+#boot .bootring{width:44px;height:44px;border-radius:50%;border:4px solid rgba(85,240,255,.22);border-top-color:var(--cyan);animation:bootspin .9s linear infinite}
+#boot p{margin:0;max-width:34ch;font-size:17px;color:var(--ink-dim)}
+#boot.failed .bootring{display:none}
+#boot .bootreload{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:#021018;padding:14px 24px;border-radius:999px;background:linear-gradient(180deg,#e9feff,#5be6ff)}
+@keyframes bootspin{to{transform:rotate(360deg)}}
 #loaderr{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));z-index:99;background:var(--void);color:var(--ink);font-size:16px;line-height:1.6}
 
 /* touch */
@@ -821,6 +829,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
   <input id="devin" autocomplete="off" spellcheck="false" placeholder="type help">
 </div>
 
+<div id="boot" role="status" aria-live="polite"><p class="bootlogo" aria-hidden="true">Creature Clash</p><div class="bootring" aria-hidden="true"></div><p data-boot-text>Loading the arena…</p><a class="bootreload" href="/" data-boot-reload hidden>Reload</a></div>
 <div id="loaderr" hidden><div><b>The 3D engine didn't load.</b><br>Check your connection and reload the page.</div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js" integrity="sha384-vV17nr/rMaJqmeZkFUzXLpHdQ+ME5QHKdydaqqN+3Ga39RJlNrTatJxHwGV4ml2C" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -832,6 +841,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/MaskPass.js" integrity="sha384-gIi7RFX7Tfx4uZNXqq8zYoylQ5Gfp1c5ttIgteXJoKbbvy9CGQ9ZWNjygulWgS/P" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/UnrealBloomPass.js" integrity="sha384-EYOqTmLl8GhcXCeuHZ88cRp7inJaG/+pOg9hPG2GjQp535CVdHPNqMDbJMBbOypa" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="js/security.js"></script>
+<script src="js/telemetry.js"></script>
 <script src="js/core.js"></script>
 <script src="js/parts.js"></script>
 <script src="js/creature.js"></script>
@@ -842,5 +852,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <script src="js/intro.js"></script>
 <script src="js/menus.js"></script>
 <script src="js/cloud.js"></script>
+<script src="js/usage.js"></script>
 
 </body></html>

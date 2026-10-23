@@ -481,5 +481,6 @@ function idleNeutral(n,dt){if(!n.alive)return;n.wanderT-=dt;if(n.wanderT<=0){n.w
 /* boot */
 startIntro();
 requestAnimationFrame(frame);
+requestAnimationFrame(()=>requestAnimationFrame(()=>{const b=$('#boot');if(b&&!b.classList.contains('failed'))b.hidden=true;})); // the loading screen goes once the first frame is drawn
 if(DEV_BUILD)window.__cc={get world(){return world;},get match(){return match;},get build(){return build;},get progress(){return progress;},S,PRESETS,BOT_PRESETS,PARTS,validateDesign,calcStats,openBuild,openWorkshop,openMenu,startTestDrive,lockAndBegin,A11Y,applyA11y,renderA11y,applyPreset,addCaption,announce,TEAMS,startCampaign,CAMPAIGN,openChallenges,rotating,CONSTRAINTS,
   get ws(){return ws;},wsApi:{pickPart,removeSel,doUndo,renderPalette,endTestDrive,tryBuyPart},autoPilot:(on)=>{DEV.auto=!!on;if(match&&match.player&&!match.player.brain)match.player.brain={t:0,mode:'lane',target:null,laneI:-1,retreat:false,atkT:0,jit:0};}};

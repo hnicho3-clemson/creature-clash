@@ -81,3 +81,42 @@ CREATE TABLE IF NOT EXISTS matches (
   xp_awarded    integer NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS matches_user_started ON matches (user_id, started_at DESC);
+
+-- Anonymous usage counts for the stats queries in db/reports.sql. One row per day and event, no player or browser IDs.
+CREATE TABLE IF NOT EXISTS daily_stats (
+  day      date NOT NULL,
+  event    text NOT NULL CHECK (event IN ('page_view','daily_visitor','battle_start','challenge_start','match_end')),
+  count    integer NOT NULL DEFAULT 0,
+  minutes  numeric(12,2) NOT NULL DEFAULT 0,   -- match_end only: minutes of play
+  PRIMARY KEY (day, event)
+);
+
+-- Error reports from the game and the API, grouped so the same bug is one row with a count.
+-- Messages are scrubbed of emails, codes, tokens and query strings before they are stored.
+CREATE TABLE IF NOT EXISTS error_reports (
+  fingerprint  text PRIMARY KEY,
+  source       text NOT NULL CHECK (source IN ('client','server')),
+  message      text NOT NULL,
+  location     text,
+  stack        text,
+  count        integer NOT NULL DEFAULT 1,
+  first_seen   timestamptz NOT NULL DEFAULT now(),
+  last_seen    timestamptz NOT NULL DEFAULT now(),
+  request_id   text
+);
+CREATE INDEX IF NOT EXISTS error_reports_last_seen ON error_reports (last_seen DESC);
+
+-- Row level security: on for every table, with no policies. The game's server connects as the tables' owner,
+-- which row level security does not restrict, so the game works as before. Any other database role, such as the
+-- ones Neon's Data API uses, sees no rows and cannot change any.
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE saves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE daily_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE error_reports ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC;
+DO $$ DECLARE r text; BEGIN FOREACH r IN ARRAY ARRAY['anonymous','authenticated','authenticator'] LOOP IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN EXECUTE format('REVOKE ALL ON ALL TABLES IN SCHEMA public FROM %I', r); EXECUTE format('REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM %I', r); END IF; END LOOP; END $$;
