@@ -12,12 +12,8 @@ Guests can play without an account; their progress stays in the browser. Signed-
 
 1. **Import the repo.** In Vercel, choose *Add New → Project*, pick this GitHub repo, and deploy with the default settings. The first deploy works as a guest-only game until the steps below are done.
 2. **Add a database.** In the project, open *Storage → Create Database → Neon (Postgres)* and connect it to the project. This adds `DATABASE_URL` automatically.
-3. **Create the tables.** On your computer, in this repo folder:
-   ```
-   npm install
-   DATABASE_URL="(copy it from Vercel → Storage → your database → .env.local)" npm run migrate
-   ```
-   You should see `Database ready`.
+3. **Create the tables.** In Vercel, open *Storage*, click your database, then *Open in Neon*. In Neon, open *SQL Editor*, paste the whole contents of `db/schema.sql`, and click *Run*. Check *Tables* shows `users`, `sessions`, `user_codes`, `rate_limits`, `saves` and `matches`. Running it again is harmless.
+   (Prefer a terminal? `npm install`, then `DATABASE_URL="..." npm run migrate` does the same.)
 4. **Set up email.** Create a free account at [resend.com](https://resend.com) (or add Resend from Vercel's Marketplace), verify a domain you own, and create an API key.
 5. **Add environment variables** in *Settings → Environment Variables* (Production and Preview). See `.env.example`:
    - `APP_SECRET`: 32+ random characters. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`
