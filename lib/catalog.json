@@ -1,0 +1,316 @@
+{
+  "parts": {
+    "shortLegs": {
+      "name": "Short Legs",
+      "fam": "Locomotion",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": true
+    },
+    "longLegs": {
+      "name": "Long Legs",
+      "fam": "Locomotion",
+      "tier": "Standard",
+      "lv": 2,
+      "mirror": true
+    },
+    "spiderLegs": {
+      "name": "Spider Legs",
+      "fam": "Locomotion",
+      "tier": "Advanced",
+      "lv": 5,
+      "mirror": true
+    },
+    "frogLegs": {
+      "name": "Frog Legs",
+      "fam": "Locomotion",
+      "tier": "Advanced",
+      "lv": 6,
+      "mirror": true
+    },
+    "fins": {
+      "name": "Fins",
+      "fam": "Locomotion",
+      "tier": "Standard",
+      "lv": 3,
+      "mirror": true
+    },
+    "wings": {
+      "name": "Wings",
+      "fam": "Locomotion",
+      "tier": "Rare",
+      "lv": 8,
+      "mirror": true
+    },
+    "basicJaw": {
+      "name": "Basic Jaw",
+      "fam": "Offense",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": false
+    },
+    "beak": {
+      "name": "Beak",
+      "fam": "Offense",
+      "tier": "Standard",
+      "lv": 3,
+      "mirror": false
+    },
+    "smallClaws": {
+      "name": "Small Claws",
+      "fam": "Offense",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": true
+    },
+    "bigClaws": {
+      "name": "Big Claws",
+      "fam": "Offense",
+      "tier": "Advanced",
+      "lv": 6,
+      "mirror": true
+    },
+    "pincers": {
+      "name": "Pincers",
+      "fam": "Offense",
+      "tier": "Standard",
+      "lv": 4,
+      "mirror": true
+    },
+    "horns": {
+      "name": "Horns",
+      "fam": "Offense",
+      "tier": "Standard",
+      "lv": 2,
+      "mirror": true
+    },
+    "tailClub": {
+      "name": "Tail Club",
+      "fam": "Offense",
+      "tier": "Advanced",
+      "lv": 5,
+      "mirror": false
+    },
+    "spitGland": {
+      "name": "Spit Gland",
+      "fam": "Offense",
+      "tier": "Advanced",
+      "lv": 5,
+      "mirror": false
+    },
+    "stinger": {
+      "name": "Stinger",
+      "fam": "Offense",
+      "tier": "Rare",
+      "lv": 9,
+      "mirror": false
+    },
+    "zapAntennae": {
+      "name": "Zap Antennae",
+      "fam": "Offense",
+      "tier": "Rare",
+      "lv": 10,
+      "mirror": true
+    },
+    "spikes": {
+      "name": "Spikes",
+      "fam": "Defense",
+      "tier": "Standard",
+      "lv": 2,
+      "mirror": false
+    },
+    "quills": {
+      "name": "Quills",
+      "fam": "Defense",
+      "tier": "Advanced",
+      "lv": 7,
+      "mirror": false
+    },
+    "armorPlates": {
+      "name": "Armor Plates",
+      "fam": "Defense",
+      "tier": "Standard",
+      "lv": 4,
+      "mirror": true
+    },
+    "shell": {
+      "name": "Shell",
+      "fam": "Defense",
+      "tier": "Advanced",
+      "lv": 5,
+      "mirror": true
+    },
+    "bellyPadding": {
+      "name": "Belly Padding",
+      "fam": "Defense",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": true
+    },
+    "inflateSac": {
+      "name": "Inflate Sac",
+      "fam": "Defense",
+      "tier": "Rare",
+      "lv": 11,
+      "mirror": false
+    },
+    "wideEyes": {
+      "name": "Wide Eyes",
+      "fam": "Utility",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": true
+    },
+    "bigEars": {
+      "name": "Big Ears",
+      "fam": "Utility",
+      "tier": "Standard",
+      "lv": 3,
+      "mirror": true
+    },
+    "snoot": {
+      "name": "Sniffer Snoot",
+      "fam": "Utility",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": false
+    },
+    "healingGland": {
+      "name": "Healing Gland",
+      "fam": "Utility",
+      "tier": "Rare",
+      "lv": 8,
+      "mirror": false
+    },
+    "shieldNode": {
+      "name": "Shield Node",
+      "fam": "Utility",
+      "tier": "Advanced",
+      "lv": 4,
+      "mirror": false
+    },
+    "inkSac": {
+      "name": "Ink Sac",
+      "fam": "Utility",
+      "tier": "Advanced",
+      "lv": 6,
+      "mirror": false
+    },
+    "camoCrest": {
+      "name": "Camo Crest",
+      "fam": "Utility",
+      "tier": "Rare",
+      "lv": 10,
+      "mirror": false
+    },
+    "burrowPaws": {
+      "name": "Burrow Paws",
+      "fam": "Utility",
+      "tier": "Advanced",
+      "lv": 7,
+      "mirror": true
+    },
+    "googlyEye": {
+      "name": "Googly Eye",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": true
+    },
+    "partyHat": {
+      "name": "Party Hat",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": false
+    },
+    "topHat": {
+      "name": "Top Hat",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": false
+    },
+    "beanie": {
+      "name": "Propeller Beanie",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": false
+    },
+    "crownMini": {
+      "name": "Tiny Crown",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": false
+    },
+    "bowTie": {
+      "name": "Bow Tie",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": false
+    },
+    "mustache": {
+      "name": "Mustache",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": false
+    }
+  },
+  "prices": {
+    "Basic": 50,
+    "Standard": 65,
+    "Advanced": 80,
+    "Rare": 90,
+    "Free": 0
+  },
+  "budget": {
+    "weight": 60,
+    "complexity": 40,
+    "parts": 24
+  },
+  "patterns": [
+    "spots",
+    "stripes",
+    "belly",
+    "plain"
+  ],
+  "rewards": {
+    "dnaPlayer": 25,
+    "dnaBot": 15,
+    "dropChance": 0.5,
+    "xpMatch": 100,
+    "xpWin": 50,
+    "xpKill": 10,
+    "xpNest": 15
+  },
+  "campaign": {
+    "wobbles": 50,
+    "snack": 60,
+    "egg": 80,
+    "legless": 100,
+    "geyser": 100,
+    "rescue": 120,
+    "glass": 150,
+    "gobbler": 200,
+    "defend": 200,
+    "exam": 250
+  },
+  "constraints": [
+    "half",
+    "swim",
+    "tiny",
+    "oneatk",
+    "nodef",
+    "stilts"
+  ],
+  "goals": [
+    "win",
+    "kills3",
+    "nests2",
+    "survive"
+  ]
+}

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Approve a Creature Clash Account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" referrerpolicy="no-referrer" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Michroma&display=swap">
+<link rel="stylesheet" href="/css/site.css">
+</head><body>
+<header class="top"><a class="brand" href="/">Creature Clash</a></header>
+<main class="panel" aria-live="polite">
+  <div class="loading" id="p-loading"><span class="spinner" aria-hidden="true"></span>Loading the request…</div>
+
+  <section id="p-ask" hidden aria-labelledby="h-ask">
+    <p class="eyebrow">For parents and guardians</p>
+    <h1 id="h-ask">Your child asked to join Creature Clash</h1>
+    <p class="lead">Username: <b id="p-user"></b></p>
+    <div class="card"><b>What the game is</b>A creature-building battle game played against computer bots. Players can't chat with, message or see anyone else.</div>
+    <h2>If you approve, we keep</h2>
+    <ul class="legal">
+      <li>the username and a scrambled (hashed) password,</li>
+      <li>your email address, used only to approve the account and to reset its password,</li>
+      <li>game progress: creatures, levels, DNA and parts.</li>
+    </ul>
+    <p class="muted">We never show your email to anyone, sell it, or send marketing. You can delete the account any time from its Account page. Read the full <a href="/privacy" target="_blank" rel="noopener">privacy policy</a>.</p>
+    <div class="alert error" role="alert" id="p-err"></div>
+    <div class="row"><button class="btn" id="p-yes" type="button">Approve the account</button><button class="btn ghost" id="p-no" type="button">Decline and delete</button></div>
+  </section>
+
+  <section id="p-done" hidden aria-labelledby="h-done">
+    <h1 id="h-done" tabindex="-1"></h1><p class="lead" id="p-done-text"></p><a class="btn" href="/">Go to Creature Clash</a>
+  </section>
+  <section id="p-gone" hidden aria-labelledby="h-gone">
+    <h1 id="h-gone">This link no longer works</h1><p class="lead" id="p-gone-text"></p><a class="btn ghost" href="/">Go to Creature Clash</a>
+  </section>
+</main>
+<footer><a href="/privacy">Privacy</a><a href="/terms">Rules</a></footer>
+<script src="/js/parent.js"></script>
+</body></html>
