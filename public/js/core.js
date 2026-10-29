@@ -85,6 +85,11 @@ const AudioFX={ctx:null,master:null,on:true,music:null,musicOn:true,
       case 'popup':this.noise(.3,.35*v,700);this.tone('triangle',150,500,.2,.2*v);break;
       case 'inflate':this.tone('sine',200,800,.4,.2*v);break;
       case 'boing':this.tone('triangle',180,700,.2,.2*v);break;
+      case 'swish':this.noise(.12,.22*v,2600);this.tone('sine',500*p,220*p,.1,.08*v);break;
+      case 'squeak':this.tone('square',900*p,1700*p,.07,.09*v);this.tone('square',1500*p,800*p,.08,.07*v,.06);break;
+      case 'flip':this.tone('triangle',260*p,900*p,.16,.16*v);this.noise(.08,.12*v,3000);break;
+      case 'bubble':this.tone('sine',300*p,1200*p,.07,.1*v);break;
+      case 'whoosh':this.noise(.35,.18*v,1500);this.tone('sine',260,520,.3,.05*v);break;
       case 'revive':[392,523,659,784].forEach((f,i)=>this.tone('triangle',f,f,.18,.14*v,i*.07));break;
       case 'geyser':this.noise(.9,.25*v,1600);this.tone('sine',90,40,.8,.15*v);break;
       case 'ui':this.tone('sine',880,1320,.06,.12*v);break;

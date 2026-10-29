@@ -83,10 +83,15 @@ function buildOptions(){
 function selectBuildChoice(key,design){build.choiceKey=key;build.choice=clone(design);if(key.startsWith('slot')){progress.lastSlot=+key.slice(4);saveProgress();}}
 function renderBuild(){
   if(!build)return;const opts=buildOptions();
-  $('#bList').innerHTML=opts.map(o=>'<button class="bopt'+(o.key===build.choiceKey?' sel':'')+(o.ok?'':' bad')+'" data-key="'+o.key+'"'+(o.ok?'':' aria-disabled="true"')+'><img alt="" src="'+Portrait.design(o.design)+'"><span><b>'+esc(o.design.name)+'</b><small>'+esc(o.label)+' · '+calcStats(o.design).role+'</small>'+(o.ok?'':'<small class="why">'+esc(o.why)+'</small>')+'</span></button>').join('');
+  $('#bList').innerHTML=opts.map(o=>'<button class="bopt'+(o.key===build.choiceKey?' sel':'')+(o.ok?'':' bad')+'" data-key="'+o.key+'"'+(o.ok?'':' aria-disabled="true"')+'><img alt="" src="'+Portrait.design(o.design)+'"><span><b>'+esc(o.design.name)+'</b><small>'+esc(o.label)+' · '+(()=>{const q=calcStats(o.design);return q.styleAuto?q.role:STYLES[q.style].name+' style';})()+'</small>'+(o.ok?'':'<small class="why">'+esc(o.why)+'</small>')+'</span></button>').join('');
   $$('#bList .bopt').forEach(b=>b.addEventListener('click',()=>{const o=opts.find(x=>x.key===b.dataset.key);if(!o)return;if(!o.ok){sfx('deny');return;}sfx('ui');selectBuildChoice(o.key,o.design);renderBuild();}));
   const d=build.choice;const st=calcStats(d);
-  $('#bPick').innerHTML='<img class="bigpor" alt="" src="'+Portrait.design(d)+'"><div class="bpname">'+esc(d.name)+'</div><div class="chiprow"><span class="chip role">'+st.role+'</span>'+(st.special?'<span class="chip sp">'+SPECIALS[st.special].name+'</span>':'')+st.attacks.map(a=>'<span class="chip">'+esc(a.name)+'</span>').join('')+'</div>'+statBars(st);
+  $('#bPick').innerHTML='<img class="bigpor" alt="" src="'+Portrait.design(d)+'"><div class="bpname">'+esc(d.name)+'</div><div class="chiprow"><span class="chip role">'+st.role+'</span>'+(st.special?'<span class="chip sp">'+SPECIALS[st.special].name+'</span>':'')+st.attacks.map(a=>'<span class="chip">'+esc(a.name)+'</span>').join('')+'</div>'+statBars(st)+
+    '<div class="bstyle" role="group" aria-label="Play style"><span class="lbl">Play style</span><div class="bsty">'+['auto'].concat(STYLE_IDS).map(id=>{const on=id==='auto'?st.styleAuto:(!st.styleAuto&&st.style===id);return '<button data-bsty="'+id+'" aria-pressed="'+on+'">'+styleIcon(id)+(id==='auto'?'Auto':esc(STYLES[id].name))+'</button>';}).join('')+'</div>'+
+    '<p class="bperk">'+esc(STYLES[st.style].name)+(st.styleAuto?' (auto)':'')+' · '+esc(STYLES[st.style].perkText)+'</p></div>';
+  $$('#bPick [data-bsty]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.bsty;const d2=build.choice;if(id==='auto')delete d2.style;else d2.style=id;sfx('ui');
+    const k=build.choiceKey;if(k&&k.startsWith('slot')){const i=+k.slice(4);if(slots[i]){if(id==='auto')delete slots[i].style;else slots[i].style=id;saveSlots();}}else if(k==='custom'&&build.custom){build.custom=clone(d2);}
+    renderBuild();}));
   $('#bReady').textContent=build.ready?'Ready ✓':'Ready';$('#bReady').classList.toggle('done',build.ready);
   renderBuildTeams();
 }
@@ -206,17 +211,17 @@ function initStudio(){
   studio.hover=mk('#ff86dc');studio.sel=[mk('#6fe6f2'),mk('#6fe6f2')];
   studio.ray=new T.Raycaster();studio.ptr=new T.Vector2();
 }
-const ws={design:null,slot:-1,sel:-1,placing:null,tab:'Body',mode:'menu',drag:null,orbit:null,undo:[],moved:false,statsOpen:false};
+const ws={design:null,slot:-1,sel:-1,placing:null,tab:'Body',mode:'menu',drag:null,orbit:null,undo:[],redo:[],moved:false,statsOpen:false,dirty:false,lastNudge:0,confirm:null};
 function openWorkshop(mode,design,slot){
   initStudio();exitLock();hideTouch();
   ws.mode=mode;ws.slot=slot==null?-1:slot;
   if(design)ws.design=clone(design);else if(ws.slot>=0&&slots[ws.slot])ws.design=clone(slots[ws.slot]);else if(!ws.design){const i=slots.findIndex(Boolean);ws.slot=i;ws.design=i>=0?clone(slots[i]):newDesign();}
   if(mode==='build'&&ws.slot<0)ws.design.name=ws.design.name.replace(/^(?!My )/,'My ');
-  ws.sel=-1;ws.placing=null;ws.undo=[];
+  ws.sel=-1;ws.placing=null;ws.undo=[];ws.redo=[];ws.dirty=false;ws.confirm=null;
   phase='workshop';showScreen('workshop');setRenderView(studio.scene,studio.cam,.82);
   $('#wsMode').textContent=mode==='build'?'Build phase edit':'Workshop';$('#wsTimer').hidden=mode!=='build';$('#wsTest').hidden=mode==='build';
   $('#wsDone').textContent=mode==='build'?'Use this creature':'Main menu';
-  {const li=store.get(SaveKey('studioLight'),0);setStudioLight(Number.isInteger(li)&&li>=0&&li<LIGHT_MODES.length?li:0);}rebuildStudio(true);renderTabs();renderPalette();renderSlots();renderStats();renderSel();hint();
+  {const li=store.get(SaveKey('studioLight'),0);setStudioLight(Number.isInteger(li)&&li>=0&&li<LIGHT_MODES.length?li:0);}rebuildStudio(true);renderTabs();renderPalette();renderSlots();renderStats();renderSel();hint();setDirty(false);
 }
 function closeStudio(){if(studio.view){disposeView(studio.view);studio.view=null;}studio.hover.visible=false;for(const s of studio.sel)s.visible=false;}
 function rebuildStudio(resetCam){
@@ -226,12 +231,17 @@ function rebuildStudio(resetCam){
   if(resetCam){studio.dist=clamp(v.height*2.4+3,6,13);}studio.ty=v.height*.5;
   updateSelMarkers();
 }
-function pushUndo(){ws.undo.push(JSON.stringify(ws.design));if(ws.undo.length>40)ws.undo.shift();}
+function pushUndo(){ws.undo.push(JSON.stringify(ws.design));if(ws.undo.length>60)ws.undo.shift();ws.redo.length=0;setDirty(true);}
+function setDirty(v){ws.dirty=v;const b=$('#wsSave');if(b){b.textContent=v?'Save •':'Save';b.title=v?'You have unsaved changes':'Saved';}updateUndoBtns();}
+function updateUndoBtns(){const u=$('#wsUndo'),r=$('#wsRedo');if(u)u.disabled=!ws.undo.length;if(r)r.disabled=!ws.redo.length;}
 function changed(rebuild){if(rebuild!==false)rebuildStudio();renderStats();renderSlots();renderPalette();}
-const FAM_TABS=['Body'].concat(FAMS);
+const FAM_TABS=['Style','Body'].concat(FAMS);
+// side panels sit just under the top bar, however many rows its buttons wrap to
+if(window.ResizeObserver){const top=$('#wsTop');new ResizeObserver(()=>{if(top.offsetHeight)$('#workshop').style.setProperty('--wstop',(top.offsetTop+top.offsetHeight-10)+'px');}).observe(top);}
 function renderTabs(){$('#wsTabs').innerHTML=FAM_TABS.map(t=>'<button role="tab" aria-selected="'+(t===ws.tab)+'" data-tab="'+t+'">'+t+'</button>').join('');$$('#wsTabs button').forEach(b=>b.addEventListener('click',()=>{ws.tab=b.dataset.tab;sfx('ui');renderTabs();renderPalette();}));}
 function renderPalette(){
   const el=$('#wsPal');
+  if(ws.tab==='Style'){renderStylePalette(el);return;}
   if(ws.tab==='Body'){const b=ws.design.body;const sw=(which)=>SWATCHES.map(c=>'<button class="sw'+(ws.design[which]===c?' on':'')+'" data-w="'+which+'" data-c="'+c+'" style="background:'+c+'" aria-label="'+c+'"></button>').join('')+'<label class="swc" aria-label="Custom color"><input type="color" data-w="'+which+'" value="'+ws.design[which]+'"></label>';
     el.innerHTML='<div class="bodyed">'+[['w','Width',.7,1.6],['h','Height',.7,1.5],['l','Length',.8,1.8]].map(([k,n,a,z])=>'<label class="sl"><span>'+n+'</span><input type="range" id="bd_'+k+'" min="'+a+'" max="'+z+'" step=".01" value="'+b[k]+'"><output>'+b[k].toFixed(2)+'</output></label>').join('')+
       '<div class="sect">Pattern</div><div class="pats">'+PATTERNS.map(p=>'<button class="chip'+(ws.design.pattern===p?' on':'')+'" data-pat="'+p+'">'+p+'</button>').join('')+'</div>'+
@@ -254,26 +264,80 @@ function renderPalette(){
 function updateTopDna(){$('#wsDna').textContent=progress.dna;}
 function pickPart(id){const d=PARTS[id];AudioFX.init();
   if(d.mount==='cover'){pushUndo();const i=ws.design.parts.findIndex(p=>p.id===id);if(i>=0){ws.design.parts.splice(i,1);sfx('remove');}else{ws.design.parts.push({id,p:[0,1,0],s:1,r:0,m:false});sfx('place');}ws.sel=-1;changed();return;}
+  if(d.fam==='Weapon'){const wi=ws.design.parts.findIndex(p=>PARTS[p.id]&&PARTS[p.id].fam==='Weapon');
+    if(wi>=0){if(ws.design.parts[wi].id===id){ws.sel=wi;ws.placing=null;sfx('ui');renderPalette();renderSel();hint('That weapon is already equipped. Drag it to move it.');return;}
+      pushUndo();const old=PARTS[ws.design.parts[wi].id].name;ws.design.parts[wi].id=id;ws.design.parts[wi].m=false;ws.sel=wi;ws.placing=null;sfx('place');changed();renderSel();hint('Swapped '+old+' for '+d.name+'. Creatures have one weapon slot.');return;}}
   if(d.max&&ws.design.parts.filter(p=>p.id===id).length>=d.max){sfx('deny');hint('You can only have '+d.max+' '+d.name+'.');return;}
   ws.placing=ws.placing===id?null:id;ws.sel=-1;sfx('ui');renderPalette();renderSel();hint();
   if(isCoarse&&ws.placing){/* on phones, quick-place at the default spot */pushUndo();ws.design.parts.push({id,p:norm3(d.def||[0,1,0]),s:1,r:0,m:d.mirror!==false});ws.sel=ws.design.parts.length-1;ws.placing=null;sfx('place');changed();renderSel();hint('Placed. Drag it on your creature to move it.');}
 }
 function hint(t){const el=$('#wsHint');if(t){el.textContent=t;return;}
-  el.textContent=ws.placing?'Click your creature to attach '+PARTS[ws.placing].name+'. Esc cancels.':ws.sel>=0?'Drag the part to move it. Delete removes it.':isCoarse?'Tap a part to add it. Drag to spin the camera.':'Pick a part, then click your creature to attach it. Drag empty space to orbit, scroll to zoom.';}
+  el.textContent=ws.placing?'Click your creature to attach '+PARTS[ws.placing].name+'. Hold Shift to place several. Esc cancels.':ws.sel>=0?(isCoarse?'Drag the part to move it.':'Drag or use the arrow keys to move it. [ ] resizes, Q and E twist, Delete removes.'):isCoarse?'Tap a part to add it. Drag to spin the camera.':'Pick a part, then click your creature to attach it. Drag empty space to orbit, scroll to zoom.';}
 function renderSlots(){
   const n=slotCount();let h='';for(let i=0;i<n;i++){const d=slots[i];const v=d?validateDesign(d):null;h+='<button class="slot'+(i===ws.slot?' on':'')+(v&&!v.selectable?' warn':'')+'" data-slot="'+i+'" title="'+(d?esc(d.name)+(v&&!v.selectable?' · can’t be selected: '+esc(v.issues[0]||'uses parts you don’t own'):''):'Empty slot')+'"><span>'+(i+1)+'</span>'+(d?'<img alt="" src="'+Portrait.design(d)+'">':'<em>Empty</em>')+'</button>';}
   $('#wsSlots').innerHTML=h;updateTopDna();
-  $$('#wsSlots .slot').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.slot;sfx('ui');ws.slot=i;if(slots[i]){ws.design=clone(slots[i]);ws.undo=[];ws.sel=-1;rebuildStudio(true);}else{hint('Empty slot selected. Save to store this creature here.');}$('#wsName').value=ws.design.name;renderSlots();renderStats();renderPalette();renderSel();}));
+  $$('#wsSlots .slot').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.slot;if(i===ws.slot&&!ws.dirty)return;
+    if(ws.dirty&&slots[i]&&ws.confirm!=='slot'+i){ws.confirm='slot'+i;sfx('deny');hint('You have unsaved changes. Click slot '+(i+1)+' again to switch anyway, or Save first.');return;}
+    ws.confirm=null;sfx('ui');ws.slot=i;if(slots[i]){ws.design=clone(slots[i]);ws.undo=[];ws.redo=[];ws.sel=-1;ws.placing=null;rebuildStudio(true);setDirty(false);}else{hint('Empty slot selected. Save to store this creature here.');}$('#wsName').value=ws.design.name;renderSlots();renderStats();renderPalette();renderSel();}));
   $('#wsName').value=ws.design.name;
 }
 function renderStats(){
   const v=validateDesign(ws.design);const st=v.stats;const bar=(k,val,max)=>{const f=val/max;return '<div class="bud'+(f>1?' over':'')+'"><span>'+k+'</span><i><b style="width:'+clamp(f*100,2,100).toFixed(0)+'%"></b></i><span>'+(Number.isInteger(val)?val:val.toFixed(1))+' / '+max+'</span></div>';};
   let issues='';for(const s of v.issues)issues+='<li>'+esc(s)+'</li>';if(v.notOwned.length)issues+='<li>Buy or remove: '+v.notOwned.map(id=>esc(PARTS[id].name)).join(', ')+'</li>';
-  $('#wsStats').innerHTML='<div class="mehead"><span class="chip role">'+st.role+'</span>'+(st.special?'<span class="chip sp">'+SPECIALS[st.special].name+'</span>':'<span class="chip dim">No special</span>')+'</div>'+statBars(st)+
+  const sty=STYLES[st.style];
+  const styleBox='<div class="stylebox"><div class="styhead">'+styleIcon(st.style)+'<b>'+esc(sty.name)+'</b><small>'+(st.styleAuto?'Auto':'Play style')+'</small><button class="btn small ghost" id="wsStyleGo">Change</button></div><p>'+esc(sty.perkText)+'</p>'+
+    (!st.styleAuto&&ROLE_STYLE[st.role]!==st.style?'<p class="stymis">Your parts play more like a '+esc(STYLES[ROLE_STYLE[st.role]].name)+'. The perk still applies.</p>':'')+'</div>';
+  $('#wsStats').innerHTML=styleBox+'<div class="mehead"><span class="chip role">'+st.role+'</span>'+(st.special?'<span class="chip sp">'+SPECIALS[st.special].name+'</span>':'<span class="chip dim">No special</span>')+'</div>'+statBars(st)+
     '<div class="sect">Budget</div>'+bar('Weight',st.weight,BUDGET.weight)+bar('Complexity',st.complexity,BUDGET.complexity)+bar('Parts',st.partCount,BUDGET.parts)+
     '<div class="sect">Attacks</div><div class="chiprow">'+st.attacks.map(a=>'<span class="chip">'+esc(a.name)+'</span>').join('')+'</div>'+
     (st.armor||st.thorns||st.glide||st.jump>1||st.kbResist<1?'<div class="sect">Traits</div><div class="chiprow">'+(st.armor?'<span class="chip">Armored</span>':'')+(st.thorns?'<span class="chip">Thorns '+st.thorns.toFixed(0)+'</span>':'')+(st.glide?'<span class="chip">Glides</span>':'')+(st.jump>1?'<span class="chip">Big jumps</span>':'')+(st.kbResist<1?'<span class="chip">Knockback resist</span>':'')+'</div>':'')+
-    (issues?'<ul class="issues">'+issues+'</ul>':'<p class="okmsg">Ready for battle.</p>');
+    (issues?'<ul class="issues">'+issues+'</ul>':'<p class="okmsg">Ready for battle.</p>')+partListHTML();
+  $('#wsStyleGo').addEventListener('click',()=>{ws.tab='Style';sfx('ui');renderTabs();renderPalette();if(ws.statsOpen){ws.statsOpen=false;$('#workshop').classList.remove('statsopen');}});
+  bindPartList();
+}
+/* "On your creature": every placed part in one list, grouped by family, to select, mirror or remove */
+function partListHTML(){
+  const ps=ws.design.parts;if(!ps.length)return '<div class="sect">On your creature</div><p class="note">No parts yet. Pick some from the left.</p>';
+  const order=FAMS;const rows=ps.map((p,i)=>({p,i,d:PARTS[p.id]})).filter(r=>r.d).sort((a,b)=>order.indexOf(a.d.fam)-order.indexOf(b.d.fam)||a.i-b.i);
+  let h='<div class="sect plhead"><span>On your creature · '+ps.length+'</span><button class="btn small ghost" id="plClear" title="Remove every part (you can undo)">'+(ws.confirm==='clear'?'Really clear?':'Clear all')+'</button></div><ul class="plist" aria-label="Parts on your creature">';
+  let fam='';
+  for(const r of rows){if(r.d.fam!==fam){fam=r.d.fam;h+='<li class="plfam">'+esc(fam)+'</li>';}
+    const canMir=r.d.mount!=='cover'&&r.d.fam!=='Weapon'&&Math.abs(r.p.p[0])>.06;const owned=isOwned(r.p.id);
+    h+='<li class="plrow'+(r.i===ws.sel?' on':'')+(owned?'':' unowned')+'"><button class="plsel" data-pi="'+r.i+'" aria-pressed="'+(r.i===ws.sel)+'"><img alt="" src="'+Portrait.part(r.p.id)+'"><span>'+esc(r.d.name)+(r.p.m&&canMir?' <em>×2</em>':'')+(owned?'':' <em class="bad">not owned</em>')+'</span></button>'+
+      (canMir?'<button class="plb" data-pm="'+r.i+'" aria-label="'+(r.p.m?'Stop mirroring ':'Mirror ')+esc(r.d.name)+'" title="Mirror on both sides" aria-pressed="'+!!r.p.m+'">⇋</button>':'')+
+      '<button class="plb del" data-pd="'+r.i+'" aria-label="Remove '+esc(r.d.name)+'" title="Remove">×</button></li>';}
+  return h+'</ul>';}
+function bindPartList(){
+  $$('#wsStats [data-pi]').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.pi;ws.placing=null;ws.sel=ws.sel===i?-1:i;sfx('ui');renderSel();renderStats();renderPalette();hint();}));
+  $$('#wsStats [data-pm]').forEach(b=>b.addEventListener('click',()=>{const p=ws.design.parts[+b.dataset.pm];if(!p)return;pushUndo();p.m=!p.m;sfx('ui');changed();renderSel();}));
+  $$('#wsStats [data-pd]').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.pd;pushUndo();ws.design.parts.splice(i,1);if(ws.sel===i)ws.sel=-1;else if(ws.sel>i)ws.sel--;sfx('remove');changed();renderSel();hint();}));
+  const cl=$('#plClear');if(cl)cl.addEventListener('click',()=>{if(ws.confirm!=='clear'){ws.confirm='clear';sfx('deny');renderStats();setTimeout(()=>{if(ws.confirm==='clear'){ws.confirm=null;if(phase==='workshop')renderStats();}},3500);return;}
+    ws.confirm=null;pushUndo();ws.design.parts=[];ws.sel=-1;sfx('remove');changed();renderSel();hint('All parts removed. Undo brings them back.');});
+}
+/* ---------- play style picker (Workshop "Style" tab) ---------- */
+const STYLE_ICONS={tank:'<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/>',bruiser:'<path d="M5 11V7a2 2 0 014 0V6a2 2 0 014 0v1a2 2 0 014 0v1a2 2 0 014 0v6a7 7 0 01-7 7h-2a8 8 0 01-8-8v-1a2 2 0 014 0"/>',
+  spitter:'<path d="M12 3c3 4 6 7.5 6 11a6 6 0 01-12 0c0-3.5 3-7 6-11z"/>',support:'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',scout:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  allrounder:'<path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 21l1.6-7L2 9.2l7.1-.6z"/>',auto:'<path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>'};
+function styleIcon(id){return '<svg class="styicon sty-'+id+'" viewBox="0 0 24 24" aria-hidden="true">'+STYLE_ICONS[id]+'</svg>';}
+function renderStylePalette(el){
+  const st=calcStats(ws.design);const cur=STYLES[ws.design.style]?ws.design.style:'auto';const auto=ROLE_STYLE[st.role];
+  const card=(id,name,blurb,perk,extra)=>'<button class="stycard'+(cur===id?' on':'')+'" data-style="'+id+'" aria-pressed="'+(cur===id)+'">'+styleIcon(id)+'<span><b>'+esc(name)+'</b>'+extra+'<small>'+esc(blurb)+'</small><i>'+esc(perk)+'</i></span></button>';
+  let h='<p class="note">Pick how you want to play this creature. Your style gives a small perk and suggests parts. Auto follows whatever your parts are best at.</p><div class="stygrid">'+
+    card('auto','Auto','Your parts decide.','Right now: '+STYLES[auto].name+' · '+STYLES[auto].perkText,'')+
+    STYLE_IDS.map(id=>card(id,STYLES[id].name,STYLES[id].blurb,STYLES[id].perkText,auto===id?'<em class="fit">fits your build</em>':'')).join('')+'</div>';
+  const show=cur==='auto'?auto:cur;const S2=STYLES[show];
+  h+='<div class="sect">Suggested parts for '+esc(S2.name)+'</div><div class="sugg">'+S2.suggest.map(id=>{const d=PARTS[id];
+      if(!isUnlocked(id))return '<span class="sg pod" title="Locked: level up to unlock"><span class="podimg mini" aria-hidden="true"></span><small>Mystery pod</small></span>';
+      const on=ws.design.parts.some(p=>p.id===id);
+      return '<button class="sg'+(on?' have':'')+'" data-sg="'+id+'" title="'+esc(d.desc)+'"><img alt="" src="'+Portrait.part(id)+'"><small>'+esc(d.name)+'</small>'+(on?'<em>on</em>':isOwned(id)?'':'<em class="buy">'+partPrice(id)+' DNA</em>')+'</button>';}).join('')+'</div>'+
+    '<div class="sect">Start fresh</div><p class="note">Builds a new '+esc(S2.name)+' from the best parts you own. Your current creature stays in its slot until you save over it.</p>'+
+    '<button class="btn small" id="styTpl">New '+esc(S2.name)+' from template</button>';
+  el.innerHTML=h;
+  $$('#wsPal [data-style]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.style;pushUndo();if(id==='auto')delete ws.design.style;else ws.design.style=id;sfx('ui');changed(false);}));
+  $$('#wsPal [data-sg]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.sg;const d=PARTS[id];sfx('ui');ws.tab=d.fam;renderTabs();renderPalette();
+    if(isOwned(id)){if(!ws.design.parts.some(p=>p.id===id)||d.fam==='Weapon')pickPart(id);else{ws.sel=ws.design.parts.findIndex(p=>p.id===id);renderSel();hint();}}else hint(d.name+' is unlocked. Buy it here for '+partPrice(id)+' DNA.');}));
+  $('#styTpl').addEventListener('click',()=>{pushUndo();const nd=styleTemplate(show);ws.design=nd;ws.sel=-1;ws.placing=null;ws.slot=slots.findIndex((x,i)=>!x&&i<slotCount());sfx('place');rebuildStudio(true);changed(false);renderSel();$('#wsName').value=nd.name;
+    hint('Here is a starter '+STYLES[show].name+'. Tweak it, then Save.'+(ws.slot<0?' All slots are full, so saving replaces slot 1 unless you pick another.':''));});
 }
 function renderSel(){
   const el=$('#wsSel');if(ws.sel<0||!ws.design.parts[ws.sel]){el.hidden=true;updateSelMarkers();return;}
@@ -281,14 +345,15 @@ function renderSel(){
   el.innerHTML='<div class="selhead"><b>'+esc(d.name)+'</b><button class="xbtn" id="selClose" aria-label="Deselect">×</button></div>'+
     '<label class="sl"><span>Size</span><input type="range" id="selS" min=".6" max="1.6" step=".01" value="'+p.s+'"><output>'+p.s.toFixed(2)+'</output></label>'+
     (d.mount==='cover'?'':'<label class="sl"><span>Twist</span><input type="range" id="selR" min="-3.14" max="3.14" step=".01" value="'+(p.r||0)+'"><output>'+Math.round((p.r||0)*57.3)+'°</output></label>'+
-    '<label class="optrow"><input type="checkbox" id="selM"'+(p.m?' checked':'')+'> Mirror on both sides</label>')+
-    '<div class="row"><button class="btn small ghost" id="selDup">Duplicate</button><button class="btn small danger" id="selDel">Remove</button></div>';
+    (d.fam==='Weapon'?'<p class="selnote">One weapon slot. Pick another weapon to swap it.</p>':'<label class="optrow"><input type="checkbox" id="selM"'+(p.m?' checked':'')+'> Mirror on both sides</label>'))+
+    '<div class="row"><button class="btn small ghost" id="selReset" title="Put it back where this part normally goes">Reset</button>'+(d.mount==='cover'||d.fam==='Weapon'?'':'<button class="btn small ghost" id="selDup">Duplicate</button>')+'<button class="btn small danger" id="selDel">Remove</button></div>';
   $('#selClose').addEventListener('click',()=>{ws.sel=-1;renderSel();hint();});
   const sS=$('#selS');sS.addEventListener('pointerdown',pushUndo);sS.addEventListener('input',()=>{p.s=+sS.value;sS.nextElementSibling.textContent=p.s.toFixed(2);rebuildStudio();renderStats();});
   const sR=$('#selR');if(sR){sR.addEventListener('pointerdown',pushUndo);sR.addEventListener('input',()=>{p.r=+sR.value;sR.nextElementSibling.textContent=Math.round(p.r*57.3)+'°';rebuildStudio();});}
   const sM=$('#selM');if(sM)sM.addEventListener('change',()=>{pushUndo();p.m=sM.checked;changed();});
   $('#selDel').addEventListener('click',removeSel);
-  $('#selDup').addEventListener('click',()=>{const d2=PARTS[p.id];if(d2.max&&ws.design.parts.filter(q=>q.id===p.id).length>=d2.max){sfx('deny');return;}pushUndo();const q=clone(p);q.p=norm3([q.p[0]*.8,q.p[1]+.25,q.p[2]-.15]);ws.design.parts.push(q);ws.sel=ws.design.parts.length-1;sfx('place');changed();renderSel();});
+  $('#selReset').addEventListener('click',()=>{pushUndo();p.s=1;p.r=0;if(d.mount!=='cover')p.p=norm3(d.def||[0,1,0]);p.m=d.mirror!==false&&d.fam!=='Weapon';sfx('ui');changed();renderSel();});
+  const dupB=$('#selDup');if(dupB)dupB.addEventListener('click',()=>{const d2=PARTS[p.id];if(d2.max&&ws.design.parts.filter(q=>q.id===p.id).length>=d2.max){sfx('deny');return;}pushUndo();const q=clone(p);q.p=norm3([q.p[0]*.8,q.p[1]+.25,q.p[2]-.15]);ws.design.parts.push(q);ws.sel=ws.design.parts.length-1;sfx('place');changed();renderSel();});
   updateSelMarkers();
 }
 function removeSel(){if(ws.sel<0)return;pushUndo();ws.design.parts.splice(ws.sel,1);ws.sel=-1;sfx('remove');changed();renderSel();hint();}
@@ -303,7 +368,7 @@ function bodyPointFromRay(e){const r=canvas.getBoundingClientRect();studio.ptr.s
 canvas.addEventListener('pointerdown',e=>{
   if(phase!=='workshop'||!studio.view)return;AudioFX.init();canvas.setPointerCapture(e.pointerId);
   const hit=wsRay(e);
-  if(ws.placing){const p=bodyPointFromRay(e);if(p){const d=PARTS[ws.placing];pushUndo();ws.design.parts.push({id:ws.placing,p,s:1,r:0,m:d.mirror!==false&&Math.abs(p[0])>.12});ws.sel=ws.design.parts.length-1;if(!e.shiftKey)ws.placing=null;sfx('place');changed();renderSel();hint();return;}}
+  if(ws.placing){const p=bodyPointFromRay(e);if(p){const d=PARTS[ws.placing];pushUndo();ws.design.parts.push({id:ws.placing,p,s:1,r:0,m:d.mirror!==false&&d.fam!=='Weapon'&&Math.abs(p[0])>.12});ws.sel=ws.design.parts.length-1;if(!e.shiftKey)ws.placing=null;sfx('place');changed();renderSel();hint();return;}}
   if(hit&&hit.part!=null&&!ws.placing){ws.sel=hit.part;ws.drag={idx:hit.part,startX:e.clientX,startY:e.clientY};ws.moved=false;renderSel();hint();return;}
   ws.orbit={x:e.clientX,y:e.clientY,moved:false};
 });
@@ -327,10 +392,31 @@ canvas.addEventListener('wheel',e=>{if(phase==='workshop')studio.dist=clamp(stud
 function wsKey(e){
   if(e.code==='Escape'){if(ws.placing){ws.placing=null;studio.hover.visible=false;renderPalette();hint();}else if(ws.sel>=0){ws.sel=-1;renderSel();hint();}return;}
   if((e.code==='Delete'||e.code==='Backspace')&&ws.sel>=0){e.preventDefault();removeSel();return;}
+  if((e.ctrlKey||e.metaKey)&&(e.code==='KeyY'||(e.code==='KeyZ'&&e.shiftKey))){e.preventDefault();doRedo();return;}
   if((e.ctrlKey||e.metaKey)&&e.code==='KeyZ'){e.preventDefault();doUndo();return;}
-  if(e.code==='KeyM'&&ws.sel>=0){pushUndo();const p=ws.design.parts[ws.sel];p.m=!p.m;changed();renderSel();}
+  if((e.ctrlKey||e.metaKey)&&e.code==='KeyS'){e.preventDefault();$('#wsSave').click();return;}
+  if((e.ctrlKey||e.metaKey)&&e.code==='KeyD'&&ws.sel>=0){e.preventDefault();const b=$('#selDup');if(b)b.click();return;}
+  if(ws.sel<0)return;
+  const step=e.shiftKey?3:1;
+  if(e.code==='ArrowLeft'){e.preventDefault();nudgeSel('around',-.07*step);return;}
+  if(e.code==='ArrowRight'){e.preventDefault();nudgeSel('around',.07*step);return;}
+  if(e.code==='ArrowUp'){e.preventDefault();nudgeSel('up',.05*step);return;}
+  if(e.code==='ArrowDown'){e.preventDefault();nudgeSel('up',-.05*step);return;}
+  if(e.code==='BracketRight'||e.key==='+'||e.key==='='){e.preventDefault();nudgeSel('size',.05);return;}
+  if(e.code==='BracketLeft'||e.key==='-'){e.preventDefault();nudgeSel('size',-.05);return;}
+  if(e.code==='KeyQ'){nudgeSel('twist',-.15);return;}
+  if(e.code==='KeyE'){nudgeSel('twist',.15);return;}
+  if(e.code==='KeyM'){const p=ws.design.parts[ws.sel];if(PARTS[p.id].fam==='Weapon'||PARTS[p.id].mount==='cover')return;pushUndo();p.m=!p.m;changed();renderSel();}
 }
-function doUndo(){const s=ws.undo.pop();if(!s){sfx('deny');return;}ws.design=JSON.parse(s);ws.sel=-1;sfx('remove');changed();renderSel();}
+function doUndo(){const s=ws.undo.pop();if(!s){sfx('deny');return;}ws.redo.push(JSON.stringify(ws.design));ws.design=JSON.parse(s);ws.sel=-1;sfx('remove');setDirty(true);changed();renderSel();$('#wsName').value=ws.design.name;}
+function doRedo(){const s=ws.redo.pop();if(!s){sfx('deny');return;}ws.undo.push(JSON.stringify(ws.design));ws.design=JSON.parse(s);ws.sel=-1;sfx('place');setDirty(true);changed();renderSel();$('#wsName').value=ws.design.name;}
+/* keyboard nudges for the selected part; quick repeats share one undo step */
+function nudgeUndo(){const now=performance.now();if(now-ws.lastNudge>700)pushUndo();ws.lastNudge=now;}
+function nudgeSel(kind,amt){const p=ws.design.parts[ws.sel];if(!p)return;const d=PARTS[p.id];nudgeUndo();
+  if(kind==='size'){p.s=clamp(+(p.s+amt).toFixed(2),.6,1.6);}
+  else if(kind==='twist'){if(d.mount==='cover')return;p.r=clamp((p.r||0)+amt,-3.14,3.14);}
+  else if(d.mount!=='cover'){let [x,y,z]=p.p;if(kind==='around'){const a=Math.atan2(x,z)+amt,r=Math.hypot(x,z);x=Math.sin(a)*r;z=Math.cos(a)*r;}else{y=clamp(y+amt,-1,1);}p.p=norm3([x,y,z]);if(p.m&&Math.abs(p.p[0])<.06)p.p[0]=0;}
+  rebuildStudio();renderStats();renderSel();}
 function updateStudio(rdt,now){
   if(!studio.view)return;const e=studio.ent;
   if(studio.walk){e.vx=Math.sin(studio.view.lastYaw||0)*0;e.vz=3.2;}else{e.vx=0;e.vz=0;}
@@ -346,11 +432,19 @@ function updateStudio(rdt,now){
   if(studio.mons)for(const m of studio.mons){const f=1.25+Math.sin(t*3+m.id)*.08+(Math.random()<.004?.6:0);m.material.color.setRGB(f,f,f);}
   studio.key.target.position.y=h*.45;
 }
-$('#wsName').addEventListener('input',e=>{ws.design.name=Sec.cleanName(e.target.value);});
+$('#wsName').addEventListener('focus',()=>{ws.nameUndo=true;});
+$('#wsName').addEventListener('input',e=>{if(ws.nameUndo){pushUndo();ws.nameUndo=false;}ws.design.name=Sec.cleanName(e.target.value);setDirty(true);});
 $('#wsUndo').addEventListener('click',doUndo);
-$('#wsNew').addEventListener('click',()=>{sfx('ui');pushUndo();ws.design=newDesign();ws.sel=-1;ws.slot=slots.findIndex((s,i)=>!s&&i<slotCount());rebuildStudio(true);changed(false);renderSel();$('#wsName').value=ws.design.name;});
+$('#wsNew').addEventListener('click',()=>{sfx('ui');pushUndo();ws.design=newDesign();ws.sel=-1;ws.placing=null;ws.slot=slots.findIndex((s,i)=>!s&&i<slotCount());ws.tab='Style';rebuildStudio(true);renderTabs();changed(false);renderSel();$('#wsName').value=ws.design.name;hint('New creature. Pick a play style to start from a template, or build from scratch.');});
+$('#wsRedo').addEventListener('click',doRedo);
+$('#wsCopy').addEventListener('click',()=>{const i=slots.findIndex((s,k)=>!s&&k<slotCount());if(i<0){sfx('deny');hint('No empty slot to copy into. Delete a creature first.');return;}
+  const d=clone(ws.design);d.name=Sec.cleanName((d.name.length>18?d.name.slice(0,18):d.name)+' copy');slots[i]=d;ws.design=clone(d);ws.slot=i;saveSlots();setDirty(false);sfx('buy');banner('Copied to slot '+(i+1),'good');renderSlots();$('#wsName').value=d.name;});
+$('#wsDel').addEventListener('click',()=>{const i=ws.slot;if(i<0||!slots[i]){sfx('deny');hint('This creature is not saved in a slot yet.');return;}
+  if(slots.filter(Boolean).length<=1){sfx('deny');hint('Keep at least one saved creature.');return;}
+  if(ws.confirm!=='del'){ws.confirm='del';$('#wsDel').textContent='Really delete?';sfx('deny');setTimeout(()=>{if(ws.confirm==='del'){ws.confirm=null;$('#wsDel').textContent='Delete';}},3500);return;}
+  ws.confirm=null;$('#wsDel').textContent='Delete';slots[i]=null;saveSlots();if(progress.lastSlot===i){progress.lastSlot=-1;saveProgress();}ws.slot=-1;setDirty(true);sfx('remove');banner('Deleted slot '+(i+1),'bad');renderSlots();hint('Slot '+(i+1)+' is empty. The creature is still here until you leave, so Save brings it back.');});
 $('#wsSave').addEventListener('click',()=>{let i=ws.slot;if(i<0||i>=slotCount())i=slots.findIndex((s,k)=>!s&&k<slotCount());if(i<0)i=0;
-  slots[i]=clone(ws.design);ws.slot=i;saveSlots();sfx('buy');banner('Saved to slot '+(i+1),'good');renderSlots();
+  slots[i]=clone(ws.design);ws.slot=i;saveSlots();setDirty(false);sfx('buy');banner('Saved to slot '+(i+1),'good');renderSlots();
   if(build){build.custom=null;selectBuildChoice('slot'+i,ws.design);}});
 $('#wsTest').addEventListener('click',()=>{sfx('ui');startTestDrive();});
 const LIGHT_MODES=[['Dim',1.5,.012,.3],['Off',0,0,.42],['Bright',3.4,.035,.16]];

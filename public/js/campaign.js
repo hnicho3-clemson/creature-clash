@@ -98,7 +98,7 @@ function retryChallenge(){const def=match.challenge;const next=CAMPAIGN[def.inde
 function quitChallenge(){openChallenges();}
 
 /* ---------- daily & weekly challenges (Lane Battle with a twist) ---------- */
-function trimTo(d,ok){for(let guard=0;guard<40&&!ok(d);guard++){const i=d.parts.map((p,k)=>[p,k]).reverse().find(([p])=>PARTS[p.id].mount!=='leg'&&PARTS[p.id].fam!=='Offense');if(!i)break;d.parts.splice(i[1],1);}return d;}
+function trimTo(d,ok){for(let guard=0;guard<40&&!ok(d);guard++){const i=d.parts.map((p,k)=>[p,k]).reverse().find(([p])=>PARTS[p.id].mount!=='leg'&&PARTS[p.id].fam!=='Offense'&&PARTS[p.id].fam!=='Weapon');if(!i)break;d.parts.splice(i[1],1);}return d;}
 const CONSTRAINTS={
   half:{name:'Half Budget',desc:'Weight 30, complexity 20 and 12 parts at most.',check:d=>{const s=calcStats(d);if(s.weight>30)return 'Weight must be 30 or less.';if(s.complexity>20)return 'Complexity must be 20 or less.';if(s.partCount>12)return 'Use 12 parts or fewer.';return null;},fix:d=>trimTo(d,x=>!CONSTRAINTS.half.check(x))},
   swim:{name:'Swimmers Only',desc:'No legs allowed. Bring at least one pair of fins.',check:d=>d.parts.some(p=>PARTS[p.id].mount==='leg')?'Remove all legs.':!d.parts.some(p=>p.id==='fins')?'Add Fins.':null,fix:d=>{d.parts=d.parts.filter(p=>PARTS[p.id].mount!=='leg');if(!d.parts.some(p=>p.id==='fins'))d.parts.push(P('fins',.97,-.15,0));return d;}},

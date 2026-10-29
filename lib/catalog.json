@@ -112,6 +112,48 @@
       "lv": 10,
       "mirror": true
     },
+    "fishSword": {
+      "name": "Fish Sword",
+      "fam": "Weapon",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": false
+    },
+    "rubberMallet": {
+      "name": "Rubber Mallet",
+      "fam": "Weapon",
+      "tier": "Standard",
+      "lv": 2,
+      "mirror": false
+    },
+    "poolNoodle": {
+      "name": "Pool Noodle Lance",
+      "fam": "Weapon",
+      "tier": "Standard",
+      "lv": 3,
+      "mirror": false
+    },
+    "spatula": {
+      "name": "Flipping Spatula",
+      "fam": "Weapon",
+      "tier": "Advanced",
+      "lv": 4,
+      "mirror": false
+    },
+    "bubbleBlaster": {
+      "name": "Bubble Blaster",
+      "fam": "Weapon",
+      "tier": "Advanced",
+      "lv": 6,
+      "mirror": false
+    },
+    "boomerangBone": {
+      "name": "Boomerang Bone",
+      "fam": "Weapon",
+      "tier": "Rare",
+      "lv": 9,
+      "mirror": false
+    },
     "spikes": {
       "name": "Spikes",
       "fam": "Defense",

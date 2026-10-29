@@ -103,7 +103,7 @@ function finShape(big){const s=new T.Shape();if(big){s.moveTo(0,0);s.quadraticCu
 const IRIS_COLORS=['#3aa6ff','#62d36a','#ffb347','#b07aff','#ff6a7a','#40e0d0'];
 const irisGeo=()=>geo('irisCap',()=>{const g=new T.SphereGeometry(1.004,36,10,0,TAU,0,.62);g.rotateX(Math.PI/2);const p=g.attributes.position,uv=g.attributes.uv;const k=2*Math.sin(.62);for(let i=0;i<p.count;i++)uv.setXY(i,p.getX(i)/k+.5,p.getY(i)/k+.5);return g;});
 const clawGeo=(big)=>geo('claw'+(big?'B':'S'),()=>big?taperTube([[0,0,0],[0,.04,.16],[0,-.04,.32],[0,-.2,.4]],.075,.004,{c0:'#3a2a2a',c1:'#f0e6d0',segs:14,radial:8}):taperTube([[0,0,0],[0,.03,.11],[0,-.03,.21],[0,-.13,.26]],.045,.003,{c0:'#2a2028',c1:'#e8dcc8',segs:12,radial:8}));
-const COLLAR={claw:.2,bigclaw:.26,pincer:.24,horn:.2,tail:.3,antenna:.12,ear:.24,paw:.22,gland:.26,spike:.15,quills:.32,nose:.2,crystal:.22};
+const COLLAR={weapon:.2,claw:.2,bigclaw:.26,pincer:.24,horn:.2,tail:.3,antenna:.12,ear:.24,paw:.22,gland:.26,spike:.15,quills:.32,nose:.2,crystal:.22};
 
 /* =========================================================
    Part builders: each returns {g, ...animation refs}; local +Z points out of the body, +Y roughly up
@@ -147,6 +147,13 @@ const BUILDERS={
     for(let i=0;i<3;i++){const c=new T.Mesh(clawGeo(big),clawMat());c.position.set((i-1)*th*.75,0,(big?.62:.56)-Math.abs(i-1)*.03);c.rotation.y=(i-1)*.25;arm.add(c);}
     return {g,arm:{g:arm,side:1}};},
   bigclaw(ctx){return BUILDERS.claw(ctx,true);},
+  /* held weapons: a stubby arm with a hand, gripping a goofy weapon that points out along +Z */
+  weapon(ctx){const g=new T.Group();const k=ctx.def.weapon;const arm=new T.Group();arm.rotation.x=.25;g.add(arm);
+    const a=new T.Mesh(geo('wArm',()=>taperTube([[0,0,-.05],[0,-.03,.18],[0,0,.34]],.13,.1,{bulge:.12,segs:10,radial:12,cap:false})),ctx.solid);arm.add(a);
+    const hand=new T.Mesh(sphereG(),ctx.solid);hand.scale.set(.13,.12,.13);hand.position.z=.38;arm.add(hand);
+    const w=buildWeaponMesh(k);w.position.z=.38;arm.add(w);
+    return {g,weapon:{g:arm,k,base:.25}};},
+
   pincer(ctx){const g=new T.Group();const arm=new T.Group();arm.rotation.x=.3;g.add(arm);
     const a=new T.Mesh(geo('pinArm',()=>taperTube([[0,0,-.05],[0,-.03,.22],[0,0,.46]],.15,.11,{bulge:.15,segs:12,radial:14,cap:false})),ctx.solid);arm.add(a);
     const shellM=matc('pinShell'+ctx.d.accent,()=>new T.MeshPhysicalMaterial({color:col(ctx.d.accent),roughness:.3,clearcoat:1,clearcoatRoughness:.08,sheen:.6,sheenColor:col(ctx.d.accent).lerp(new T.Color(1,1,1),.6),normalMap:skinTex('scales').normal,normalScale:new T.Vector2(.25,.25)}));
@@ -232,6 +239,36 @@ const BUILDERS={
     const m=new T.Mesh(sphereG(),bm);m.scale.set(b.w*.8,b.h*.42,b.l*.85);m.position.y=-b.h*.55;g.add(m);
     for(let i=0;i<4;i++){const s=new T.Mesh(geo('bellyStripe',()=>new T.TorusGeometry(1,.035,8,48)),skinMat('#e8c890','pebble'));s.rotation.x=Math.PI/2;const z=(i-1.5)*.26*b.l;const k=Math.sqrt(Math.max(.1,1-Math.pow(z/(b.l*.85),2)));s.scale.set(b.w*.78*k,b.l*.1,1);s.position.set(0,-b.h*.72,z);g.add(s);}return {g};},
 };
+
+/* Weapon meshes (shared by the held part and thrown projectiles). Grip at the origin, weapon along +Z. */
+function buildWeaponMesh(k){const g=new T.Group();
+  const grip=(c,len)=>{const h=new T.Mesh(cylG(.045,.05,len,10),pmat(c,{roughness:.6}));h.rotation.x=Math.PI/2;h.position.z=len*.5-.12;g.add(h);return h;};
+  if(k==='fish'){grip('#6a4022',.36);const guard=new T.Mesh(cylG(.16,.16,.05,16),pmat('#ffd166',{metalness:.8,roughness:.25}));guard.rotation.x=Math.PI/2;guard.position.z=.1;g.add(guard);
+    const fm=pmat('#8fb8d8',{metalness:.35,roughness:.25,clearcoat:1,sheen:1,sheenColor:col('#e0f4ff')});
+    const body=new T.Mesh(sphereG(),fm);body.scale.set(.09,.17,.5);body.position.z=.58;g.add(body);
+    const belly=new T.Mesh(sphereG(),pmat('#e8f0f4',{roughness:.3}));belly.scale.set(.085,.1,.42);belly.position.set(0,-.06,.6);g.add(belly);
+    const tail=new T.Mesh(coneG(.16,.22,4),fm);tail.rotation.x=-Math.PI/2;tail.scale.set(.25,1,1);tail.position.z=.15;g.add(tail);
+    for(const s of [-1,1]){const e=new T.Mesh(sphereG(),pmat('#ffffff',{roughness:.1}));e.scale.setScalar(.04);e.position.set(s*.075,.05,.95);g.add(e);const pu=new T.Mesh(sphereG(),pmat('#0b0b14'));pu.scale.setScalar(.02);pu.position.set(s*.105,.05,.96);g.add(pu);}
+    const fin=new T.Mesh(coneG(.12,.25,3),fm);fin.scale.set(.15,1,1.6);fin.position.set(0,.17,.6);g.add(fin);}
+  else if(k==='mallet'){grip('#ffd23d',.75);const head=new T.Mesh(cylG(.17,.17,.5,24),pmat('#ff4d5e',{roughness:.35,clearcoat:1}));head.rotation.z=Math.PI/2;head.position.z=.72;g.add(head);
+    for(const s of [-1,1]){const cap=new T.Mesh(cylG(.18,.18,.08,24),pmat('#ffb0c8',{roughness:.5}));cap.rotation.z=Math.PI/2;cap.position.set(s*.27,0,.72);g.add(cap);}
+    const band=new T.Mesh(cylG(.175,.175,.06,24),pmat('#ffffff',{roughness:.4}));band.rotation.z=Math.PI/2;band.position.z=.72;g.add(band);}
+  else if(k==='noodle'){const n=new T.Mesh(geo('noodleG',()=>taperTube([[0,0,-.1],[0,.05,.5],[0,.02,1.1],[0,-.08,1.7]],.075,.07,{segs:24,radial:12})),pmat('#7dff6a',{roughness:.7,sheen:1,sheenColor:col('#d8ffd0')}));g.add(n);
+    const tip=new T.Mesh(sphereG(),pmat('#ff5ad6',{roughness:.6}));tip.scale.setScalar(.09);tip.position.set(0,-.08,1.72);g.add(tip);}
+  else if(k==='spatula'){grip('#1a1a24',.5);const neck=new T.Mesh(cylG(.025,.025,.22,8),pmat('#c9d6ee',{metalness:.9,roughness:.2}));neck.rotation.x=Math.PI/2;neck.position.z=.48;g.add(neck);
+    const blade=new T.Mesh(geo('spatBlade',()=>new T.BoxGeometry(.34,.025,.38)),pmat('#d8e0ee',{metalness:.95,roughness:.18}));blade.position.z=.76;blade.rotation.x=-.15;g.add(blade);
+    for(let i=0;i<3;i++){const sl=new T.Mesh(geo('spatSlot',()=>new T.BoxGeometry(.04,.03,.22)),pmat('#2a2f45'));sl.position.set((i-1)*.09,.005,.78);sl.rotation.x=-.15;g.add(sl);}}
+  else if(k==='blaster'){const bm=pmat('#ff8a3d',{roughness:.3,clearcoat:1}),cm=pmat('#3b6bff',{roughness:.3,clearcoat:1});
+    const body=new T.Mesh(geo('blBody',()=>new T.BoxGeometry(.2,.22,.5)),bm);body.position.set(0,.06,.3);g.add(body);
+    const handle=new T.Mesh(geo('blGrip',()=>new T.BoxGeometry(.12,.26,.12)),cm);handle.position.set(0,-.08,.06);handle.rotation.x=.3;g.add(handle);
+    const barrel=new T.Mesh(cylG(.06,.08,.34,14),cm);barrel.rotation.x=Math.PI/2;barrel.position.set(0,.08,.68);g.add(barrel);
+    const ring=new T.Mesh(geo('blRing',()=>new T.TorusGeometry(.1,.025,8,20)),pmat('#ffd23d',{metalness:.6,roughness:.3}));ring.position.set(0,.08,.86);g.add(ring);
+    const tank=new T.Mesh(sphereG(),matc('blTank',()=>new T.MeshPhysicalMaterial({color:col('#9af0ff'),emissive:col('#2ab8ff'),emissiveIntensity:.6,transparent:true,opacity:.7,roughness:.05,clearcoat:1,iridescence:1})));tank.scale.setScalar(.13);tank.position.set(0,.26,.28);g.add(tank);}
+  else if(k==='bone'){const bm=pmat('#f4ead2',{roughness:.55,sheen:.6,sheenColor:col('#ffffff')});
+    for(const s of [-1,1]){const arm=new T.Mesh(capsuleG(.05,.42),bm);arm.rotation.set(Math.PI/2,0,0);arm.rotation.y=s*.55;arm.position.set(s*.13,0,.38);g.add(arm);
+      for(const t of [-1,1]){const kn=new T.Mesh(sphereG(),bm);kn.scale.setScalar(.065);kn.position.set(s*.27+t*.04,0,.62+t*.03);g.add(kn);}}
+    const mid=new T.Mesh(sphereG(),bm);mid.scale.set(.1,.07,.09);mid.position.z=.16;g.add(mid);}
+  return g;}
 let _viewOwn=null;function own2(x){if(_viewOwn)_viewOwn.push(x);else own(x);return x;}
 
 function legBuild(def,s,side,skin,acc){
@@ -255,7 +292,7 @@ function legBuild(def,s,side,skin,acc){
 function buildCreatureView(d,opts){
   opts=opts||{};const b=d.body;const R=[b.w,b.h,b.l];
   const root=new T.Group();const pivot=new T.Group();root.add(pivot);
-  const v={root,pivot,R,b,legs:[],eyes:[],jaws:[],arms:[],pincers:[],tails:[],wings:[],fins:[],glands:[],props:[],zaps:[],crests:[],phase:Math.random()*TAU,j:0,jv:0,tilt:0,flash:0,legLen:.6,turn:0,lastYaw:0,disp:[],partGroups:[],blinkT:1+Math.random()*4,blink:0};
+  const v={root,pivot,R,b,legs:[],eyes:[],jaws:[],arms:[],weapons:[],pincers:[],tails:[],wings:[],fins:[],glands:[],props:[],zaps:[],crests:[],phase:Math.random()*TAU,j:0,jv:0,tilt:0,flash:0,legLen:.6,turn:0,lastYaw:0,disp:[],partGroups:[],blinkT:1+Math.random()*4,blink:0};
   const vown=x=>{v.disp.push(x);return x;};_viewOwn=v.disp;
   const kind=d.pattern==='stripes'?'scales':'pebble';const tx=skinTex(kind);
   const bodyMat=vown(new T.MeshPhysicalMaterial({vertexColors:true,normalMap:tx.normal,normalScale:new T.Vector2(.5,.5),roughnessMap:tx.rough,roughness:.85,sheen:1,sheenColor:col(d.color).lerp(new T.Color(1,.92,.88),.55),sheenRoughness:.42,clearcoat:.3,clearcoatRoughness:.35,emissive:new T.Color(0,0,0)}));v.bodyMat=bodyMat;
@@ -270,7 +307,7 @@ function buildCreatureView(d,opts){
     if(def.mount==='cover'){pivot.add(holder);}
     else{const fr=surfaceFrame(it.p,b);holder.position.copy(fr.pos);holder.quaternion.copy(fr.q).multiply(new T.Quaternion().setFromAxisAngle(_zAxis,it.r||0));holder.scale.set(it.mir?-it.s:it.s,it.s,it.s);pivot.add(holder);}
     v.partGroups.push(holder);
-    if(built.eye)v.eyes.push(built.eye);if(built.jaw)v.jaws.push(built.jaw);if(built.arm){built.arm.side=it.mir?-1:1;v.arms.push(built.arm);}if(built.pincer)v.pincers.push(built.pincer);
+    if(built.weapon)v.weapons.push(built.weapon);if(built.eye)v.eyes.push(built.eye);if(built.jaw)v.jaws.push(built.jaw);if(built.arm){built.arm.side=it.mir?-1:1;v.arms.push(built.arm);}if(built.pincer)v.pincers.push(built.pincer);
     if(built.tail)v.tails.push(built.tail);if(built.wing)v.wings.push(built.wing);if(built.fin)v.fins.push(built.fin);if(built.gland)v.glands.push(built.gland);if(built.prop)v.props.push(built.prop);if(built.zap)v.zaps.push(built.zap);if(built.crest)v.crests.push(built.crest);}
   _viewOwn=null;
   const bySide={'-1':[],'1':[]};for(const L of v.legs)bySide[L.side].push(L);
@@ -340,6 +377,10 @@ function animateCreatureView(c,dt,time){
     else{const r0=e.er*.62;e.pupil.position.set(e.x,e.y,Math.sqrt(Math.max(0,r0*r0-e.x*e.x-e.y*e.y)));}}
   for(const j of v.jaws)j.rotation.x=c.biteT>0?Math.sin((.3-c.biteT)/.3*Math.PI)*.75:(c.state==='dead'?.5:.06+Math.sin(time*2+v.phase)*.04+breathe*2);
   for(const a of v.arms)a.g.rotation.y=c.slashT>0?a.side*Math.sin((.3-c.slashT)/.3*Math.PI)*1.0:Math.sin(v.phase+a.side)*.2*walk;
+  for(const w of v.weapons){const t=c.swingT>0?1-c.swingT/.35:-1;let rx=w.base+Math.sin(time*2.2+v.phase*.3)*.06+Math.sin(v.phase)*.12*walk,ry=0,pz=0;
+    if(t>=0){const e=Math.sin(t*Math.PI);if(w.k==='noodle'||w.k==='blaster'){pz=e*(w.k==='noodle'?.45:.12);rx=w.base-e*.2;}else if(w.k==='spatula'){rx=w.base+e*1.3-Math.sin(t*TAU)*.4;}else if(w.k==='bone'){ry=-e*1.6;rx=w.base-e*.6;}else if(w.k==='fish'){ry=-Math.sin(t*TAU*.75)*1.3;}else{rx=w.base-Math.sin(t*Math.PI*.5)*1.6+(t>.5?(t-.5)*3.2:0);}}
+    if(c.boneOut&&w.k==='bone')w.g.children[w.g.children.length-1].visible=false;else if(w.k==='bone')w.g.children[w.g.children.length-1].visible=true;
+    w.g.rotation.x=lerp(w.g.rotation.x,rx,1-Math.exp(-dt*22));w.g.rotation.y=lerp(w.g.rotation.y,ry,1-Math.exp(-dt*22));w.g.position.z=pz;}
   for(const pc of v.pincers){const open=c.slashT>0?Math.sin((.3-c.slashT)/.3*Math.PI)*.6:.18+Math.sin(time*3)*.05;for(const h of pc)h.h.rotation.y=-h.s*(.1+open);}
   for(const t of v.tails)t.forEach((s,i)=>{s.rotation.y=Math.sin(time*3-i*.7)*(.14+walk*.14)*(1+i*.15);s.rotation.x=Math.sin(time*2-i)*.05+(c.state==='dead'?0:-.03*i);});
   for(const w of v.wings)w.rotation.x=.25+Math.sin(time*(grounded?5:24))*(grounded?.22:.7);

@@ -12,7 +12,7 @@ class Creature{
     this.downedT=0;this.downedBy=null;this.reviveP=0;this.reviving=false;this.lastHitBy=null;this.lastHurt=-99;
     this.dodgeT=0;this.invulnT=0;this.dashT=0;this.dashHit=null;this.dashDmg=0;this.spinT=0;this.biteT=0;this.slashT=0;this.flop=false;
     this.shield=0;this.shieldT=0;this.venomT=0;this.venomSrc=null;this.emoteT=0;this.deadT=0;this.blessT=0;this.spitT=0;this.spitTarget=null;
-    this.slowT=0;this.camoT=0;this.burrowT=0;this.inflateT=0;this.zapT=0;this.glideHeld=false;
+    this.swingT=0;this.boneOut=false;this.style=this.st.style;this.perk=this.st.perk;this.slowT=0;this.camoT=0;this.burrowT=0;this.inflateT=0;this.zapT=0;this.glideHeld=false;
     this.brain=isPlayer?null:{t:Math.random()*.3,mode:'lane',target:null,laneI:-1,retreat:false,atkT:0,jit:Math.random()*TAU};
   }
   get alive(){return this.state==='alive';}
@@ -68,15 +68,18 @@ function targetsFor(c){const out=[];for(const e of world.creatures){if(e.team===
 function dmgMul(c){return (.55+c.st.damage*.06)*(c.muts['Big Bite']?1.15:1)*(c.blessT>0?1.15:1)*(match&&match.rules.dmgMul&&c.isPlayer?match.rules.dmgMul:1);}
 function tryAttack(c,i,aimYaw){
   if(!c.alive||c.dashT>0||c.reviving||c.burrowT>0)return false;const a=c.attacks[i];if(!a||c.cds[i]>0||c.stamina<a.st)return false;
-  if(aimYaw!=null)c.yaw=aimYaw;c.aimYaw=c.yaw;c.faceT=.35;c.cds[i]=a.cd;c.stamina-=a.st;const mul=dmgMul(c)*(.7+.3*(a.scale||1));
+  if(aimYaw!=null)c.yaw=aimYaw;c.aimYaw=c.yaw;c.faceT=.35;c.cds[i]=a.cd;c.stamina-=a.st;const mul=dmgMul(c)*(.7+.3*(a.scale||1))*(a.ranged?(c.perk.ranged||1):(c.perk.melee||1));
   if(c.camoT>0){c.camoT=0;emit(c.x,c.y+1,c.z,{n:14,color:'#55f0ff',speed:4,life:.5,size:.14,glow:2});}
   if(c.view)c.view.jv+=.5;if(Math.random()<.35)voice(c,'attack');
-  if(a.melee){if(a.id==='slash'||a.id==='maul'||a.id==='pinch')c.slashT=.3;else c.biteT=a.id==='peck'?.15:.3;meleeHit(c,a,mul);sfx(a.sound,c);}
+  if(a.weapon)c.swingT=.35;
+  if(a.melee){if(a.weapon){}else if(a.id==='slash'||a.id==='maul'||a.id==='pinch')c.slashT=.3;else c.biteT=a.id==='peck'?.15:.3;meleeHit(c,a,mul);sfx(a.sound,c);}
   else switch(a.id){
     case 'spin':c.spinT=.5;aoeHit(c,c.x,c.z,a.range+c.radius,a.dmg*mul,a.type,a.kb,!!c.muts.Venom,true);emit(c.x,c.y+.8,c.z,{n:18,color:c.d.accent,speed:9,flat:true,life:.4,grav:0,size:.18,glow:1.5});sfx('spin',c);break;
     case 'charge':c.dashT=a.dash;c.dashHit=new Set();c.dashDmg=a.dmg*mul;sfx('charge',c);break;
     case 'spit':fireSpit(c,a,mul);break;
     case 'zap':fireZap(c,a,mul);break;
+    case 'bubble':fireBubble(c,a,mul);break;
+    case 'boomerang':if(c.boneOut){c.stamina+=a.st;c.cds[i]=0;return false;}fireBoomerang(c,a,mul);break;
   }
   if(match&&c.isPlayer)match.stats.attacks=(match.stats.attacks||0)+1;
   return true;
@@ -87,6 +90,7 @@ function meleeHit(c,a,mul){
   if(a.single&&best)hits.push(best);
   for(const t of hits){const dx=t.x-c.x,dz=t.z-c.z,d=Math.hypot(dx,dz)||1;hurt(t,a.dmg*mul,a.type,c,dx/d,dz/d,a.kb,!!a.venom||!!c.muts.Venom);
     if(a.slow&&t.kind==='creature')t.slowT=a.slow;
+    if(a.launch&&t.kind==='creature'&&t.state==='alive'&&t.burrowT<=0){const sf=Math.max(.7,t.st.stability/5)/(t.st.kbResist||1);t.vy=Math.max(t.vy,a.launch/Math.sqrt(sf));t.grounded=false;t.spinT=.5;emit(t.x,(t.y||0)+.3,t.z,{n:12,color:'#ffe6a0',speed:5,life:.5,size:.14,glow:1.6,up:5});}
     emit(t.x-dx/d*t.radius*.7,(t.y||0)+1.2,t.z-dz/d*t.radius*.7,{n:8,color:a.venom?'#b8ff4f':'#fff3c0',speed:6,life:.35,size:.12,glow:2.2});
     if(t.kind==='creature'&&t.state==='alive'){ // thorns and inflate push back on melee attackers
       if(t.st.thorns>0){hurtCreature(c,t.st.thorns,'thorns',t,-dx/d,-dz/d,1.5,false);sfx('thorns',c);}
@@ -102,6 +106,37 @@ function fireSpit(c,a,mul){
   const mesh=new T.Mesh(sphereG(),glowMat('#b8ff4f',2.6));mesh.scale.setScalar(.3);world.group.add(mesh);
   world.projectiles.push({kind:'spit',x:sx,y:sy,z:sz,vx:fx*sp,vy,vz:fz*sp,g,life:1.1,team:c.team,src:c,dmg:a.dmg*mul,type:'spit',kb:a.kb,r:.35,splash:0,venom:!!c.muts.Venom,mesh,color:'#b8ff4f'});
   c.spitT=.25;sfx('spit',c);
+}
+function fireBubble(c,a,mul){
+  const yaw=c.yaw+(Math.random()-.5)*.06;const fx=Math.sin(yaw),fz=Math.cos(yaw);const sx=c.x+fx*(c.radius+.5),sz=c.z+fz*(c.radius+.5),sy=c.y+c.view.baseY+.1;
+  const sp=24;let vy=0;const t=c.spitTarget;
+  if(t&&(t.alive||t.state==='downed')){const d=Math.hypot(t.x-sx,t.z-sz);vy=clamp(((t.y||0)+(t.height||2)*.45-sy)/(d/sp),-6,6);}
+  else if(c.isPlayer)vy=clamp(-(cam.pitch-.34)*10,-4,4);
+  const mesh=new T.Mesh(sphereG(),matc('bubbleM',()=>new T.MeshPhysicalMaterial({color:col('#d8f8ff'),emissive:col('#55c8ff'),emissiveIntensity:.5,transparent:true,opacity:.55,roughness:0,clearcoat:1,iridescence:1,depthWrite:false})));
+  mesh.scale.setScalar(.22+Math.random()*.08);world.group.add(mesh);
+  world.projectiles.push({kind:'bubble',hitsAll:true,x:sx,y:sy,z:sz,vx:fx*sp,vy,vz:fz*sp,g:0,life:a.range/sp,team:c.team,src:c,dmg:a.dmg*mul,type:a.type,kb:a.kb,r:.3,splash:0,venom:!!c.muts.Venom,mesh,color:'#9af0ff'});
+  c.spitT=.12;sfx('bubble',c);
+}
+function fireBoomerang(c,a,mul){
+  const fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);const sy=c.y+c.view.baseY+.2;
+  const mesh=buildWeaponMesh('bone');mesh.scale.setScalar(1.25);world.group.add(mesh);
+  c.boneOut=true;
+  world.projectiles.push({kind:'boomerang',x:c.x+fx*(c.radius+.4),y:sy,z:c.z+fz*(c.radius+.4),dx:fx,dz:fz,sp:20,out:a.range/20,t:0,team:c.team,src:c,dmg:a.dmg*mul,type:a.type,kb:a.kb,r:.55,hit:new Set(),back:false,venom:!!c.muts.Venom,mesh,color:'#f4ead2',life:4});
+  sfx('whoosh',c);
+}
+function updateBoomerang(p,dt){
+  const c=p.src;p.t+=dt;p.life-=dt;
+  if(!p.back&&p.t>=p.out){p.back=true;p.hit.clear();}
+  let vx,vz;if(!p.back){const k=1-.55*p.t/p.out;vx=p.dx*p.sp*k;vz=p.dz*p.sp*k;}
+  else{const tx=c.x-p.x,tz=c.z-p.z,d=Math.hypot(tx,tz)||1;const s=Math.min(p.sp*1.1,6+(p.t-p.out)*30);vx=tx/d*s;vz=tz/d*s;
+    p.y=lerp(p.y,c.y+(c.view?c.view.baseY:1)+.2,1-Math.exp(-dt*4));if(d<c.radius+.6||c.state!=='alive')p.done=true;}
+  p.x+=vx*dt;p.z+=vz*dt;const gh=world.map.heightAt(p.x,p.z);if(p.y<gh+.4)p.y=gh+.4;
+  const tgts=world.creatures.filter(t=>t.team!==p.team&&t.state==='alive'&&t.burrowT<=0).concat(world.nests.filter(n=>n.team!==p.team&&n.alive),world.neutrals.filter(n=>n.alive));
+  for(const t of tgts){if(p.hit.has(t))continue;const rad=(t.radius||1)+p.r;if(Math.hypot(t.x-p.x,t.z-p.z)<rad&&p.y<(t.y||0)+(t.height||(t.view&&t.view.height)||3)+.4){if(t.kind==='nest'&&!nestAttackable(t))continue;p.hit.add(t);const n=Math.hypot(vx,vz)||1;hurt(t,p.dmg*(p.back?.8:1),p.type,c,vx/n,vz/n,p.kb,p.venom);emit(p.x,p.y,p.z,{n:10,color:'#fff3c0',speed:6,life:.35,size:.13,glow:2});sfx('squeak',p);}}
+  p.mesh.position.set(p.x,p.y,p.z);p.mesh.rotation.y+=dt*18;
+  if(p.life<=0)p.done=true;
+  if(p.done){world.group.remove(p.mesh);c.boneOut=false;return false;}
+  return true;
 }
 function fireZap(c,a,mul){
   const fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);let best=null,bd=1e9;
@@ -255,7 +290,7 @@ function simulate(dt){
 function updateCreature(c,dt){
   const map=world.map;
   for(let i=0;i<c.cds.length;i++)if(c.cds[i]>0)c.cds[i]-=dt;
-  if(c.specCd>0)c.specCd-=dt;c.dodgeT-=dt;c.invulnT-=dt;c.faceT-=dt;c.biteT-=dt;c.slashT-=dt;c.spinT-=dt;c.emoteT-=dt;c.spitT-=dt;c.zapT-=dt;c.slowT-=dt;c.inflateT-=dt;
+  if(c.specCd>0)c.specCd-=dt;c.dodgeT-=dt;c.invulnT-=dt;c.faceT-=dt;c.biteT-=dt;c.slashT-=dt;c.spinT-=dt;c.emoteT-=dt;c.spitT-=dt;c.zapT-=dt;c.swingT-=dt;c.slowT-=dt;c.inflateT-=dt;
   if(c.camoT>0){c.camoT-=dt;if(c.camoT<=0)emit(c.x,c.y+1,c.z,{n:10,color:'#55f0ff',speed:3,life:.5,size:.12,glow:2});}
   if(c.shieldT>0){c.shieldT-=dt;if(c.shieldT<=0)c.shield=0;}
   if(c.blessT>0)c.blessT-=dt;
@@ -266,7 +301,7 @@ function updateCreature(c,dt){
   if(c.state==='downed'){c.moveX=c.moveZ=0;const kd=Math.exp(-5*dt);c.kx*=kd;c.kz*=kd;c.vx*=kd;c.vz*=kd;c.x+=(c.vx+c.kx)*dt;c.z+=(c.vz+c.kz)*dt;c.vy-=30*dt;c.y+=c.vy*dt;const gh=map.heightAt(c.x,c.z);if(c.y<gh){c.y=gh;c.vy=0;}return;}
   if(c.burrowT>0){c.burrowT-=dt;if(Math.random()<dt*14)emit(c.x,c.y+.2,c.z,{n:2,color:map.biome.lane,speed:2,life:.6,size:.2,up:2});
     if(c.burrowT<=0){aoeHit(c,c.x,c.z,3+c.radius,14*dmgMul(c),'blunt',9,false,false);emit(c.x,c.y+.3,c.z,{n:30,color:map.biome.lane,speed:9,life:.7,size:.24,up:6});sfx('popup',c);c.vy=9;c.grounded=false;if(c.view)c.view.jv+=1.5;}}
-  c.stamina=Math.min(100,c.stamina+20*dt);
+  c.stamina=Math.min(100,c.stamina+20*(c.perk.stamina||1)*dt);
   let spd=c.st.moveSpeed*(c.muts.Zoomies?1.15:1)*(c.blessT>0?1.1:1)*(c.slowT>0?.6:1)*(c.burrowT>0?1.5:1)*(inkAt(c.x,c.z,c.team)?.65:1)*(c.isPlayer&&match.rules.speedMul?match.rules.speedMul:1);
   if(c.reviving||c.isDummy)spd=0;
   let tvx=c.moveX*spd,tvz=c.moveZ*spd;
@@ -296,8 +331,8 @@ function trySpecial(c){
   if(!c.alive||c.specCd>0||c.reviving||c.burrowT>0)return false;const sp=SPECIALS[c.special];if(!sp)return false;
   switch(c.special){
     case 'bellyflop':if(!c.grounded)return false;c.vy=12;c.grounded=false;c.flop=true;sfx('jump',c);break;
-    case 'shield':c.shield=60;c.shieldT=6;sfx('shield',c);break;
-    case 'heal':for(const m of world.creatures)if(m.team===c.team&&m.state==='alive'&&Math.hypot(m.x-c.x,m.z-c.z)<9){const h=Math.min(30,m.maxHp-m.hp);m.hp+=h;if(h>0)floatText(m,'+'+Math.round(h),'heal');emit(m.x,m.y+1,m.z,{n:14,color:'#ff8ad0',speed:3,life:1,size:.15,glow:2.2,up:4,grav:-2});}
+    case 'shield':c.shield=Math.round(60*(c.perk.heal||1));c.shieldT=6;sfx('shield',c);break;
+    case 'heal':for(const m of world.creatures)if(m.team===c.team&&m.state==='alive'&&Math.hypot(m.x-c.x,m.z-c.z)<9){const h=Math.min(30*(c.perk.heal||1),m.maxHp-m.hp);m.hp+=h;if(h>0)floatText(m,'+'+Math.round(h),'heal');emit(m.x,m.y+1,m.z,{n:14,color:'#ff8ad0',speed:3,life:1,size:.15,glow:2.2,up:4,grav:-2});}
       emit(c.x,c.y+.4,c.z,{n:40,color:'#ff8ad0',speed:9,flat:true,life:.7,size:.18,glow:2,grav:0});sfx('heal',c);break;
     case 'ink':world.inks.push({x:c.x,z:c.z,r:5.5,t:5,team:c.team});emit(c.x,c.y+1,c.z,{n:60,color:'#2a1640',speed:7,life:1.4,size:.6,grav:-.5,drag:2});sfx('ink',c);
       for(const e of world.creatures)if(e.team!==c.team&&e.brain&&Math.hypot(e.x-c.x,e.z-c.z)<7){e.brain.target=null;e.brain.t=.6;}if(cam.lock&&cam.lock!==c&&Math.hypot(cam.lock.x-c.x,cam.lock.z-c.z)<6&&c.team!==match.player.team)cam.lock=null;break;
@@ -340,10 +375,10 @@ function updateInks(dt){let w=0;for(const k of world.inks){k.t-=dt;if(k.t<=0)con
   let wb=0;for(const b of world.bolts){b.t-=dt;if(b.t<=0){world.group.remove(b.l);b.l.geometry.dispose();continue;}world.bolts[wb++]=b;}world.bolts.length=wb;}
 function updateProjectiles(dt){
   const PR=world.projectiles;let w=0;
-  for(let i=0;i<PR.length;i++){const p=PR[i];p.life-=dt;p.vy-=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;let boom=false,hitT=null;
+  for(let i=0;i<PR.length;i++){const p=PR[i];if(p.kind==='boomerang'){if(updateBoomerang(p,dt))PR[w++]=p;continue;}p.life-=dt;p.vy-=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;let boom=false,hitT=null;
     if(Math.random()<.7)emit(p.x,p.y,p.z,{n:1,color:p.color,speed:.5,life:.3,size:p.r*.6,glow:2,grav:0});
     for(const c of world.creatures){if(c.team===p.team||c.state!=='alive'||c.burrowT>0)continue;if(Math.hypot(c.x-p.x,c.z-p.z)<c.radius+p.r&&p.y>c.y-.3&&p.y<c.y+c.height+.3){boom=true;hitT=c;break;}}
-    if(!boom&&p.kind==='spit'){for(const n of world.nests){if(n.team===p.team||!n.alive)continue;if(Math.hypot(n.x-p.x,n.z-p.z)<n.radius+p.r&&p.y<n.y+n.height){boom=true;hitT=n;break;}}
+    if(!boom&&(p.kind==='spit'||p.hitsAll)){for(const n of world.nests){if(n.team===p.team||!n.alive)continue;if(Math.hypot(n.x-p.x,n.z-p.z)<n.radius+p.r&&p.y<n.y+n.height){boom=true;hitT=n;break;}}
       if(!boom)for(const n of world.neutrals){if(!n.alive)continue;if(Math.hypot(n.x-p.x,n.z-p.z)<n.radius+p.r&&p.y<n.y+n.view.height+.3){boom=true;hitT=n;break;}}}
     if(!boom&&(p.y<world.map.heightAt(p.x,p.z)||p.life<=0))boom=true;
     if(boom){
@@ -379,7 +414,7 @@ function updateRules(dt){
   const W=world;
   for(const c of W.creatures){if(c.state!=='downed')continue;c.downedT-=dt;let rv=null;
     for(const m of W.creatures){if(m.team!==c.team||m.state!=='alive'||!m.reviving)continue;if(Math.hypot(m.x-c.x,m.z-c.z)<c.radius+m.radius+1.6){rv=m;break;}}
-    if(rv){c.reviveP+=dt;if(Math.random()<dt*10)emit(c.x,c.y+1,c.z,{n:1,color:'#62ff9a',speed:1,life:.6,size:.12,glow:2,up:3,grav:-2});if(c.reviveP>=S.reviveSec){revive(c,rv);if(rv.isPlayer&&typeof onChallengeEvent==='function')onChallengeEvent('revive',{c});continue;}}
+    if(rv){c.reviveP+=dt*(rv.perk.revive||1);if(Math.random()<dt*10)emit(c.x,c.y+1,c.z,{n:1,color:'#62ff9a',speed:1,life:.6,size:.12,glow:2,up:3,grav:-2});if(c.reviveP>=S.reviveSec){revive(c,rv);if(rv.isPlayer&&typeof onChallengeEvent==='function')onChallengeEvent('revive',{c});continue;}}
     else c.reviveP=Math.max(0,c.reviveP-dt*.5);
     if(c.downedT<=0)killCreature(c,c.downedBy);}
   const alive={blue:0,red:0};for(const c of W.creatures)if(c.state==='alive'&&!c.isDummy)alive[c.team]++;
@@ -454,7 +489,7 @@ function botAct(c,dt){
 }
 function botFight(c,t,dt){
   const b=c.brain;const dx=t.x-c.x,dz=t.z-c.z,d=Math.hypot(dx,dz)||.001;const yawTo=Math.atan2(dx,dz);
-  const reachBase=c.radius+t.radius*.6;const ri=c.attacks.findIndex(a=>a.id==='spit');const zi=c.attacks.findIndex(a=>a.id==='zap');
+  const reachBase=c.radius+t.radius*.6;const ri=c.attacks.findIndex(a=>a.id==='spit'||a.id==='bubble'||a.id==='boomerang');const zi=c.attacks.findIndex(a=>a.id==='zap');
   let want=ri>=0?(t.kind==='nest'?t.radius+7:10):zi>=0?7:reachBase+1.1;
   if(t.kind==='creature'&&t.state==='downed')want=reachBase+1;
   if(d>want+.8)steerTo(c,t.x,t.z,1);
@@ -464,7 +499,7 @@ function botFight(c,t,dt){
   const facing=Math.abs(angDiff(c.yaw,yawTo))<.5;
   if(b.atkT<=0&&!(b.passive)){
     for(let i=0;i<c.attacks.length;i++){const a=c.attacks[i];if(c.cds[i]>0||c.stamina<a.st)continue;let go=false;
-      if(a.id==='spit')go=d<22;else if(a.id==='zap')go=facing&&d<a.range+t.radius;
+      if(a.id==='spit')go=d<22;else if(a.id==='bubble')go=facing&&d<a.range;else if(a.id==='boomerang')go=facing&&!c.boneOut&&d<a.range+t.radius;else if(a.id==='zap')go=facing&&d<a.range+t.radius;
       else if(a.id==='charge')go=facing&&d>3.5&&d<11&&t.kind!=='nest'&&Math.random()<.25;
       else if(a.id==='spin')go=d<a.range+c.radius+t.radius*.6;
       else go=facing&&d<a.range+reachBase;
@@ -477,7 +512,7 @@ function botFight(c,t,dt){
       case 'ink':if(t.kind==='creature'&&d<5&&hpF<.7)trySpecial(c);break;
       case 'camo':if(t.kind==='creature'&&d>6&&d<14&&Math.random()<.02)trySpecial(c);break;
       case 'burrow':if(t.kind==='creature'&&d>5&&d<12&&Math.random()<.03)trySpecial(c);break;}}
-  if(t.kind==='creature'&&t.state==='alive'&&d<4.5&&(t.biteT>0||t.slashT>0||t.dashT>0)&&Math.random()<.035)c.dodge();
+  if(t.kind==='creature'&&t.state==='alive'&&d<4.5&&(t.biteT>0||t.slashT>0||t.swingT>0||t.dashT>0)&&Math.random()<.035)c.dodge();
 }
 
 /* ---------- player input ---------- */
@@ -604,7 +639,7 @@ function buildAbilityBar(){H.abil.innerHTML='';abSlots=[];const p=match.player;c
   p.attacks.forEach((a,i)=>{const d=document.createElement('div');d.className='ab';d.innerHTML='<div class="cd"></div><div class="cdn"></div><span class="an">'+esc(a.name)+'</span><kbd>'+(isCoarse?'Atk '+(i+1):(i<2?keysLbl[i]+' / ':'')+keyName(A11Y.keys['atk'+(i+1)]))+'</kbd>';H.abil.appendChild(d);abSlots.push({el:d,cd:d.querySelector('.cd'),n:d.querySelector('.cdn'),get:()=>[p.cds[i],a.cd]});});
   const sp=SPECIALS[p.special];if(sp){const d=document.createElement('div');d.className='ab special';d.innerHTML='<div class="cd"></div><div class="cdn"></div><span class="an">'+esc(sp.name)+'</span><kbd>'+(isCoarse?'Special':keyName(A11Y.keys.special))+'</kbd>';H.abil.appendChild(d);abSlots.push({el:d,cd:d.querySelector('.cd'),n:d.querySelector('.cdn'),get:()=>[p.specCd,sp.cd]});}
   for(const k in cache)delete cache[k];
-  setText(H.name,'nm',p.d.name);setText(H.role,'role',p.st.role);
+  setText(H.name,'nm',p.d.name);setText(H.role,'role',p.st.styleAuto?p.st.role:STYLES[p.st.style].name);
   $$('#tbtns .tb').forEach(b=>{const a=b.dataset.act;if(a.startsWith('atk')){const at=p.attacks[+a.slice(3)];b.hidden=!at;if(at)b.textContent=at.name.split(' ').pop();}else if(a==='spec'){b.hidden=!sp;if(sp)b.textContent=sp.name.split(' ').pop();}});}
 function updateHUD(dt){
   setText(H.dna,'dna',String(progress.dna));setText(H.lv,'lv',String(progress.level));const xpf=(progress.xp/xpNeeded(progress.level)*100).toFixed(1)+'%';if(cache.xpf!==xpf){cache.xpf=xpf;H.xp.style.width=xpf;}
