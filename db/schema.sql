@@ -1,5 +1,5 @@
--- Creature Clash database schema (Postgres / Neon).
--- Safe to run more than once: every statement is idempotent.
+-- Creature Clash database schema (Postgres, run by PGlite on this computer; see lib/db.js).
+-- The server runs this every time it starts. Safe to run more than once: every statement is idempotent.
 
 CREATE TABLE IF NOT EXISTS users (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 CREATE INDEX IF NOT EXISTS matches_user_started ON matches (user_id, started_at DESC);
 
--- Anonymous usage counts for the stats queries in db/reports.sql. One row per day and event, no player or browser IDs.
+-- Anonymous usage counts for the Admin Analytics page (/admin). One row per day and event, no player or browser IDs.
 CREATE TABLE IF NOT EXISTS daily_stats (
   day      date NOT NULL,
   event    text NOT NULL CHECK (event IN ('page_view','daily_visitor','battle_start','challenge_start','match_end')),
@@ -110,8 +110,8 @@ CREATE TABLE IF NOT EXISTS error_reports (
 CREATE INDEX IF NOT EXISTS error_reports_last_seen ON error_reports (last_seen DESC);
 
 -- Row level security: on for every table, with no policies. The game's server connects as the tables' owner,
--- which row level security does not restrict, so the game works as before. Any other database role, such as the
--- ones Neon's Data API uses, sees no rows and cannot change any.
+-- which row level security does not restrict. Any other database role sees no rows and cannot change any.
+-- (The database is a folder only the game server opens; nothing else can connect to it over the network.)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_codes ENABLE ROW LEVEL SECURITY;

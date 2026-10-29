@@ -1,4 +1,4 @@
-// Test helpers: a throwaway Postgres database, a psql-backed stand-in for the Neon driver,
+// Test helpers: a throwaway Postgres database, a psql-backed stand-in for the database driver,
 // and fake req/res objects that drive the real API handlers.
 // Needs a local Postgres. Set TEST_PG (default: -h /var/tmp/ccpg -p 5433 -U cc).
 import { spawnSync } from 'node:child_process';
