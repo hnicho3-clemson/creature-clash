@@ -106,7 +106,7 @@
       "mirror": false
     },
     "zapAntennae": {
-      "name": "Zap Antennae",
+      "name": "Firefly Stalks",
       "fam": "Offense",
       "tier": "Rare",
       "lv": 10,
@@ -120,14 +120,14 @@
       "mirror": false
     },
     "rubberMallet": {
-      "name": "Rubber Mallet",
+      "name": "Mushroom Mallet",
       "fam": "Weapon",
       "tier": "Standard",
       "lv": 2,
       "mirror": false
     },
     "poolNoodle": {
-      "name": "Pool Noodle Lance",
+      "name": "Cattail Lance",
       "fam": "Weapon",
       "tier": "Standard",
       "lv": 3,
@@ -141,7 +141,7 @@
       "mirror": false
     },
     "bubbleBlaster": {
-      "name": "Bubble Blaster",
+      "name": "Dewdrop Popper",
       "fam": "Weapon",
       "tier": "Advanced",
       "lv": 6,
@@ -169,7 +169,7 @@
       "mirror": false
     },
     "armorPlates": {
-      "name": "Armor Plates",
+      "name": "Bark Plates",
       "fam": "Defense",
       "tier": "Standard",
       "lv": 4,
@@ -225,7 +225,7 @@
       "mirror": false
     },
     "shieldNode": {
-      "name": "Shield Node",
+      "name": "Moonstone Seed",
       "fam": "Utility",
       "tier": "Advanced",
       "lv": 4,
@@ -252,6 +252,13 @@
       "lv": 7,
       "mirror": true
     },
+    "beadEye": {
+      "name": "Bead Eyes",
+      "fam": "Cosmetic",
+      "tier": "Free",
+      "lv": 1,
+      "mirror": true
+    },
     "googlyEye": {
       "name": "Googly Eye",
       "fam": "Cosmetic",
@@ -260,42 +267,42 @@
       "mirror": true
     },
     "partyHat": {
-      "name": "Party Hat",
+      "name": "Toadstool Cap",
       "fam": "Cosmetic",
       "tier": "Free",
       "lv": 1,
       "mirror": false
     },
     "topHat": {
-      "name": "Top Hat",
+      "name": "Acorn Cap",
       "fam": "Cosmetic",
       "tier": "Free",
       "lv": 1,
       "mirror": false
     },
     "beanie": {
-      "name": "Propeller Beanie",
+      "name": "Maple Spinner",
       "fam": "Cosmetic",
       "tier": "Free",
       "lv": 1,
       "mirror": false
     },
     "crownMini": {
-      "name": "Tiny Crown",
+      "name": "Flower Crown",
       "fam": "Cosmetic",
       "tier": "Free",
       "lv": 1,
       "mirror": false
     },
     "bowTie": {
-      "name": "Bow Tie",
+      "name": "Petal Bow",
       "fam": "Cosmetic",
       "tier": "Free",
       "lv": 1,
       "mirror": false
     },
     "mustache": {
-      "name": "Mustache",
+      "name": "Moss Mustache",
       "fam": "Cosmetic",
       "tier": "Free",
       "lv": 1,

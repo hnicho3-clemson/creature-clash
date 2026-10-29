@@ -1,6 +1,6 @@
 # Creature Clash
 
-A goofy 3D creature-building battle game in the browser, with optional accounts and cloud saves.
+A goofy 3D creature-building battle game in the browser: build cute forest spirits and defend your side of the Enchanted Forest. Optional accounts and cloud saves.
 
 - `public/` is the game and the account, parent, privacy, rules and 404 pages (static files).
 - `api/` is the server: Vercel functions for sign-in, saves, matches, the part shop, account deletion, and anonymous stats and error reports.

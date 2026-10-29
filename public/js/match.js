@@ -35,9 +35,9 @@ const DUMMY=D('Training Dummy','#e8d2a0','#c84a3a','stripes',[.85,1.25,.85],[P('
 /* ---------- MatchManager ---------- */
 let phase='menu';let match=null;let timeScale=1,ffMul=1;let paused=false;
 const cam={yaw:Math.PI/2,pitch:.34,dist:11,shake:0,lock:null,fx:0,fy:0,fz:0,spect:null,cine:null};
-const BOT_COLORS=[['#ffd23d','#ff7a3d'],['#5ad1ff','#2a5cff'],['#7dff6a','#1f9a5a'],['#ff5a7a','#ffd0e0'],['#c08aff','#5a2aa8'],['#ffa04a','#7a3a1a'],['#4affd8','#1a6a8a'],['#ff7ae8','#7a2a8a'],['#e8f06a','#6a8a2a'],['#9af0ff','#ff6a9a']];
-const BOT_NAMES=['Blorbo','Sir Noodlethigh','Gloria Gumbo','Captain Wigglebottom','Snackrifice','Professor Plonk','Muffinmaw','Dame Squelch','Tater Thunk','Lord Flopsy','Wobbletron','Gristle McGee','Nibbles the Unkind','Bean Supreme','Count Chompula','Puddlebutt'];
-const CAPTIONS=['Returned to the primordial soup.','Cause of death: bit off more than it could chew.','Extinction speedrun complete.','Evolution has requested a refund.','Your genes have left the chat.','Fossil record updated.','Natural selection said no.','Tragically out-wobbled.','Now a cautionary tale for future species.','Respawning is a myth. Sorry.','Reclassified as a snack.','Achievement unlocked: Fossil.'];
+const BOT_COLORS=[['#8fd16a','#f2b84b'],['#7ec8e3','#4a6fa5'],['#5f9a3c','#d9473b'],['#ff9ec4','#fff3b0'],['#b49ae0','#7fe3c0'],['#e08a4a','#6b4226'],['#7fe3c0','#3fa89a'],['#f4ead2','#8fd16a'],['#a8b860','#5f7a3a'],['#7d8a86','#ff9ec4']];
+const BOT_NAMES=['Blorbo','Puddlesprout','Acorn Al','Lady Lichen','Thistlewump','Sir Noodlethigh','Gloria Gumbo','Captain Wigglebottom','Snackrifice','Professor Plonk','Muffinmaw','Dame Squelch','Tater Thunk','Lord Flopsy','Mossbottom','Gristle McGee','Nibbles the Unkind','Bean Supreme','Count Chompula','Puddlebutt'];
+const CAPTIONS=['Returned to the primordial soup.','Cause of death: bit off more than it could chew.','Extinction speedrun complete.','Evolution has requested a refund.','Your genes have left the chat.','Fossil record updated.','Natural selection said no.','Tragically out-wobbled.','Now a cautionary tale for future species.','Respawning is a myth. Sorry.','Reclassified as a snack.','Achievement unlocked: Fossil.','Returned to the forest floor.','Composted, lovingly.','Now fertilizer for a very proud mushroom.','Gone to sprout another day.','The moss will remember you.'];
 
 /* opts: {mode:'battle'|'test'|'challenge', player:design, bots:[{design,team,name,lane,tint}], rules:{}} */
 function startMatch(opts){
@@ -69,7 +69,7 @@ function dmgMul(c){return (.55+c.st.damage*.06)*(c.muts['Big Bite']?1.15:1)*(c.b
 function tryAttack(c,i,aimYaw){
   if(!c.alive||c.dashT>0||c.reviving||c.burrowT>0)return false;const a=c.attacks[i];if(!a||c.cds[i]>0||c.stamina<a.st)return false;
   if(aimYaw!=null)c.yaw=aimYaw;c.aimYaw=c.yaw;c.faceT=.35;c.cds[i]=a.cd;c.stamina-=a.st;const mul=dmgMul(c)*(.7+.3*(a.scale||1))*(a.ranged?(c.perk.ranged||1):(c.perk.melee||1));
-  if(c.camoT>0){c.camoT=0;emit(c.x,c.y+1,c.z,{n:14,color:'#55f0ff',speed:4,life:.5,size:.14,glow:2});}
+  if(c.camoT>0){c.camoT=0;emit(c.x,c.y+1,c.z,{n:14,color:'#8fffd0',speed:4,life:.5,size:.14,glow:2});}
   if(c.view)c.view.jv+=.5;if(Math.random()<.35)voice(c,'attack');
   if(a.weapon)c.swingT=.35;
   if(a.melee){if(a.weapon){}else if(a.id==='slash'||a.id==='maul'||a.id==='pinch')c.slashT=.3;else c.biteT=a.id==='peck'?.15:.3;meleeHit(c,a,mul);sfx(a.sound,c);}
@@ -172,7 +172,7 @@ function hurtCreature(c,amt,type,src,dx,dz,kb,venom){
   let m=1;if(c.st.armor){if(venom||type==='venom')m*=1.4;else if(type==='bite'||type==='slash')m*=.7;}
   if(c.muts['Thick Hide'])m*=.85;if(c.inflateT>0)m*=.4;
   let dmg=amt*m;
-  if(c.shield>0){const ab=Math.min(c.shield,dmg);c.shield-=ab;dmg-=ab;if(c.shield<=0){c.shieldT=0;emit(c.x,c.y+1.5,c.z,{n:16,color:'#55f0ff',speed:7,life:.5,size:.15,glow:2});}}
+  if(c.shield>0){const ab=Math.min(c.shield,dmg);c.shield-=ab;dmg-=ab;if(c.shield<=0){c.shieldT=0;emit(c.x,c.y+1.5,c.z,{n:16,color:'#8fffd0',speed:7,life:.5,size:.15,glow:2});}}
   if(venom){c.venomT=3;c.venomSrc=src;}
   c.hp-=dmg;c.lastHurt=match.time;if(src&&src.kind==='creature'){c.lastHitBy=src;src.dmgDealt+=dmg;}
   if(c.isDummy){if(c.hp<1)c.hp=1;c.dummyT=3;}
@@ -291,7 +291,7 @@ function updateCreature(c,dt){
   const map=world.map;
   for(let i=0;i<c.cds.length;i++)if(c.cds[i]>0)c.cds[i]-=dt;
   if(c.specCd>0)c.specCd-=dt;c.dodgeT-=dt;c.invulnT-=dt;c.faceT-=dt;c.biteT-=dt;c.slashT-=dt;c.spinT-=dt;c.emoteT-=dt;c.spitT-=dt;c.zapT-=dt;c.swingT-=dt;c.slowT-=dt;c.inflateT-=dt;
-  if(c.camoT>0){c.camoT-=dt;if(c.camoT<=0)emit(c.x,c.y+1,c.z,{n:10,color:'#55f0ff',speed:3,life:.5,size:.12,glow:2});}
+  if(c.camoT>0){c.camoT-=dt;if(c.camoT<=0)emit(c.x,c.y+1,c.z,{n:10,color:'#8fffd0',speed:3,life:.5,size:.12,glow:2});}
   if(c.shieldT>0){c.shieldT-=dt;if(c.shieldT<=0)c.shield=0;}
   if(c.blessT>0)c.blessT-=dt;
   if(c.isDummy){c.dummyT=(c.dummyT||0)-dt;if(c.dummyT<=0&&c.hp<c.maxHp){c.hp=c.maxHp;emit(c.x,c.y+1.5,c.z,{n:10,color:'#62ff9a',speed:2,life:.7,size:.12,glow:2,up:3,grav:-2});}}
@@ -336,7 +336,7 @@ function trySpecial(c){
       emit(c.x,c.y+.4,c.z,{n:40,color:'#ff8ad0',speed:9,flat:true,life:.7,size:.18,glow:2,grav:0});sfx('heal',c);break;
     case 'ink':world.inks.push({x:c.x,z:c.z,r:5.5,t:5,team:c.team});emit(c.x,c.y+1,c.z,{n:60,color:'#2a1640',speed:7,life:1.4,size:.6,grav:-.5,drag:2});sfx('ink',c);
       for(const e of world.creatures)if(e.team!==c.team&&e.brain&&Math.hypot(e.x-c.x,e.z-c.z)<7){e.brain.target=null;e.brain.t=.6;}if(cam.lock&&cam.lock!==c&&Math.hypot(cam.lock.x-c.x,cam.lock.z-c.z)<6&&c.team!==match.player.team)cam.lock=null;break;
-    case 'camo':c.camoT=5;sfx('camo',c);emit(c.x,c.y+1,c.z,{n:20,color:'#55f0ff',speed:4,life:.6,size:.13,glow:2});if(cam.lock===c)cam.lock=null;break;
+    case 'camo':c.camoT=5;sfx('camo',c);emit(c.x,c.y+1,c.z,{n:20,color:'#8fffd0',speed:4,life:.6,size:.13,glow:2});if(cam.lock===c)cam.lock=null;break;
     case 'burrow':if(!c.grounded)return false;c.burrowT=2.5;c.invulnT=0;sfx('burrow',c);emit(c.x,c.y+.3,c.z,{n:24,color:world.map.biome.lane,speed:6,life:.6,size:.22,up:4});if(cam.lock===c)cam.lock=null;break;
     case 'inflate':c.inflateT=3.5;sfx('inflate',c);break;
   }
@@ -676,14 +676,14 @@ function drawMinimap(){
   const W=440,Hh=280,map=world.map;mm.clearRect(0,0,W,Hh);
   const sx=W/200,sz=Hh/(2*(map.zMax+6));const X=x=>W/2+x*sx,Z=z=>Hh/2+z*sz;
   mm.lineCap='round';mm.lineJoin='round';
-  for(const L of map.lanes){mm.strokeStyle='rgba(180,210,255,.22)';mm.lineWidth=map.lw*sx;mm.beginPath();L.pts.forEach((p,i)=>i?mm.lineTo(X(p.x),Z(p.z)):mm.moveTo(X(p.x),Z(p.z)));mm.stroke();}
-  for(const t of ['blue','red']){mm.fillStyle=t==='blue'?'rgba(59,167,255,.25)':'rgba(255,77,94,.25)';mm.beginPath();mm.arc(X(TEAMS[t].sign*86),Z(0),13*sx,0,TAU);mm.fill();}
+  for(const L of map.lanes){mm.strokeStyle='rgba(232,214,170,.25)';mm.lineWidth=map.lw*sx;mm.beginPath();L.pts.forEach((p,i)=>i?mm.lineTo(X(p.x),Z(p.z)):mm.moveTo(X(p.x),Z(p.z)));mm.stroke();}
+  for(const t of ['blue','red']){mm.fillStyle=TEAMS[t].hex+'40';mm.beginPath();mm.arc(X(TEAMS[t].sign*86),Z(0),13*sx,0,TAU);mm.fill();}
   for(const k of world.inks){mm.fillStyle='rgba(40,20,70,.7)';mm.beginPath();mm.arc(X(k.x),Z(k.z),k.r*sx,0,TAU);mm.fill();}
   for(const n of world.nests){const s=(n.main?8:5.5)*sx*.9;mm.save();mm.translate(X(n.x),Z(n.z));mm.rotate(Math.PI/4);mm.fillStyle=n.alive?TEAMS[n.team].hex:'rgba(255,255,255,.15)';mm.strokeStyle='rgba(255,255,255,.7)';mm.lineWidth=1.5;mm.fillRect(-s/2,-s/2,s,s);mm.strokeRect(-s/2,-s/2,s,s);mm.restore();}
   for(const n of world.neutrals){if(!n.alive)continue;mm.fillStyle=n.type==='boss'?'#c08aff':'#ffd166';mm.beginPath();mm.arc(X(n.x),Z(n.z),n.type==='boss'?9:3.5,0,TAU);mm.fill();}
   const me=match.player;
   for(const c of world.creatures){if(c.state==='dead')continue;if(c.team!==me.team&&!c.isDummy&&!visibleToTeam(c,me.team))continue;const x=X(c.x),z=Z(c.z);
-    if(c.isPlayer){mm.save();mm.translate(x,z);mm.rotate(-c.yaw+Math.PI/2);mm.fillStyle='#ffffff';mm.shadowColor='#55f0ff';mm.shadowBlur=10;mm.beginPath();mm.moveTo(11,0);mm.lineTo(-7,7);mm.lineTo(-3,0);mm.lineTo(-7,-7);mm.closePath();mm.fill();mm.restore();
+    if(c.isPlayer){mm.save();mm.translate(x,z);mm.rotate(-c.yaw+Math.PI/2);mm.fillStyle='#ffffff';mm.shadowColor='#8fffd0';mm.shadowBlur=10;mm.beginPath();mm.moveTo(11,0);mm.lineTo(-7,7);mm.lineTo(-3,0);mm.lineTo(-7,-7);mm.closePath();mm.fill();mm.restore();
       mm.strokeStyle='rgba(85,240,255,.25)';mm.lineWidth=1;mm.beginPath();mm.arc(x,z,c.st.detect*sx,0,TAU);mm.stroke();continue;}
     mm.fillStyle=TEAMS[c.team].hex;mm.strokeStyle='#fff';mm.lineWidth=2;mm.beginPath();if(c.team===me.team)mm.arc(x,z,6.5,0,TAU);else{mm.moveTo(x,z-8);mm.lineTo(x+8,z);mm.lineTo(x,z+8);mm.lineTo(x-8,z);mm.closePath();}if(c.state==='downed')mm.stroke();else{mm.fill();mm.stroke();}}
 }

@@ -6,46 +6,46 @@ const mz=x=>world.map.laneZ(0,x);
 function placeAt(c,x,z,yaw){c.x=x;c.z=z;c.y=world.map.heightAt(x,z);if(yaw!=null)c.yaw=yaw;}
 function cBot(design,team,name,x,z,tweak){const c=spawnCreature(design,team,false,name,0,1,pick(BOT_COLORS));placeAt(c,x,z,team==='red'?-Math.PI/2:Math.PI/2);if(tweak)tweak(c.brain,c);return c;}
 function addBeacon(x,z){const y=world.map.heightAt(x,z);const g=new T.Group();g.position.set(x,y,z);
-  const ring=new T.Mesh(geo('beaconRing',()=>new T.TorusGeometry(1.8,.1,8,48)),glowMat('#55f0ff',3));ring.rotation.x=Math.PI/2;ring.position.y=.2;g.add(ring);
-  const beam=new T.Mesh(geo('beaconBeam',()=>new T.CylinderGeometry(1.5,1.7,16,32,1,true)),matc('beaconBeamM',()=>new T.MeshBasicMaterial({color:col('#55f0ff').multiplyScalar(1.4),transparent:true,opacity:.18,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false})));beam.position.y=8;g.add(beam);
+  const ring=new T.Mesh(geo('beaconRing',()=>new T.TorusGeometry(1.8,.1,8,48)),glowMat('#8fffd0',3));ring.rotation.x=Math.PI/2;ring.position.y=.2;g.add(ring);
+  const beam=new T.Mesh(geo('beaconBeam',()=>new T.CylinderGeometry(1.5,1.7,16,32,1,true)),matc('beaconBeamM',()=>new T.MeshBasicMaterial({color:col('#8fffd0').multiplyScalar(1.4),transparent:true,opacity:.18,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false})));beam.position.y=8;g.add(beam);
   world.group.add(g);return {x,z,g,ring};}
 function ensureGeyserNear(x,z){let best=null,bd=1e9;for(const g of world.geysers){const d=dist2(g.x,g.z,x,z);if(d<bd){bd=d;best=g;}}
   if(best&&bd<45*45)return best;const gx=x,gz=z;const gy={x:gx,z:gz,y:world.map.heightAt(gx,gz),period:6.5,t:0,hit:new Set(),erupting:0};gy.view=buildGeyserView(world.map.biome);gy.view.position.set(gx,gy.y,gz);world.group.add(gy.view);world.geysers.push(gy);return gy;}
 
 const CAMPAIGN=[
-  {id:'wobbles',name:'First Wobbles',xp:50,biome:'candy',lesson:'Moving, jumping and the camera',desc:'Reach three glowing beacons. Move with WASD or the joystick, jump with Space, and steer the camera with the mouse.',
+  {id:'wobbles',name:'First Wobbles',xp:50,biome:'grove',lesson:'Moving, jumping and the camera',desc:'Reach three glowing beacons. Move with WASD or the joystick, jump with Space, and steer the camera with the mouse.',
     setup(m){placeAt(m.player,-30,mz(-30),Math.PI/2);m.cs={i:0,b:[addBeacon(-16,mz(-16)+3),addBeacon(-2,mz(-2)-4),addBeacon(14,mz(14)+3)]};m.cs.b.forEach((b,i)=>b.g.visible=i===0);},
     objective:m=>'Reach the glowing beacons · '+m.cs.i+' of 3',
-    update(m){const b=m.cs.b[m.cs.i];if(!b)return;b.ring.rotation.z+=.03;if(Math.hypot(m.player.x-b.x,m.player.z-b.z)<2.6){b.g.visible=false;sfx('drop');emit(b.x,b.g.position.y+1,b.z,{n:30,color:'#55f0ff',speed:6,life:.8,size:.16,glow:2.5,up:4});m.cs.i++;if(m.cs.b[m.cs.i])m.cs.b[m.cs.i].g.visible=true;else return 'win';}}},
-  {id:'snack',name:'Snack Attack',xp:60,biome:'swamp',lesson:'Attacking and lock-on',desc:'Defeat three Snorflets. Left click attacks and Tab locks on. Snorflets give health or a mutation, but never DNA.',
+    update(m){const b=m.cs.b[m.cs.i];if(!b)return;b.ring.rotation.z+=.03;if(Math.hypot(m.player.x-b.x,m.player.z-b.z)<2.6){b.g.visible=false;sfx('drop');emit(b.x,b.g.position.y+1,b.z,{n:30,color:'#8fffd0',speed:6,life:.8,size:.16,glow:2.5,up:4});m.cs.i++;if(m.cs.b[m.cs.i])m.cs.b[m.cs.i].g.visible=true;else return 'win';}}},
+  {id:'snack',name:'Snack Attack',xp:60,biome:'lotus',lesson:'Attacking and lock-on',desc:'Defeat three Snorflets. Left click attacks and Tab locks on. Snorflets give health or a mutation, but never DNA.',
     setup(m){placeAt(m.player,-10,mz(-10),Math.PI/2);m.cs={n:0};for(let i=0;i<3;i++){const s=spawnNeutral('critter',4+i*4,mz(4+i*4)+(i-1)*5,world.map.biome);s.noRespawn=true;}},
     objective:m=>'Defeat the Snorflets · '+m.cs.n+' of 3',
     on(m,t,d){if(t==='neutral'&&d.by===m.player&&d.n.type==='critter'){m.cs.n++;if(m.cs.n>=3)return 'win';}}},
-  {id:'egg',name:'Crack an Egg',xp:80,time:120,biome:'volcanic',lesson:'Nests and dodging',desc:'Destroy the enemy nest before time runs out. Nests spit goo, so dodge it with Shift.',
+  {id:'egg',name:'Crack an Egg',xp:80,time:120,biome:'autumn',lesson:'Nests and dodging',desc:'Destroy the enemy nest before time runs out. Nests spit goo, so dodge it with Shift.',
     setup(m){placeAt(m.player,-12,mz(-12),Math.PI/2);m.cs={nest:addNest({team:'red',lane:0,x:14,z:mz(14),main:false,outer:true},700)};},
     objective:()=>'Destroy the red nest',
     on(m,t,d){if(t==='nest'&&d.nest===m.cs.nest)return 'win';}},
-  {id:'legless',name:'Win With No Legs',xp:100,biome:'tundra',forced:LEGLESS,lesson:'Form equals function',desc:'You get a legless creature that slides slowly. Let the enemy come to you and fight smart.',
+  {id:'legless',name:'Win With No Legs',xp:100,biome:'frost',forced:LEGLESS,lesson:'Form equals function',desc:'You get a legless creature that slides slowly. Let the enemy come to you and fight smart.',
     setup(m){placeAt(m.player,-8,mz(-8),Math.PI/2);m.cs={e:cBot(BOT_PRESETS[7],'red','Puffington',10,mz(10),b=>{b.slow=2.2;b.fixedTarget=m.player;b.brave=true;})};},
     objective:m=>'Defeat '+m.cs.e.name,
     on(m,t,d){if(t==='kill'&&d.victim===m.cs.e)return 'win';}},
-  {id:'geyser',name:'Hot Seat',xp:100,time:150,biome:'volcanic',lesson:'Using hazards',desc:'Geysers launch anything standing on them. Lure the enemy onto a geyser just as it erupts.',
+  {id:'geyser',name:'Hot Seat',xp:100,time:150,biome:'autumn',lesson:'Using hazards',desc:'Puffball vents launch anything standing on them. Lure the enemy onto one just as it bursts.',
     setup(m){const g=ensureGeyserNear(-10,-16);placeAt(m.player,g.x+5,g.z+2,0);m.cs={g,e:cBot(BOT_PRESETS[5],'red','Inkwell',g.x-9,g.z-3,b=>{b.passive=true;b.fixedTarget=m.player;b.brave=true;})};m.cs.e.maxHp=m.cs.e.hp=400;},
-    objective:()=>'Get the enemy launched by a geyser. Watch for the bubbles.',
+    objective:()=>'Get the enemy launched by a puffball vent. Watch for the spores.',
     on(m,t,d){if(t==='geyser'&&d.c===m.cs.e)return 'win';}},
-  {id:'rescue',name:'No Fossil Left Behind',xp:120,biome:'swamp',lesson:'Reviving teammates',desc:'Your teammate is down. Stand next to them and hold E to revive them, then win the fight together.',
+  {id:'rescue',name:'No Fossil Left Behind',xp:120,biome:'lotus',lesson:'Reviving teammates',desc:'Your teammate is down. Stand next to them and hold E to revive them, then win the fight together.',
     setup(m){placeAt(m.player,-14,mz(-14),Math.PI/2);const t=cBot(PRESETS[1],'blue','Sir Shellby',-4,mz(-4));t.state='downed';t.hp=0;t.downedT=30;m.cs={t,e:cBot(BOT_PRESETS[4],'red','Zappity',14,mz(14),b=>{b.slow=1.8;b.noFinish=true;})};},
     objective:m=>m.cs.t.state==='downed'?'Revive your teammate · hold E next to them':'Defeat '+m.cs.e.name,
     update(m){if(m.cs.t.state==='dead')return 'fail:Your teammate became a fossil.';if(m.cs.e.state==='dead'&&m.cs.t.state==='alive')return 'win';}},
-  {id:'glass',name:'Glass Cannon',xp:150,biome:'candy',rules:{dmgMul:1.6,noRegen:true},lesson:'Risk and reward',desc:'You start at half health with no regeneration, but hit 60% harder. Defeat both bots.',
-    setup(m){placeAt(m.player,-12,mz(-12),Math.PI/2);m.player.hp=Math.round(m.player.maxHp*.5);m.cs={n:0,es:[cBot(BOT_PRESETS[0],'red','Chompsworth',10,mz(10)-3,b=>{b.slow=2.1;b.fixedTarget=m.player;}),cBot(BOT_PRESETS[2],'red','Gloopa',18,mz(18)+3,b=>{b.slow=2.1;b.fixedTarget=m.player;})]};},
+  {id:'glass',name:'Glass Cannon',xp:150,biome:'grove',rules:{dmgMul:1.6,noRegen:true},lesson:'Risk and reward',desc:'You start at half health with no regeneration, but hit 60% harder. Defeat both bots.',
+    setup(m){placeAt(m.player,-12,mz(-12),Math.PI/2);m.player.hp=Math.round(m.player.maxHp*.5);m.cs={n:0,es:[cBot(BOT_PRESETS[0],'red','Sprig',10,mz(10)-3,b=>{b.slow=2.1;b.fixedTarget=m.player;}),cBot(BOT_PRESETS[2],'red','Gloopa',18,mz(18)+3,b=>{b.slow=2.1;b.fixedTarget=m.player;})]};},
     objective:m=>'Defeat both bots · '+m.cs.n+' of 2',
     on(m,t,d){if(t==='kill'&&m.cs.es.includes(d.victim)){m.cs.n++;if(m.cs.n>=2)return 'win';}}},
-  {id:'gobbler',name:'Topple the Gobbler',xp:200,biome:'volcanic',lesson:'Boss fights',desc:'Take on The Grand Gobbler alone. When it rears up, get out of the way before it slams.',
+  {id:'gobbler',name:'Topple the Gobbler',xp:200,biome:'autumn',lesson:'Boss fights',desc:'Take on The Grand Gobbler alone. When it rears up, get out of the way before it slams.',
     setup(m){const b=spawnNeutral('boss',8,mz(8)+2,world.map.biome);b.noRespawn=true;b.hx=8;b.hz=mz(8)+2;placeAt(m.player,-10,mz(-10),Math.PI/2);m.cs={b};},
     objective:()=>'Defeat The Grand Gobbler',
     on(m,t,d){if(t==='neutral'&&d.n===m.cs.b)return 'win';}},
-  {id:'defend',name:'Hold the Nest',xp:200,time:90,timeWin:true,biome:'tundra',lesson:'Defending',desc:'Bots are coming for your nest. Keep it alive for 90 seconds.',
+  {id:'defend',name:'Hold the Nest',xp:200,time:90,timeWin:true,biome:'frost',lesson:'Defending',desc:'Bots are coming for your nest. Keep it alive for 90 seconds.',
     setup(m){const n=addNest({team:'blue',lane:0,x:-22,z:mz(-22),main:false},1200);placeAt(m.player,-16,mz(-16),Math.PI/2);m.cs={n,wave:0,next:3};},
     update(m,dt){m.cs.next-=dt;if(m.cs.next<=0&&m.cs.wave<6){m.cs.wave++;m.cs.next=13;cBot(pick(BOT_PRESETS),'red',pick(BOT_NAMES),36,mz(36)+(Math.random()-.5)*6,b=>{b.slow=1.8;b.brave=true;});banner('Wave '+m.cs.wave+' incoming','bad');}
       if(!m.cs.n.alive)return 'fail:Your nest was destroyed.';},

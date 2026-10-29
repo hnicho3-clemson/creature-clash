@@ -24,7 +24,7 @@ function cloudApplySlots(raw) {
   const s = Sec.slots(raw, DESIGN_CTX, 64) || [];
   const n = Math.max(SLOT_BASE, slotCount());
   const out = s.slice(0, n); while (out.length < n) out.push(null);
-  if (!out.some(Boolean)) { out[0] = clone(PRESETS[0]); out[0].name = 'My Chompsworth'; }
+  if (!out.some(Boolean)) { out[0] = clone(PRESETS[0]); out[0].name = 'My Sprig'; }
   slots = out;
 }
 function cloudApplySettings(st) {

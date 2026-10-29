@@ -48,7 +48,7 @@ const S={
   outOfCombatRegen:3,
 };
 const RW={dnaPlayer:25,dnaBot:15,dropChance:.5,xpMatch:100,xpWin:50,xpKill:10,xpNest:15};
-const TEAMS={blue:{id:'blue',name:'Blue',hex:'#3ba7ff',sign:-1},red:{id:'red',name:'Red',hex:'#ff4d5e',sign:1}};
+const TEAMS={blue:{id:'blue',name:'Moon',hex:'#5ab4ff',sign:-1},red:{id:'red',name:'Sun',hex:'#ff5a4a',sign:1}};
 const other=t=>t==='blue'?'red':'blue';
 
 /* ---------- audio ---------- */
@@ -155,7 +155,7 @@ sun.shadow.bias=-.0004;sun.shadow.normalBias=.05;scene.add(sun);scene.add(sun.ta
 const SUN_DIR=new T.Vector3(-.5,1,.38).normalize();
 const quality={bloom:true,shadows:true};
 
-const FinalShader={uniforms:{tDiffuse:{value:null},exposure:{value:1.0},desat:{value:0},vig:{value:1.1},time:{value:0},sat:{value:1.12}},
+const FinalShader={uniforms:{tDiffuse:{value:null},exposure:{value:1.0},desat:{value:0},vig:{value:1.4},time:{value:0},sat:{value:1.12}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
   fragmentShader:'uniform sampler2D tDiffuse;uniform float exposure,desat,vig,time,sat;varying vec2 vUv;'+
   'vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}'+

@@ -41,7 +41,9 @@
 
   // play styles a design may pick (matches STYLES in parts.js; no style means Auto)
   const STYLES=['tank','bruiser','spitter','support','scout','allrounder'];
-  /* creature design: {v,name,color,accent,pattern,body:{w,h,l},parts:[{id,p:[x,y,z],s,r,m}],seed,style?} */
+  // head sprouts a design may pick (matches SPROUTS in creature.js; none picked means one is chosen from the seed)
+  const SPROUT_KINDS=['leaf','bud','shroom','clover','fern','wisp','none'];
+  /* creature design: {v,name,color,accent,pattern,body:{w,h,l},parts:[{id,p:[x,y,z],s,r,m}],seed,style?,sprout?} */
   function design(raw,ctx){
     if(!isObj(raw))return null;
     const partIds=ctx.partIds, patterns=ctx.patterns, maxParts=ctx.maxParts||64;
@@ -59,7 +61,7 @@
     return {v:2,name:cleanName(raw.name),color:color(raw.color,'#55c8ff'),accent:color(raw.accent,'#ffd23d'),
       pattern:patterns.includes(raw.pattern)?raw.pattern:patterns[0],
       body:{w:num(b.w,.7,1.6,1),h:num(b.h,.7,1.5,1),l:num(b.l,.8,1.8,1)},
-      parts,seed:int(raw.seed,1,99991,13),...(typeof raw.blurb==='string'?{blurb:cleanText(raw.blurb,200,'')}:{}),...(typeof raw.style==='string'&&STYLES.includes(raw.style)?{style:raw.style}:{})};
+      parts,seed:int(raw.seed,1,99991,13),...(typeof raw.blurb==='string'?{blurb:cleanText(raw.blurb,200,'')}:{}),...(typeof raw.style==='string'&&STYLES.includes(raw.style)?{style:raw.style}:{}),...(typeof raw.sprout==='string'&&SPROUT_KINDS.includes(raw.sprout)?{sprout:raw.sprout}:{})};
   }
   function slots(raw,ctx,count){
     if(!Array.isArray(raw))return null;

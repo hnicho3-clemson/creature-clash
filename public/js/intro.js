@@ -1,12 +1,12 @@
 'use strict';
-/* Creature Clash — opening cutscene (AAA pass).
-   A fleet flown by real creature pilots carries YOUR creature's drop pod to the arena planet.
-   The pod re-enters, then lands for real in the live arena, right on the home-screen stage,
-   and the camera glides straight into the menu with no cut. */
+/* Creature Clash — opening cutscene.
+   A flight of leaf gliders, flown by real forest spirits, carries YOUR spirit's acorn high over the
+   moonlit Enchanted Forest. The acorn drops through the clouds and lands for real in the live grove,
+   right on the home-screen stage, and the camera glides straight into the menu with no cut. */
 const intro={scene:null,cam:new T.PerspectiveCamera(46,innerWidth/innerHeight,.1,5000),t:0,ships:[],trail:[],pod:null,done:false,started:false,subIdx:-1,stage:'space',shake:0};
 cameras.push(intro.cam);
 const INTRO_LEN=12.8,INTRO_SWITCH=7.45,INTRO_IMPACT=1.6;
-const INTRO_SUBS=[[.3,'Somewhere in the Wobble Galaxy…'],[3.0,'The Great Creature Clash is about to begin!'],[4.8,'Drop pod away! Hold on tight!'],[7.5,'Touchdown in 3… 2… 1…'],[9.7,'Your team is waiting!']];
+const INTRO_SUBS=[[.3,'High above the Enchanted Forest…'],[3.0,'The Great Creature Clash is about to begin!'],[4.8,'Acorn away! Hold on tight!'],[7.5,'Landing in 3… 2… 1…'],[9.7,'Your grove is waiting!']];
 const _iv=new T.Vector3(),_iv2=new T.Vector3(),_iv3=new T.Vector3(),_iq=new T.Quaternion(),_iq2=new T.Quaternion(),_DOWN=new T.Vector3(0,-1,0),_YAX=new T.Vector3(0,1,0);
 
 /* ---------- procedural surface maps (same pipeline as creature skin) ---------- */
@@ -21,20 +21,6 @@ function mapsFromHeight(h,W,H,S,rough){
   const tn=new T.CanvasTexture(cn),tr=new T.CanvasTexture(cr);for(const t of [tn,tr]){t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=4;}
   return {normal:tn,rough:tr};
 }
-/* hull plating: staggered panels, bevelled seams, rivet rows, a little grime */
-function hullTex(){
-  if(TEXC.hull)return TEXC.hull;const W=256,H=256;const h=new Float32Array(W*H),ro=new Float32Array(W*H);const R=mulberry32(77);
-  let y0=0;
-  while(y0<H){const rh=Math.min(H-y0,26+Math.floor(R()*38));const seams=[];let sx=Math.floor(R()*40);while(sx<W){seams.push(sx);sx+=44+Math.floor(R()*80);}
-    for(let y=y0;y<y0+rh;y++)for(let x=0;x<W;x++){let k=0;while(k<seams.length&&seams[k]<=x)k++;const pid=y0*31+k*7;const off=(hash2(pid,3)-.5)*.06;const i=y*W+x;
-      let ex=99;for(const s of seams)ex=Math.min(ex,Math.abs(x-s));const e=Math.min(y-y0,y0+rh-1-y,ex);
-      let v=1+off;if(e<1)v=.15;else if(e<2)v=.6+off;
-      const ry=y-y0-4;if(ry>=-1.5&&ry<=1.5){const rx=((x+3)%9)-4;if(rx*rx+ry*ry<=2.2)v=1.28;}
-      h[i]=v+(vnoise(x*.15,y*.15)-.5)*.02;
-      ro[i]=.42+(hash2(pid,9)-.5)*.12+(vnoise(x*.05+pid,y*.05)-.5)*.25+(e<2?.3:0);}
-    y0+=rh;}
-  const m=mapsFromHeight(h,W,H,3.0,ro);m.normal.repeat.set(4,2);m.rough.repeat.set(4,2);return TEXC.hull=m;
-}
 function glowTex(){if(TEXC.glow)return TEXC.glow;const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);
   g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.18,'rgba(255,255,255,.6)');g.addColorStop(.45,'rgba(255,255,255,.14)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return TEXC.glow=new T.CanvasTexture(c);}
 function glowSprite(hex,k,s){const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex(),color:col(hex).multiplyScalar(k),blending:T.AdditiveBlending,transparent:true,depthWrite:false,toneMapped:false}));sp.scale.setScalar(s);return sp;}
@@ -45,24 +31,21 @@ function nebulaTex(seed){const W=256;const c=document.createElement('canvas');c.
 const flameGeo=r=>geo('flame'+r,()=>{const c=new T.ConeGeometry(r,1,20,1,true);c.rotateX(Math.PI/2);c.translate(0,0,.5);return c;});
 const flameMat=(hex,k,op)=>new T.MeshBasicMaterial({color:col(hex).multiplyScalar(k),transparent:true,opacity:op,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false,side:T.DoubleSide});
 
-/* ---------- shaders: planet, clouds, atmosphere, ring, re-entry plasma ---------- */
+/* ---------- shaders: forest landscape far below, cloud deck, spirit-glow trail ---------- */
 const INTRO_NOISE='float h3(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}'+
   'float n3(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(mix(mix(h3(i),h3(i+vec3(1.,0.,0.)),f.x),mix(h3(i+vec3(0.,1.,0.)),h3(i+vec3(1.,1.,0.)),f.x),f.y),mix(mix(h3(i+vec3(0.,0.,1.)),h3(i+vec3(1.,0.,1.)),f.x),mix(h3(i+vec3(0.,1.,1.)),h3(i+vec3(1.,1.,1.)),f.x),f.y),f.z);}'+
   'float fb(vec3 p){float a=.5,s=0.;for(int i=0;i<6;i++){s+=a*n3(p);p=p*2.03+vec3(1.7,9.2,3.1);a*=.5;}return s;}';
 const SPHERE_VS='uniform float rad;varying vec3 vP;varying vec3 vN;varying vec3 vW;varying vec3 vNv;void main(){vP=position/rad;vN=normalize(mat3(modelMatrix)*normal);vNv=normalize(normalMatrix*normal);vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}';
 const PLANET_FS='uniform vec3 g1,g2,sea,det,atmo,ice,L;uniform float time;varying vec3 vP;varying vec3 vN;varying vec3 vW;varying vec3 vNv;'+INTRO_NOISE+
-  'void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);vec3 q=vP*2.2;float w=fb(q+fb(q*1.3)*1.2);float land=smoothstep(.48,.52,w);'+
-  'float h2=fb(vP*6.+3.);vec3 c=mix(sea*(.7+.5*fb(vP*4.)),mix(g1,g2,smoothstep(.35,.65,h2)),land);'+
-  'float d=smoothstep(.62,.7,fb(vP*14.+7.))*land;c=mix(c,det,d*.8);'+
-  'float coast=(1.-smoothstep(0.,.025,abs(w-.5)));c+=coast*atmo*.18;'+
-  'c=mix(c,ice,smoothstep(.8,.92,abs(vP.y)+(fb(vP*5.)-.5)*.25));'+
-  'float ndl=dot(N,L);float day=smoothstep(-.12,.35,ndl);vec3 col=c*(.025+1.15*max(ndl,0.)+day*.1);'+
-  'vec3 H=normalize(L+V);col+=(1.-land)*pow(max(dot(N,H),0.),60.)*day*.8*vec3(1.,.95,.85);'+
-  'col+=det*d*(1.-day)*1.8;'+
-  'float fr=pow(1.-max(dot(N,V),0.),3.);col+=atmo*fr*(.12+1.5*smoothstep(-.3,.6,ndl));gl_FragColor=vec4(col,1.);}';
+  'void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);vec3 q=vP*80.;float w=fb(q*.5+fb(q*.4)*1.2);float river=1.-smoothstep(0.,.018,abs(w-.5));'+
+  'float can=fb(q*3.1);float clump=smoothstep(.35,.75,fb(q*9.+2.));vec3 c=mix(g2*.55,g1*1.1,can)*(.7+.5*clump)*(.55+.7*fb(q*34.));'+
+  'float glade=smoothstep(.66,.72,fb(q*1.7+5.));c=mix(c,mix(g1,vec3(.55,.62,.35),.4),glade*.7);c=mix(c,sea,river*.9);'+
+  'float d=smoothstep(.72,.78,fb(q*22.+7.));'+
+  'float ndl=dot(N,L);vec3 col=c*(.05+.5*max(ndl,0.))+c*vec3(.06,.1,.14);col+=river*atmo*.35;col+=det*d*1.4*(1.-glade);'+
+  'float fr=pow(1.-max(dot(N,V),0.),2.2);col=mix(col,atmo*.55,clamp(fr*1.1,0.,1.));gl_FragColor=vec4(col,1.);}';
 const CLOUD_FS='uniform vec3 L;uniform float time;varying vec3 vP;varying vec3 vN;varying vec3 vW;varying vec3 vNv;'+INTRO_NOISE+
-  'void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);float c=fb(vP*3.2+vec3(time*.012,0.,time*.004));float a=smoothstep(.53,.72,c);'+
-  'float lit=.05+1.15*smoothstep(-.1,.5,dot(N,L));float edge=smoothstep(0.,.3,dot(N,V));gl_FragColor=vec4(vec3(1.,.98,.96)*lit,a*.85*edge);}';
+  'void main(){vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);float c=fb(vP*100.+vec3(time*.05,0.,time*.02));float a=smoothstep(.55,.74,c)*smoothstep(.0,.25,fb(vP*18.));'+
+  'float lit=.05+1.15*smoothstep(-.1,.5,dot(N,L));float edge=smoothstep(0.,.3,dot(N,V));gl_FragColor=vec4(vec3(.82,.9,1.)*lit*.8,a*.7*edge);}';
 const ATMO_FS='uniform vec3 atmo,L;varying vec3 vP;varying vec3 vN;varying vec3 vW;varying vec3 vNv;'+
   'void main(){float i=pow(smoothstep(0.,.42,-normalize(vNv).z),2.);float lit=.15+smoothstep(-.45,.6,dot(normalize(vN),L));gl_FragColor=vec4(atmo*i*lit*1.7,1.);}';
 const RING_VS='varying vec3 vL;void main(){vL=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
@@ -76,41 +59,42 @@ const PLASMA_FS='uniform float k,time;uniform vec3 c1,c2;varying vec3 vNv;varyin
   'float lead=1.-smoothstep(-1.,.4,vP.y);float tail=1.-smoothstep(.2,1.,vP.y);'+
   'float a=k*(f*.9+.3*lead)*(.5+.9*n)*tail;gl_FragColor=vec4(mix(c1,c2,lead*.8+n*.2)*a*2.4,1.);}';
 
-/* ---------- ships: painted panel hulls, chrome engines, real creature pilots ---------- */
+/* ---------- leaf gliders: seed-pod hulls, leaf wings, firefly trails, real spirit pilots ---------- */
 const V2=(r,y)=>new T.Vector2(r,y);
 function introShip(color,accent,pilotD,scale,flameHex){
-  const g=new T.Group();const tx=hullTex();const fl=flameHex||'#6fe6f2';const blink=[];
-  const paint=new T.MeshPhysicalMaterial({color:col(color),roughness:.75,roughnessMap:tx.rough,normalMap:tx.normal,normalScale:new T.Vector2(.6,.6),metalness:.15,clearcoat:1,clearcoatRoughness:.06});
-  const trim=new T.MeshPhysicalMaterial({color:col(accent),roughness:.7,roughnessMap:tx.rough,normalMap:tx.normal,normalScale:new T.Vector2(.5,.5),metalness:.1,clearcoat:1,clearcoatRoughness:.08});
-  const chrome=new T.MeshPhysicalMaterial({color:col('#d4dbe8'),metalness:1,roughness:.14,side:T.DoubleSide});
-  const gun=new T.MeshPhysicalMaterial({color:col('#2c3140'),metalness:.8,roughness:.9,roughnessMap:tx.rough,normalMap:tx.normal});
+  const g=new T.Group();const tx=skinTex('pebble');const fl=flameHex||'#8fffd0';const blink=[];
+  const paint=new T.MeshPhysicalMaterial({color:col(color),roughness:.6,normalMap:tx.normal,normalScale:new T.Vector2(.4,.4),clearcoat:.5,clearcoatRoughness:.2,sheen:1,sheenColor:col(color).lerp(new T.Color(1,1,1),.5)});
+  const trim=new T.MeshPhysicalMaterial({color:col(accent),roughness:.55,side:T.DoubleSide,clearcoat:.4,clearcoatRoughness:.2,sheen:1,sheenColor:col(accent).lerp(new T.Color(1,1,1),.5)});
+  const chrome=new T.MeshPhysicalMaterial({color:col('#b08050'),roughness:.45,clearcoat:.6,side:T.DoubleSide});
+  const gun=new T.MeshPhysicalMaterial({color:col('#4a3322'),roughness:.9,normalMap:tx.normal,normalScale:new T.Vector2(1.6,1.6)});
   const prof=[V2(0,-2.5),V2(.3,-2.42),V2(.6,-2.12),V2(.84,-1.6),V2(.98,-.85),V2(1.04,0),V2(1,.85),V2(.86,1.55),V2(.66,2.05),V2(.5,2.3),V2(.2,2.36),V2(0,2.37)];
   const hg=new T.LatheGeometry(prof,72);hg.rotateX(Math.PI/2);const hull=new T.Mesh(hg,paint);hull.scale.set(1,.78,1);g.add(hull);
   const ng=new T.LatheGeometry(prof.slice(0,4).concat([V2(.86,-1.5)]),72);ng.rotateX(Math.PI/2);const nose=new T.Mesh(ng,trim);nose.scale.set(1.012,.79,1.004);g.add(nose);
   const belly=new T.Mesh(sphereG(),gun);belly.scale.set(.82,.34,1.9);belly.position.set(0,-.48,.15);g.add(belly);
   const band=new T.Mesh(new T.TorusGeometry(1.0,.07,12,72),trim);band.scale.set(1.02,.8,1);band.position.z=.55;g.add(band);
-  for(const s of [-1,1]){const hl=new T.Mesh(sphereG(),glowMat('#fff6d8',3));hl.scale.set(.1,.07,.05);hl.position.set(s*.5,-.26,-2.05);g.add(hl);}
+  for(const s of [-1,1]){const hl=new T.Mesh(sphereG(),glowMat('#ffe9a0',3));hl.scale.set(.1,.07,.05);hl.position.set(s*.5,-.26,-2.05);g.add(hl);}
   // cockpit + pilot
   const ck=new T.Group();ck.position.set(0,.52,-.75);g.add(ck);
-  const glass=new T.Mesh(new T.SphereGeometry(.68,40,24,0,TAU,0,Math.PI/2),new T.MeshPhysicalMaterial({color:col('#cfefff'),roughness:.02,transparent:true,opacity:.22,clearcoat:1,clearcoatRoughness:0,iridescence:.5,depthWrite:false,envMapIntensity:2}));
+  const glass=new T.Mesh(new T.SphereGeometry(.68,40,24,0,TAU,0,Math.PI/2),new T.MeshPhysicalMaterial({color:col('#d8fff0'),roughness:.02,transparent:true,opacity:.22,clearcoat:1,clearcoatRoughness:0,iridescence:.5,depthWrite:false,envMapIntensity:2}));
   glass.scale.set(1,.92,1.3);glass.renderOrder=2;ck.add(glass);
   const rim=new T.Mesh(new T.TorusGeometry(.68,.05,10,64),chrome);rim.scale.set(1,1.3,1);rim.rotation.x=Math.PI/2;ck.add(rim);
   let pilot=null;
   if(pilotD){const v=buildCreatureView(pilotD,{});if(v.cshadow)v.root.remove(v.cshadow);v.cshadow=null;const s=Math.min(.95/v.height,.55/v.radius);v.root.scale.setScalar(s);ck.add(v.root);
     pilot={view:v,x:0,y:-.42,z:.05,yaw:Math.PI,state:'alive',grounded:true,vx:0,vy:0,vz:0,emoteT:0,voicePitch:1.2};}
   // swept wings with nav-light pods
-  const ws=new T.Shape();ws.moveTo(0,-.7);ws.lineTo(1.75,.25);ws.quadraticCurveTo(2.15,.42,2.05,.78);ws.lineTo(1.7,.95);ws.lineTo(0,1.25);ws.lineTo(0,-.7);
-  const wg=new T.ExtrudeGeometry(ws,{depth:.1,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:3,curveSegments:10});wg.translate(0,0,-.05);wg.rotateX(Math.PI/2);
+  const ws=new T.Shape();ws.moveTo(0,-.6);ws.quadraticCurveTo(1.2,-.75,2.7,.3);ws.quadraticCurveTo(1.6,1.25,0,1.15);ws.quadraticCurveTo(.2,.3,0,-.6);
+  const wg=new T.ExtrudeGeometry(ws,{depth:.04,bevelEnabled:true,bevelThickness:.03,bevelSize:.03,bevelSegments:2,curveSegments:16});wg.translate(0,0,-.05);wg.rotateX(Math.PI/2);
   for(const s of [-1,1]){const w=new T.Mesh(wg,trim);w.scale.x=s;w.position.set(s*.7,-.18,.35);w.rotation.z=s*.07;g.add(w);
     const tp=new T.Mesh(capsuleG(.1,.7),chrome);tp.rotation.x=Math.PI/2;tp.position.set(s*2.72,-.04,1.0);g.add(tp);
-    const nav=new T.Mesh(sphereG(),glowMat(s>0?'#7dff6a':'#ff5a7a',4));nav.scale.setScalar(.09);nav.position.set(s*2.72,-.04,.6);g.add(nav);
-    const nsp=glowSprite(s>0?'#7dff6a':'#ff5a7a',2,1);nsp.position.copy(nav.position);g.add(nsp);blink.push(nsp);}
+    const rib=new T.Mesh(cylG(.025,.012,2.6,5),chrome);rib.rotation.z=Math.PI/2-.12;rib.position.set(s*1.95,-.14,.62);g.add(rib);
+    const nav=new T.Mesh(sphereG(),glowMat(s>0?'#8fffd0':'#ffd88a',4));nav.scale.setScalar(.09);nav.position.set(s*2.72,-.04,.6);g.add(nav);
+    const nsp=glowSprite(s>0?'#8fffd0':'#ffd88a',2,1);nsp.position.copy(nav.position);g.add(nsp);blink.push(nsp);}
   // tail fin + antenna beacon
   const fs=new T.Shape();fs.moveTo(-.3,0);fs.lineTo(.85,0);fs.lineTo(.95,.12);fs.lineTo(.7,1.0);fs.quadraticCurveTo(.58,1.12,.45,1.0);fs.lineTo(-.3,0);
   const fg=new T.ExtrudeGeometry(fs,{depth:.06,bevelEnabled:true,bevelThickness:.04,bevelSize:.04,bevelSegments:3,curveSegments:8});fg.translate(0,0,-.03);fg.rotateY(-Math.PI/2);
   const fin=new T.Mesh(fg,trim);fin.position.set(0,.5,1.0);g.add(fin);
   const ant=new T.Mesh(cylG(.02,.02,.5,6),chrome);ant.position.set(.35,.85,.6);g.add(ant);
-  const bea=glowSprite('#ffe14a',2.6,.55);bea.position.set(.35,1.12,.6);g.add(bea);blink.push(bea);
+  const bea=glowSprite('#ffe9a0',2.6,.55);bea.position.set(.35,1.12,.6);g.add(bea);blink.push(bea);
   // twin engines: chrome nacelles, hot inner disc, layered flames, heat glow
   const flames=[];
   for(const s of [-1,1]){const n=new T.Group();n.position.set(s*.62,-.14,1.85);g.add(n);
@@ -122,78 +106,76 @@ function introShip(color,accent,pilotD,scale,flameHex){
   g.scale.setScalar(scale||1);g.userData={flames,blink,pilot};return g;
 }
 
-/* ---------- drop pod: ceramic shell, scorched heat shield, glass dome with YOUR creature inside ---------- */
+/* ---------- the acorn: polished shell, scaly cap that pops off, YOUR spirit curled up inside ---------- */
 function buildPod(design){
-  const g=new T.Group();const tx=hullTex();const disp=[];const o=x=>{disp.push(x);return x;};
-  const shellM=o(new T.MeshPhysicalMaterial({color:col('#f2efe8'),roughness:.8,roughnessMap:tx.rough,normalMap:tx.normal,normalScale:new T.Vector2(.5,.5),clearcoat:.8,clearcoatRoughness:.12,emissive:col('#ff6a1a'),emissiveIntensity:0}));
-  const heatM=o(new T.MeshPhysicalMaterial({color:col('#4a2e26'),roughness:.85,metalness:.2,normalMap:tx.normal,emissive:col('#ff5a10'),emissiveIntensity:0}));
-  const accM=o(new T.MeshPhysicalMaterial({color:col('#ff8a3d'),roughness:.35,clearcoat:1,clearcoatRoughness:.1}));
-  const gunM=o(new T.MeshPhysicalMaterial({color:col('#2c3140'),metalness:.85,roughness:.35}));
+  const g=new T.Group();const tx=skinTex('pebble');const ts=skinTex('scales');const disp=[];const o=x=>{disp.push(x);return x;};
+  const shellM=o(new T.MeshPhysicalMaterial({color:col('#b9803e'),roughness:.4,normalMap:tx.normal,normalScale:new T.Vector2(.25,.25),clearcoat:.9,clearcoatRoughness:.15,emissive:col('#5affc8'),emissiveIntensity:0}));
+  const heatM=o(new T.MeshPhysicalMaterial({color:col('#6a4424'),roughness:.6,normalMap:tx.normal,emissive:col('#8fffd0'),emissiveIntensity:0}));
+  const accM=o(new T.MeshPhysicalMaterial({color:col('#6fae4a'),roughness:.5,side:T.DoubleSide,sheen:1,sheenColor:col('#d8ffb0')}));
+  const gunM=o(new T.MeshPhysicalMaterial({color:col('#6a4424'),roughness:.95,normalMap:ts.normal,normalScale:new T.Vector2(2,2),flatShading:true}));
   g.add(new T.Mesh(o(new T.LatheGeometry([V2(0,-1.05),V2(.55,-1.0),V2(.82,-.78),V2(.97,-.45),V2(1.02,-.1),V2(1.0,.1),V2(.92,.12)],64)),shellM));
   g.add(new T.Mesh(o(new T.LatheGeometry([V2(0,-1.22),V2(.4,-1.18),V2(.66,-1.04),V2(.8,-.88),V2(.78,-.8)],64)),heatM));
   const band=new T.Mesh(o(new T.TorusGeometry(1.0,.09,12,64)),gunM);band.rotation.x=Math.PI/2;band.position.y=.1;g.add(band);
-  const lights=[];for(let i=0;i<8;i++){const a=i/8*TAU;const l=new T.Mesh(sphereG(),glowMat('#6fe6f2',3.5));l.scale.setScalar(.055);l.position.set(Math.cos(a)*1.08,.1,Math.sin(a)*1.08);g.add(l);lights.push(l);}
-  const fs=new T.Shape();fs.moveTo(0,0);fs.lineTo(.42,-.15);fs.lineTo(.5,-.62);fs.lineTo(0,-.4);fs.lineTo(0,0);
-  const fgeo=o(new T.ExtrudeGeometry(fs,{depth:.05,bevelEnabled:true,bevelThickness:.03,bevelSize:.03,bevelSegments:2}));fgeo.translate(0,0,-.025);
+  const lights=[];for(let i=0;i<8;i++){const a=i/8*TAU;const l=new T.Mesh(sphereG(),glowMat('#ffe9a0',3));l.scale.setScalar(.055);l.position.set(Math.cos(a)*1.08,.1,Math.sin(a)*1.08);g.add(l);lights.push(l);}
+  const fs=new T.Shape();fs.moveTo(0,0);fs.quadraticCurveTo(.5,-.05,.55,-.7);fs.quadraticCurveTo(.15,-.5,0,0);
+  const fgeo=o(new T.ExtrudeGeometry(fs,{depth:.02,bevelEnabled:true,bevelThickness:.02,bevelSize:.02,bevelSegments:2,curveSegments:10}));fgeo.translate(0,0,-.025);
   for(let i=0;i<3;i++){const f=new T.Mesh(fgeo,accM);const a=i/3*TAU+.5;f.position.set(Math.cos(a)*.88,-.35,Math.sin(a)*.88);f.rotation.y=-a;g.add(f);}
   const lid=new T.Group();lid.position.y=.12;g.add(lid);
-  const glass=new T.Mesh(o(new T.SphereGeometry(.97,48,24,0,TAU,0,Math.PI/2)),o(new T.MeshPhysicalMaterial({color:col('#d8f4ff'),roughness:.03,transparent:true,opacity:.2,clearcoat:1,clearcoatRoughness:0,iridescence:.6,depthWrite:false,envMapIntensity:2.2})));
-  glass.scale.y=1.12;glass.renderOrder=2;lid.add(glass);
-  const lr=new T.Mesh(o(new T.TorusGeometry(.97,.06,10,64)),gunM);lr.rotation.x=Math.PI/2;lid.add(lr);
-  const ribG=o(new T.TorusGeometry(.98,.025,6,48,Math.PI));for(let i=0;i<4;i++){const r=new T.Mesh(ribG,gunM);r.scale.y=1.12;r.rotation.y=i/4*Math.PI;lid.add(r);}
-  const cap=new T.Mesh(o(new T.CylinderGeometry(.16,.22,.12,20)),accM);cap.position.y=1.12;lid.add(cap);
-  const bea=new T.Mesh(sphereG(),glowMat('#ff5a7a',4));bea.scale.setScalar(.09);bea.position.y=1.23;lid.add(bea);
+  const acap=new T.Mesh(o(new T.SphereGeometry(1.06,48,20,0,TAU,0,Math.PI/2)),gunM);acap.scale.y=.72;acap.castShadow=true;lid.add(acap);
+  const lr=new T.Mesh(o(new T.TorusGeometry(1.03,.08,10,64)),gunM);lr.rotation.x=Math.PI/2;lid.add(lr);
+  const cap=new T.Mesh(o(taperTube([[0,0,0],[0,.22,0],[.1,.4,0]],.11,.06,{segs:8,radial:10})),o(new T.MeshStandardMaterial({color:col('#4a2e1c'),roughness:.9})));cap.position.y=.7;lid.add(cap);
+  const lf=new T.Mesh(o(new T.SphereGeometry(1,12,8)),accM);lf.scale.set(.14,.03,.32);lf.position.set(.1,1.05,.25);lf.rotation.x=-.5;lid.add(lf);
+  const bea=new T.Mesh(sphereG(),glowMat('#8fffd0',3));bea.scale.setScalar(.06);bea.position.set(.1,1.12,0);lid.add(bea);
   const v=buildCreatureView(design,{});if(v.cshadow)v.root.remove(v.cshadow);v.cshadow=null;const fit=Math.min(1.55/v.height,.78/v.radius);v.root.scale.setScalar(fit);g.add(v.root);
   const crea={view:v,x:0,y:-.62,z:0,yaw:0,state:'alive',grounded:true,vx:0,vy:0,vz:0,emoteT:0};
-  const pl=new T.Mesh(o(new T.SphereGeometry(1,32,20)),o(new T.ShaderMaterial({uniforms:{k:{value:0},time:{value:0},c1:{value:col('#ff7a2a')},c2:{value:col('#fff0c0')}},vertexShader:PLASMA_VS,fragmentShader:PLASMA_FS,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide})));
+  const pl=new T.Mesh(o(new T.SphereGeometry(1,32,20)),o(new T.ShaderMaterial({uniforms:{k:{value:0},time:{value:0},c1:{value:col('#5affc8')},c2:{value:col('#f0fff8')}},vertexShader:PLASMA_VS,fragmentShader:PLASMA_FS,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide})));
   pl.scale.set(1.45,2.9,1.45);pl.position.y=.95;pl.visible=false;g.add(pl);
   return {g,shellM,heatM,lid,lights,plasma:pl,crea,fit,disp,S:1,speed:30,vel:new T.Vector3(),released:false,owned:false};
 }
 function disposePod(p){if(!p)return;if(p.g.parent)p.g.parent.remove(p.g);if(p.lid.parent)p.lid.parent.remove(p.lid);if(p.scorch&&p.scorch.parent)p.scorch.parent.remove(p.scorch);disposeView(p.crea.view);for(const x of p.disp){try{x.dispose();}catch(e){}}p.disp.length=0;}
 function animatePod(p,rdt,time){animateCreatureView(p.crea,rdt,time);const on=Math.floor(time*8)%p.lights.length;for(let i=0;i<p.lights.length;i++)p.lights[i].scale.setScalar(.055*(i===on?1.8:1));p.plasma.material.uniforms.time.value=time;}
 
-/* ---------- space scene ---------- */
-const INTRO_SPACE={skyTop:'#030214',skyMid:'#1d1150',skyHorizon:'#2a1d6a',wall:'#05030f',sun:'#fff0e0'};
+/* ---------- sky scene: moonlit clouds over the Enchanted Forest ---------- */
+const INTRO_SPACE={skyTop:'#02040c',skyMid:'#0c1e30',skyHorizon:'#3a6a7a',wall:'#03070a',sun:'#e8f0ff'};
 function buildIntro(){
-  const sc=new T.Scene();intro.scene=sc;sc.background=col('#020108');sc.add(intro.cam);
+  const sc=new T.Scene();intro.scene=sc;sc.background=col('#02050a');sc.add(intro.cam);
   const sky=new T.Mesh(new T.SphereGeometry(2000,32,16),skyMaterial(INTRO_SPACE,1.4));sky.renderOrder=-1;sc.add(sky);intro.sky=sky;
   sc.environment=makeEnvMap(INTRO_SPACE).texture;
   // two layers of stars
   for(const [N,sz,br] of [[2200,1.6,1.8],[260,3.2,3]]){const sp=new Float32Array(N*3);for(let i=0;i<N;i++){const v=new T.Vector3(Math.random()*2-1,Math.random()*2-1,Math.random()*2-1).normalize().multiplyScalar(900+Math.random()*700);sp[i*3]=v.x;sp[i*3+1]=v.y;sp[i*3+2]=v.z;}
     const sg=new T.BufferGeometry();sg.setAttribute('position',new T.BufferAttribute(sp,3));sc.add(new T.Points(sg,new T.PointsMaterial({color:new T.Color(br,br,br*1.15),size:sz,sizeAttenuation:false,toneMapped:false,transparent:true,depthWrite:false})));}
   // nebula clouds
-  [['#7a3ad8',.55,-700,220,-1000,1100,1],['#2a8aff',.4,800,-120,-900,1000,2],['#ff5ab0',.35,300,420,1000,1200,3],['#3affd8',.22,-900,-300,600,900,4]].forEach(([c,op,x,y,z,s,seed])=>{
+  [['#3fd6a0',.22,-700,260,-1000,1300,1],['#5a7ad8',.2,800,160,-900,1100,2],['#ff9ec4',.12,300,420,1000,1200,3],['#3fa8d8',.16,-900,200,600,900,4]].forEach(([c,op,x,y,z,s,seed])=>{
     const m=new T.SpriteMaterial({map:nebulaTex(seed),color:col(c),transparent:true,opacity:op,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false});const sp=new T.Sprite(m);sp.position.set(x,y,z);sp.scale.setScalar(s);sc.add(sp);});
-  // lighting matches the arena: same sun direction as the env map
-  sc.add(new T.HemisphereLight(col('#8f9cff'),col('#1a1030'),.45));
-  const sun=new T.DirectionalLight(col('#fff0e0'),2.8);sun.position.copy(SUN_DIR).multiplyScalar(300);sc.add(sun);
-  const rim=new T.DirectionalLight(col('#6fe6f2'),1.4);rim.position.set(80,-60,-300);sc.add(rim);
-  const sunSp=glowSprite('#fff2d8',6,320);sunSp.position.copy(SUN_DIR).multiplyScalar(1400);sc.add(sunSp);
-  const sunCore=glowSprite('#ffffff',10,70);sunCore.position.copy(sunSp.position);sc.add(sunCore);
+  // lighting matches the grove: same light direction as the env map
+  sc.add(new T.HemisphereLight(col('#9fc0e0'),col('#0a1a14'),.5));
+  const sun=new T.DirectionalLight(col('#eef4ff'),1.9);sun.position.copy(SUN_DIR).multiplyScalar(300);sc.add(sun);
+  const rim=new T.DirectionalLight(col('#8fffd0'),1.3);rim.position.set(80,-60,-300);sc.add(rim);
+  const sunSp=glowSprite('#cfe0ff',1.4,420);sunSp.position.set(520,260,-1150);sc.add(sunSp);
   // the arena planet: shader surface, cloud deck, atmosphere and ring
   const pm=new T.ShaderMaterial({uniforms:{rad:{value:140},g1:{value:new T.Color()},g2:{value:new T.Color()},sea:{value:new T.Color()},det:{value:new T.Color()},atmo:{value:new T.Color()},ice:{value:col('#eef2ff')},L:{value:SUN_DIR.clone()},time:{value:0}},vertexShader:SPHERE_VS,fragmentShader:PLANET_FS});
-  const planet=new T.Mesh(new T.SphereGeometry(140,128,96),pm);planet.position.set(0,-170,-420);sc.add(planet);intro.planet=planet;intro.planetM=pm;
+  const planet=new T.Mesh(new T.SphereGeometry(140,160,120),pm);planet.scale.setScalar(30);planet.position.set(0,-4262,-420);sc.add(planet);intro.planet=planet;intro.planetM=pm;
   const cm=new T.ShaderMaterial({uniforms:{rad:{value:141.6},L:{value:SUN_DIR.clone()},time:{value:0}},vertexShader:SPHERE_VS,fragmentShader:CLOUD_FS,transparent:true,depthWrite:false});
-  const clouds=new T.Mesh(new T.SphereGeometry(141.6,96,64),cm);clouds.position.copy(planet.position);sc.add(clouds);intro.clouds=clouds;intro.cloudM=cm;
+  const clouds=new T.Mesh(new T.SphereGeometry(141.6,128,96),cm);clouds.scale.setScalar(30);clouds.position.copy(planet.position);sc.add(clouds);intro.clouds=clouds;intro.cloudM=cm;
   const am=new T.ShaderMaterial({uniforms:{rad:{value:151},atmo:{value:new T.Color()},L:{value:SUN_DIR.clone()}},vertexShader:SPHERE_VS,fragmentShader:ATMO_FS,side:T.BackSide,transparent:true,blending:T.AdditiveBlending,depthWrite:false});
-  const atmo=new T.Mesh(new T.SphereGeometry(151,96,64),am);atmo.position.copy(planet.position);sc.add(atmo);intro.atmoM=am;
+  const atmo=new T.Mesh(new T.SphereGeometry(151,96,64),am);atmo.position.copy(planet.position);atmo.visible=false;sc.add(atmo);intro.atmoM=am;
   const rm=new T.ShaderMaterial({uniforms:{r0:{value:190},r1:{value:262},c1:{value:new T.Color()},c2:{value:new T.Color()}},vertexShader:RING_VS,fragmentShader:RING_FS,transparent:true,depthWrite:false,side:T.DoubleSide});
-  const ring=new T.Mesh(new T.RingGeometry(190,262,192,2),rm);ring.position.copy(planet.position);ring.rotation.set(1.25,.2,.1);sc.add(ring);intro.ringM=rm;
-  const tp=skinTex('pebble');const moon=new T.Mesh(new T.SphereGeometry(18,64,48),new T.MeshStandardMaterial({color:col('#b8b0d8'),roughness:.95,normalMap:tp.normal,normalScale:new T.Vector2(1.4,1.4)}));moon.position.set(260,90,-600);sc.add(moon);intro.moon=moon;
+  const ring=new T.Mesh(new T.RingGeometry(190,262,192,2),rm);ring.position.copy(planet.position);ring.rotation.set(1.25,.2,.1);ring.visible=false;sc.add(ring);intro.ringM=rm;
+  const tp=skinTex('pebble');const moon=new T.Mesh(new T.SphereGeometry(46,64,48),new T.MeshStandardMaterial({color:col('#e8eeff'),roughness:.95,emissive:col('#c8d8ff'),emissiveIntensity:.9,normalMap:tp.normal,normalScale:new T.Vector2(.8,.8)}));moon.position.set(520,260,-1150);sc.add(moon);intro.moon=moon;
   // the fleet, each ship flown by a real creature
-  const fleet=[['#ff8a3d','#ffd36b',1.6,0,1,6],['#5ad1ff','#2a5cff',1,-9,-1,14],['#ff6fae','#ffe14a',1,9,2.5,18],['#b8ff4f','#1f9a5a',.9,-15,4,26],['#9a6bff','#55f0ff',.9,15,-2,30],['#ffd23d','#ff4d5e',.8,-4,7,38]];
-  intro.ships=fleet.map(([c,a,s,x,y,z],i)=>{const g=introShip(c,a,BOT_PRESETS[(i*3+1)%BOT_PRESETS.length],s,i===0?'#ffb04a':'#6fe6f2');g.position.set(x,y,z+30);sc.add(g);return {g,x,y,z:z+30,speed:26-i*1.2,ph:i*1.3,lead:i===0};});
+  const fleet=[['#d9473b','#8fd16a',1.6,0,1,6],['#7ec8e3','#5f9a3c',1,-9,-1,14],['#ff9ec4','#8fd16a',1,9,2.5,18],['#f2b84b','#5f9a3c',.9,-15,4,26],['#b49ae0','#7fe3c0',.9,15,-2,30],['#e08a4a','#c8452a',.8,-4,7,38]];
+  intro.ships=fleet.map(([c,a,s,x,y,z],i)=>{const g=introShip(c,a,BOT_PRESETS[(i*3+1)%BOT_PRESETS.length],s,i===0?'#ffd88a':'#8fffd0');g.position.set(x,y,z+30);sc.add(g);return {g,x,y,z:z+30,speed:26-i*1.2,ph:i*1.3,lead:i===0};});
   // pooled glow puffs for engine trails and re-entry embers
   const tg=new T.SphereGeometry(1,8,6);for(let i=0;i<220;i++){const m=new T.Mesh(tg,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}));m.visible=false;sc.add(m);intro.trail.push({m,life:0});}
   // speed streaks that ride with the camera
   const SN=220,arr=new Float32Array(SN*6);for(let i=0;i<SN;i++)resetStreak(arr,i,true);
   const sgeo=new T.BufferGeometry();sgeo.setAttribute('position',new T.BufferAttribute(arr,3));
-  const sl=new T.LineSegments(sgeo,new T.LineBasicMaterial({color:new T.Color(1.4,1.7,2.2),transparent:true,opacity:.45,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}));sl.frustumCulled=false;intro.cam.add(sl);intro.streaks={mesh:sl,arr,n:SN};
+  const sl=new T.LineSegments(sgeo,new T.LineBasicMaterial({color:new T.Color(1.3,1.5,1.2),transparent:true,opacity:.22,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}));sl.frustumCulled=false;intro.cam.add(sl);intro.streaks={mesh:sl,arr,n:SN};
 }
 function resetStreak(a,i,any){const x=(Math.random()-.5)*70,y=(Math.random()-.5)*44,z=any?-Math.random()*140:-140+Math.random()*10,len=1.5+Math.random()*5;a.set([x,y,z,x,y,z-len],i*6);}
 function updateStreaks(speed,rdt){const s=intro.streaks;if(!s)return;s.mesh.visible=speed>1;if(speed<=1)return;const a=s.arr;
   for(let i=0;i<s.n;i++){const k=i*6;a[k+2]+=speed*rdt;a[k+5]+=speed*rdt;if(a[k+5]>1)resetStreak(a,i,false);}s.mesh.geometry.attributes.position.needsUpdate=true;}
-function setIntroBiome(B){const u=intro.planetM.uniforms;u.g1.value.copy(col(B.ground));u.g2.value.copy(col(B.ground2));u.sea.value.copy(col(B.wall)).multiplyScalar(.75);u.det.value.copy(col(B.detail[2]||B.detail[0]));u.atmo.value.copy(col(B.skyHorizon));
+function setIntroBiome(B){const u=intro.planetM.uniforms;u.g1.value.copy(col(B.canopy||B.ground)).lerp(col('#4f8a34'),.45).multiplyScalar(.95);u.g2.value.copy(col(B.canopy||B.ground2)).multiplyScalar(.6);u.sea.value.copy(col(B.skyHorizon)).multiplyScalar(.32);u.det.value.copy(col(B.firefly||'#ffe9a0'));u.atmo.value.copy(col(B.skyHorizon));
   intro.atmoM.uniforms.atmo.value.copy(col(B.skyHorizon));intro.ringM.uniforms.c1.value.copy(col(B.lane));intro.ringM.uniforms.c2.value.copy(col(B.planet));}
 let trailI=0;
 function introTrail(p,color,size,life){const t=intro.trail[trailI++%intro.trail.length];t.m.position.copy(p);t.m.material.color.copy(col(color)).multiplyScalar(2.2);t.m.scale.setScalar(size);t.life=t.max=life;t.m.visible=true;}
@@ -225,7 +207,7 @@ function finishIntro(instant,seamless){if(intro.done)return;intro.done=true;$('#
   document.body.classList.add('menuEnter');setTimeout(()=>document.body.classList.remove('menuEnter'),1600);
   if(AudioFX.ctx&&!instant)AudioFX.play('win',.6);if(typeof showWelcomeIfNeeded==='function')setTimeout(showWelcomeIfNeeded,instant?300:1400);}
 
-/* ---------- space shots ---------- */
+/* ---------- sky shots ---------- */
 function updateIntro(rdt,now){
   if(intro.stage==='ground'){updateIntroGround(rdt,now);return;}
   const time=now*.001;const sh=intro.ships;const cam=intro.cam;const pod=intro.pod;
@@ -237,7 +219,7 @@ function updateIntro(rdt,now){
     for(const f of u.flames){const fl=.85+Math.random()*.3;f.core.scale.set(1,1,1.3*thr*fl);f.outer.scale.set(1,1,2.4*thr*(.9+Math.random()*.2));f.hs.material.opacity=.75+Math.random()*.25;}
     for(const b of u.blink)b.visible=((time+s.ph)%1.1)<.18;
     if(u.pilot)animateCreatureView(u.pilot,rdt,time+s.ph);
-    if(intro.started&&Math.random()<.85)for(const f of u.flames){f.core.getWorldPosition(_iv);_iv.z+=.5*s.g.scale.x;introTrail(_iv,s.lead?'#ffb04a':'#6fe6f2',.14*s.g.scale.x,.45);}}
+    if(intro.started&&Math.random()<.85)for(const f of u.flames){f.core.getWorldPosition(_iv);_iv.z+=.5*s.g.scale.x;introTrail(_iv,s.lead?'#ffd88a':'#8fffd0',.14*s.g.scale.x,.45);}}
   for(const tr of intro.trail){if(tr.life<=0)continue;tr.life-=rdt;tr.m.material.opacity=Math.max(0,tr.life/tr.max)*.8;if(tr.life<=0)tr.m.visible=false;}
   if(pod)animatePod(pod,rdt,time);
   const lead=sh[0].g;
@@ -251,8 +233,8 @@ function updateIntro(rdt,now){
     pod.g.position.addScaledVector(pod.vel,rdt*clamp((dist-22)/30,.12,1));
     _iq.setFromUnitVectors(_DOWN,_iv3.copy(pod.vel).normalize());_iq2.setFromAxisAngle(_YAX,time*2.6);pod.g.quaternion.copy(_iq).multiply(_iq2);
     const heat=smooth(5.3,7.0,t);pod.plasma.visible=heat>.01;pod.plasma.material.uniforms.k.value=heat*1.25;pod.shellM.emissiveIntensity=heat*1.1;pod.heatM.emissiveIntensity=heat*3.2;
-    if(Math.random()<.95){_iv.copy(pod.g.position).addScaledVector(pod.vel,-.03);introTrail(_iv,heat>.25?'#ff8a3d':'#6fe6f2',.3+heat*.9,.55+heat*.4);}
-    if(heat>.3&&Math.random()<heat)introTrail(_iv.copy(pod.g.position).add(_iv2.set((Math.random()-.5)*2,(Math.random()-.5)*2,(Math.random()-.5)*2)).addScaledVector(pod.vel,-.05),'#ffd27a',.12,.4);}
+    if(Math.random()<.95){_iv.copy(pod.g.position).addScaledVector(pod.vel,-.03);introTrail(_iv,heat>.25?'#8fffd0':'#ffd88a',.3+heat*.9,.55+heat*.4);}
+    if(heat>.3&&Math.random()<heat)introTrail(_iv.copy(pod.g.position).add(_iv2.set((Math.random()-.5)*2,(Math.random()-.5)*2,(Math.random()-.5)*2)).addScaledVector(pod.vel,-.05),'#fff3b0',.12,.4);}
   if(t<3.0){// shot A: the fleet roars past the camera toward the planet
     const k=smooth(0,3,t);cam.position.set(lerp(0,lead.position.x+5,k*.6),lerp(2.5,lead.position.y+3,k*.6),lerp(22,lead.position.z+16,k*.55));
     cam.lookAt(lerp(0,lead.position.x,k),lerp(-2,lead.position.y,k),lerp(-60,lead.position.z-10,k));updateStreaks(90,rdt);
@@ -263,7 +245,7 @@ function updateIntro(rdt,now){
     const pil=sh[0].g.userData.pilot;if(t>3.45&&!F.wave&&pil){F.wave=true;pil.emoteT=1.3;voice(pil,'happy');}
     if(pil&&pil.emoteT>0)pil.emoteT-=rdt;
     if(t>4.55&&!F.drop){F.drop=true;intro.scene.attach(pod.g);pod.released=true;pod.speed=30;pod.vel.set(0,-8,-26);
-      const pp=intro.planet.position;intro.podTarget=_iv.subVectors(pod.g.position,pp).normalize().add(_iv2.set(0,0,-.35)).normalize().multiplyScalar(140).add(pp).clone();
+      const pp=intro.planet.position;intro.podTarget=_iv.subVectors(pod.g.position,pp).normalize().add(_iv2.set(0,0,-.35)).normalize().multiplyScalar(4200).add(pp).clone();
       AudioFX.play('boing',.7);AudioFX.play('spit',.7);whoosh(.7,600,120,.2);}}
   else{// shot C: chase the pod into the atmosphere
     const vd=_iv3.copy(pod.vel).normalize();const want=_iv.copy(pod.g.position).addScaledVector(vd,-(7+(1-smooth(5,5.8,t))*9)).add(_iv2.set(1.2,2.4,0));
@@ -274,7 +256,7 @@ function updateIntro(rdt,now){
   if(t>=INTRO_SWITCH)introToGround();
 }
 
-/* ---------- ground shots: the pod lands for real on the home-screen stage ---------- */
+/* ---------- ground shots: the acorn lands for real on the home-screen stage ---------- */
 function introToGround(){
   intro.stage='ground';const pod=intro.pod;
   if(!world||world.mode==='test'||world.creatures.length)buildWorld(newSeed());
@@ -298,19 +280,19 @@ function updateIntroGround(rdt,now){
   introSubs(t);introWorldTick(rdt,now);animatePod(pod,rdt,time);st.t+=rdt;
   $('#introFade').style.opacity=String(1-smooth(0,.55,tg));
   const rest=_iv2.copy(L).setY(L.y+1.22*S);
-  if(tg<INTRO_IMPACT){// screaming in from the sky, trailing fire and smoke
+  if(tg<INTRO_IMPACT){// streaking down through the canopy, trailing spirit light and leaves
     const k=tg/INTRO_IMPACT;const e=k*k*(1.25-.25*k);pod.g.position.lerpVectors(pod.start,rest,e);
     _iq.setFromUnitVectors(_DOWN,_iv.subVectors(rest,pod.start).normalize());_iq.slerp(_iq2.identity(),smooth(.72,1,k));pod.g.quaternion.copy(_iq).multiply(_iq2.setFromAxisAngle(_YAX,time*3));
     const heat=1-smooth(.3,1,k)*.7;pod.plasma.material.uniforms.k.value=heat;pod.shellM.emissiveIntensity=heat*.9;pod.heatM.emissiveIntensity=heat*3;
-    const q=pod.g.position;emit(q.x,q.y+S,q.z,{n:3,color:'#ff8a3d',glow:3,speed:2.5,life:.6,size:.45*S,grav:-2,jit:S});
-    emit(q.x,q.y+S*1.5,q.z,{n:2,color:'#4a4650',glow:.5,speed:1.2,life:1.8,size:.9*S,grav:-2.5,jit:S,drag:1.2});
+    const q=pod.g.position;emit(q.x,q.y+S,q.z,{n:3,color:'#8fffd0',glow:2.6,speed:2.5,life:.6,size:.4*S,grav:-2,jit:S});
+    emit(q.x,q.y+S*1.5,q.z,{n:2,color:'#6fae4a',glow:.5,speed:1.2,life:1.8,size:.9*S,grav:-2.5,jit:S,drag:1.2});
     intro.camLook.lerp(q,1-Math.exp(-rdt*7));
     if(tg>.15&&!F.in){F.in=true;whoosh(1.4,1800,140,.25);}}
   else{
     if(!F.impact){F.impact=true;pod.g.position.copy(rest);pod.g.quaternion.identity();pod.plasma.visible=false;
       const B=map.biome;const x=L.x,y=L.y+.2,z=L.z;
       emit(x,y,z,{n:50,color:B.ground,glow:.9,speed:16,flat:true,life:1.2,size:.55,grav:0,drag:2.5,up:1.5});
-      emit(x,y+.5,z,{n:34,color:'#ffb04a',glow:3.2,speed:9,up:9,life:.9,size:.22,grav:22});
+      emit(x,y+.5,z,{n:34,color:'#ffe9a0',glow:3,speed:9,up:9,life:.9,size:.22,grav:22});
       emit(x,y+.5,z,{n:20,color:B.detail[0],glow:1,speed:7,up:12,life:1.3,size:.35,grav:26});
       emit(x,y+1,z,{n:14,color:'#ffffff',glow:1.8,speed:3,life:.3,size:1.4,grav:0});
       AudioFX.play('nest',.9);AudioFX.play('land',1);if(AudioFX.ctx){AudioFX.noise(1.2,.35,180);AudioFX.tone('sine',70,30,1,.35);}
@@ -319,8 +301,8 @@ function updateIntroGround(rdt,now){
       const sc=new T.Mesh(geo('csPlane',()=>{const p=new T.PlaneGeometry(1,1);p.rotateX(-Math.PI/2);return p;}),sm);sc.scale.set(S*4.2,1,S*4.2);sc.position.set(L.x,L.y+.06,L.z);scene.add(sc);pod.scorch=sc;}
     intro.squashV+=(-intro.squash*230-intro.squashV*9)*rdt;intro.squash+=intro.squashV*rdt;const sq=clamp(intro.squash*.06,-.3,.3);pod.g.scale.set(S*(1-sq*.5),S*(1+sq),S*(1-sq*.5));
     const cool=Math.exp(-(tg-INTRO_IMPACT)*1.2);pod.heatM.emissiveIntensity=cool*1.4;pod.shellM.emissiveIntensity=cool*.3;
-    if(tg<3.6&&Math.random()<.5)emit(L.x+(Math.random()-.5)*S,L.y+S*1.1,L.z+(Math.random()-.5)*S,{n:1,color:'#e8e8f0',glow:.8,speed:1,up:2.5,grav:-1.5,life:1.4,size:.6*S,drag:1});
-    // the lid pops off and tumbles away
+    if(tg<3.6&&Math.random()<.5)emit(L.x+(Math.random()-.5)*S,L.y+S*1.1,L.z+(Math.random()-.5)*S,{n:1,color:'#c8ffe8',glow:.8,speed:1,up:2.5,grav:-1.5,life:1.4,size:.6*S,drag:1});
+    // the acorn cap pops off and tumbles away
     if(tg>=2.5&&!F.lid){F.lid=true;scene.attach(pod.lid);pod.lidLoose=true;pod.lidV=new T.Vector3(3.5,13,-2.5);pod.lidW=new T.Vector3(4,1,2.5);
       AudioFX.play('popup',.9);AudioFX.play('boing',.8);const lp=pod.lid.position;emit(lp.x,lp.y,lp.z,{n:22,color:'#ffffff',glow:1.4,speed:5,up:3,life:.8,size:.4,grav:-1});}
     if(pod.lidLoose&&!pod.lidRest){pod.lidV.y-=26*rdt;pod.lid.position.addScaledVector(pod.lidV,rdt);pod.lid.rotation.x+=pod.lidW.x*rdt;pod.lid.rotation.y+=pod.lidW.y*rdt;pod.lid.rotation.z+=pod.lidW.z*rdt;
@@ -335,7 +317,7 @@ function updateIntroGround(rdt,now){
       e0.vy=k<1?Math.cos(Math.PI*k)*16:0;e0.grounded=k>=1;e0.yaw=Math.atan2(e0.hx-h.x0,e0.hz-h.z0);
       if(k>=1){e0.hopDone=true;e0.scripted=false;e0.vy=0;e0.view.j=-.35;emit(e0.x,e0.y+.1,e0.z,{n:16,color:map.biome.ground,glow:.8,speed:6,flat:true,life:.6,size:.35,grav:0});AudioFX.play('land',.8);for(const e of st.ents)e.emoteT=1.4;}}
     _iv.copy(L).setY(L.y+S);_iv.lerp(_iv3.copy(st.c).setY(st.c.y+1),smooth(2.7,3.6,tg));intro.camLook.lerp(_iv,1-Math.exp(-rdt*4));}
-  // the teammates watch the pod come in, then face the camera
+  // the teammates watch the acorn come in, then face the camera
   const facing=tg<INTRO_IMPACT+.4?pod.g.position:camera.position;menuStageCreatures(rdt,now,facing);
   // camera: low hero angle, then a glide into the exact home-screen framing
   const pose=menuCamPose(st.t);const kb=smooth(3.2,5.2,tg);
