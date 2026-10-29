@@ -77,6 +77,7 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; ch
   '.wav': 'audio/wav', '.woff2': 'font/woff2', '.woff': 'font/woff', '.txt': 'text/plain; charset=utf-8' };
 
 function inside(base, rel) {
+  base = base.replace(/[\\/]+$/, '');
   let clean;
   try { clean = normalize(decodeURIComponent(rel)).replace(/^([/\\])+/, ''); } catch { return null; }
   const full = join(base, clean);
@@ -136,7 +137,7 @@ const server = http.createServer(async (req, res) => {
 
 // ---- backups: one at start, then once a day while running ------------------------------------------------
 async function backup() {
-  try { const f = await backupNow(); if (f) console.log('  Backup saved: ' + f.slice(ROOT.length)); }
+  try { const f = await backupNow(); if (f) console.log('  Backup saved: ' + (f.startsWith(ROOT) ? f.slice(ROOT.length) : f)); }
   catch (e) { console.error('  Backup failed: ' + e.message); }
 }
 
