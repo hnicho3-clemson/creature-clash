@@ -478,8 +478,8 @@ function idleNeutral(n,dt){if(!n.alive)return;n.wanderT-=dt;if(n.wanderT<=0){n.w
   const d=Math.hypot(n.tx-n.x,n.tz-n.z);const sp=n.type==='boss'?1.2:1.8;if(d>.5){n.vx=(n.tx-n.x)/d*sp;n.vz=(n.tz-n.z)/d*sp;n.yaw+=angDiff(n.yaw,Math.atan2(n.vx,n.vz))*Math.min(1,dt*4);}else{n.vx*=.9;n.vz*=.9;}
   n.x+=n.vx*dt;n.z+=n.vz*dt;n.y=world.map.heightAt(n.x,n.z);}
 
-/* boot */
-startIntro();
+/* boot: straight to the main menu. The intro plays from "Watch the intro" or Settings > Walkthrough. */
+finishIntro(true);
 requestAnimationFrame(frame);
 requestAnimationFrame(()=>requestAnimationFrame(()=>{const b=$('#boot');if(b&&!b.classList.contains('failed'))b.hidden=true;})); // the loading screen goes once the first frame is drawn
 if(DEV_BUILD)window.__cc={get world(){return world;},get match(){return match;},get build(){return build;},get progress(){return progress;},S,PRESETS,BOT_PRESETS,PARTS,validateDesign,calcStats,openBuild,openWorkshop,openMenu,startTestDrive,lockAndBegin,A11Y,applyA11y,renderA11y,applyPreset,addCaption,announce,TEAMS,startCampaign,CAMPAIGN,openChallenges,rotating,CONSTRAINTS,

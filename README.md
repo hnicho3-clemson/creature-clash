@@ -20,8 +20,13 @@ Guests can play without an account; their progress stays in the browser. Signed-
    - `RESEND_API_KEY`: from Resend
    - `MAIL_FROM`: for example `Creature Clash <noreply@yourdomain.com>`
    - `SITE_URL`: your site's address, for example `https://creature-clash.vercel.app`
+   - `ADMIN_USERNAMES`: usernames that can open the Admin Analytics page at `/admin`, separated by commas, for example `haley`
 6. **Fill in your contact email** in `public/privacy.html` and `public/terms.html` (search for `YOUR-DOMAIN`). A real contact address is required for the children's privacy rules.
 7. **Redeploy** (*Deployments → … → Redeploy*) so the new settings take effect.
+
+## Updating the database after a code update
+
+When `db/schema.sql` changes, run it again in Neon's *SQL Editor* (or `npm run migrate`) **before** the new code goes live. It only adds what's missing and never deletes data. The October 29 update adds the `display_name` and `portrait` columns for player cards; without them, signed-in players get errors.
 
 ## Backups
 
@@ -60,10 +65,26 @@ To read them, open Neon's *SQL Editor* and run a query from `db/reports.sql`: th
 - Have the privacy policy and rules read by someone who knows COPPA. They're a careful draft, not legal advice.
 - Set up the daily backup above and test a restore once.
 
-## Developing
+## Running it on your computer
+
+You need [Node.js 22](https://nodejs.org). Then, in the project folder:
 
 ```
 npm install
+npm run dev
+```
+
+Open http://localhost:3000. That's the whole game with accounts, saves and the API, using a built-in database (PGlite) saved in the `.data/` folder, so you don't need Neon or Postgres. Delete `.data/` to start over with an empty database.
+
+- **Emails aren't sent.** Sign-up, reset and parent-approval emails are printed in the terminal, codes and links included.
+- **Admin page.** Make a file called `.env.local` next to `package.json` with `ADMIN_USERNAMES=yourname`, restart, sign in as that user and open http://localhost:3000/admin. Local play isn't counted in the stats, so the charts start empty.
+- **Other databases.** Put `DATABASE_URL=...` in `.env.local` to use a Neon database instead (use a separate Neon branch, not the live one). If you run Postgres yourself, set `LOCAL_PG="-h localhost -p 5432 -U postgres"` to use it through `psql`.
+- **Developer console.** Add `#dev` to the address, then press Ctrl+Shift+C.
+- **Different port.** `PORT=3001 npm run dev` (on Windows PowerShell: `$env:PORT=3001; npm run dev`).
+
+## Tests
+
+```
 npm test        # needs a local Postgres; set TEST_PG, e.g. TEST_PG="-h localhost -p 5432 -U postgres"
 ```
 
@@ -78,22 +99,22 @@ The developer console in the game (Ctrl+Shift+C) only works when the page is ope
 | Real sign-in and sign-out | `/signin`; sign-out revokes the session on the server |
 | Password reset | `/forgot-password`: an emailed 8-digit code, then a new password; signs out other devices |
 | Email verification | `/verify-email`: an 8-digit code that lasts 20 minutes, with resend. Under-13 accounts need a parent's approval instead |
-| Loading states | A loading screen while the game first loads, "Checking your account…" on the menu and account page, and "Please wait…" on every form button |
-| Empty states | Empty Workshop slots, mystery pods for locked parts, and the guest or offline account messages |
+| Loading states | A loading screen while the game first loads, "Checking your account…" on the menu and account page, "Loading the numbers…" on Admin Analytics, and "Please wait…"/"Saving…" on every form button |
+| Empty states | Empty Workshop slots, mystery pods for locked parts, the guest or offline account messages, and "No errors reported" on Admin Analytics |
 | Clear error messages | Every form shows a readable alert; the server never shows internal errors |
 | Form validation | Checked in the page for quick feedback and again on the server |
-| Rate limiting | Sign-in, sign-up, codes, resets, parent links, saves, matches, the shop, stats and error reports |
-| Database backups | Daily encrypted backup kept 30 days (see *Backups*) plus Neon's own restore history |
+| Rate limiting | Sign-in, sign-up, codes, resets, parent links, saves, matches, the shop, player cards, the admin page, stats and error reports |
+| Database backups | Daily encrypted backup kept 30 days (see *Backups*) plus Neon's own restore history. **Not running yet:** the nightly job fails until the two GitHub secrets are added |
 | Row level security | On for every table. The game connects as the table owner; any other role sees nothing |
 | API keys off the frontend | Database, email and app secrets only exist as Vercel environment variables |
 | Mobile layout | Phone-sized layouts and touch controls (joystick and buttons) |
 | Custom 404 page | `public/404.html` |
-| Analytics | Anonymous first-party daily counts (see *Stats and error reports*) |
+| Analytics | Anonymous first-party daily counts, shown on the admin-only **Admin Analytics** page (`/admin`): games played, hours played, page views and active players, plus accounts and the latest errors |
 | Error tracking | First-party, scrubbed, grouped error reports from the game and the API |
 | Privacy policy | `/privacy` |
 | Terms | `/terms` (the game rules) |
 | Delete account | Account page: password plus typing DELETE |
-| Onboarding | Intro cutscene, the comfort-settings welcome, How to play, and the campaign, which is the tutorial |
+| Onboarding | No automatic tour. New accounts pick a player name and a creature portrait the first time they reach the main menu (no bio, no photo upload). Settings has a **Walkthrough** button (intro cutscene, then How to play) and a **Player card** button. The comfort-settings welcome and the campaign (the tutorial) stay |
 
 ## Security notes
 

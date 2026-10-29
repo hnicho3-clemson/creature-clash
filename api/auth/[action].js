@@ -13,7 +13,7 @@ const WRONG_LOGIN = new ApiError(401, 'wrong_login', 'That username and password
 
 async function findByUsername(key) {
   if (!key) return null;
-  const rows = await sql`SELECT id, username, username_key, pass_hash, contact_email, is_child, status FROM users WHERE username_key = ${key}`;
+  const rows = await sql`SELECT id, username, username_key, pass_hash, contact_email, is_child, status, display_name, portrait FROM users WHERE username_key = ${key}`;
   return rows[0] || null;
 }
 

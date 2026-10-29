@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Admin Analytics</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" referrerpolicy="no-referrer" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Michroma&display=swap">
+<link rel="stylesheet" href="/css/site.css">
+</head><body class="admin">
+<header class="top wide"><a class="brand" href="/">Creature Clash</a><a class="back" href="/account">Back to your account</a></header>
+
+<main class="panel wide" id="main">
+  <div class="loading" id="a-loading"><span class="spinner" aria-hidden="true"></span>Loading the numbers…</div>
+
+  <section id="a-denied" hidden>
+    <p class="eyebrow">Admin Analytics</p>
+    <h1 id="a-denied-title">Admins only</h1>
+    <p class="lead" id="a-denied-text"></p>
+    <div class="row"><a class="btn" id="a-denied-btn" href="/signin">Sign in</a><a class="btn ghost" href="/">Back to the game</a></div>
+  </section>
+
+  <section id="a-dash" hidden aria-labelledby="a-title">
+    <div class="adhead">
+      <div><p class="eyebrow">Admin</p><h1 id="a-title" style="margin:0">Analytics</h1></div>
+      <div class="seg" role="group" aria-label="Date range">
+        <button type="button" data-days="7" aria-pressed="false">7 days</button>
+        <button type="button" data-days="30" aria-pressed="true">30 days</button>
+        <button type="button" data-days="90" aria-pressed="false">90 days</button>
+      </div>
+    </div>
+    <div class="alert error" role="alert" id="a-error"></div>
+
+    <div class="tiles" id="a-tiles"></div>
+
+    <div class="chartcard">
+      <div class="charthead">
+        <h2 id="c-title" style="margin:0">Games played per day</h2>
+        <div class="seg small" role="group" aria-label="Chart shows" id="c-metric">
+          <button type="button" data-metric="games" aria-pressed="true">Games</button>
+          <button type="button" data-metric="hours" aria-pressed="false">Hours</button>
+          <button type="button" data-metric="pageViews" aria-pressed="false">Page views</button>
+          <button type="button" data-metric="players" aria-pressed="false">Active players</button>
+        </div>
+      </div>
+      <div class="chart" id="c-chart"></div>
+      <div class="tip" id="c-tip" hidden></div>
+      <details class="tableview"><summary>Show as a table</summary><div class="tablewrap"><table id="c-table"></table></div></details>
+    </div>
+
+    <h2>Accounts</h2>
+    <div class="tiles small" id="a-accounts"></div>
+
+    <h2>Latest errors</h2>
+    <div id="a-errors"></div>
+
+    <p class="muted note">Counts are anonymous daily totals from the game. A visitor is one browser on one day. Browsers that ask not to be tracked, local copies of the game, and pages opened with #dev are not counted. Days are in UTC.</p>
+  </section>
+</main>
+<script src="/js/admin.js"></script>
+</body></html>

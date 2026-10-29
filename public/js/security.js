@@ -115,5 +115,26 @@
   /* HTML escaping for text and double- or single-quoted attributes */
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  root.Sec={parse,cleanText,cleanName,color,design,slots,progress,a11y,settings,devAmount,esc,MAX_SAVE_CHARS,NAME_MAX,DNA_MAX};
+  /* Player card: a display name and a portrait picked from the game's creatures.
+     Kids play this game, so names are short, plain, and can't hold contact details or rude words. */
+  const PORTRAITS=['c0','c1','c2','c3','c4','c5','c6','c7'];
+  const ROOTS=['fuck','fuk','shit','bitch','cunt','dick','cock','pussy','penis','vagina','boob','tits','slut','whore','nigg','fag','retard','rape','porn','sex','nazi','hitler','suicide','bastard','asshole','piss','wank','twat'];
+  function displayName(v){
+    if(typeof v!=='string')return {ok:false,message:'Please type a name.'};
+    const s=v.normalize('NFKC').replace(/\s+/g,' ').trim();
+    if([...s].length<2||[...s].length>20)return {ok:false,message:'Names are 2 to 20 characters.'};
+    if(!/^[A-Za-z0-9 _'.-]+$/.test(s))return {ok:false,message:'Use letters, numbers, spaces, dashes or underscores.'};
+    if(!/[A-Za-z]/.test(s))return {ok:false,message:'Names need at least one letter.'};
+    if((s.match(/\d/g)||[]).length>3)return {ok:false,message:'Use at most 3 numbers in a name.'};
+    // Long roots are caught anywhere; short ones only at the start of a word, so "Sussex" or "peacock" stay fine.
+    const leet=t=>t.toLowerCase().replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/7/g,'t').replace(/[^a-z]/g,'').replace(/(.)\1+/g,'$1');
+    const flat=leet(s),words=s.split(/[ _'.-]+|(?<=[a-z])(?=[A-Z])/).map(leet).filter(Boolean);
+    const rude=ROOTS.some(w=>{const r=w.replace(/(.)\1+/g,'$1');return r.length>=5?flat.includes(r):flat.startsWith(r)||words.some(x=>x.replace(/^x+/,'').startsWith(r));});
+    if(rude)return {ok:false,message:'Please pick a friendlier name.'};
+    if(/\b(www|http|com|net|org|snap|insta|tiktok|discord)\b/i.test(s))return {ok:false,message:'Names cannot include websites or social media.'};
+    return {ok:true,value:s};
+  }
+  const portrait=v=>PORTRAITS.includes(v)?v:null;
+
+  root.Sec={parse,cleanText,cleanName,color,design,slots,progress,a11y,settings,devAmount,esc,displayName,portrait,PORTRAITS,MAX_SAVE_CHARS,NAME_MAX,DNA_MAX};
 })(typeof window!=='undefined'?window:globalThis);

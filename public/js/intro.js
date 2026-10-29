@@ -223,7 +223,7 @@ function finishIntro(instant,seamless){if(intro.done)return;intro.done=true;$('#
   if(seamless||instant)fade.style.opacity='0';
   else{fade.style.transition='none';fade.style.opacity='1';requestAnimationFrame(()=>{fade.style.transition='opacity .9s ease';fade.style.opacity='0';});}
   document.body.classList.add('menuEnter');setTimeout(()=>document.body.classList.remove('menuEnter'),1600);
-  if(AudioFX.ctx&&!instant)AudioFX.play('win',.6);if(typeof showWelcomeIfNeeded==='function')setTimeout(showWelcomeIfNeeded,instant?300:1400);}
+  if(AudioFX.ctx&&!instant)AudioFX.play('win',.6);const after=()=>{if(typeof walkthroughPending!=='undefined'&&walkthroughPending){finishWalkthrough();return;}if(typeof showWelcomeIfNeeded==='function')showWelcomeIfNeeded();if($('#welcome').hidden&&typeof Profile!=='undefined')Profile.maybeShow();};setTimeout(after,instant?300:1400);}
 
 /* ---------- space shots ---------- */
 function updateIntro(rdt,now){

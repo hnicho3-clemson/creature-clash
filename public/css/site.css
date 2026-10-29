@@ -103,3 +103,40 @@ footer a{color:var(--ink-dim)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 [tabindex="-1"]:focus{outline:none}
+
+/* ---------- Admin Analytics (/admin) ---------- */
+.top.wide{max-width:960px}
+.admin .panel.wide{max-width:960px}
+.adhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.3)}
+.seg button{font:inherit;font-size:14px;font-weight:700;color:var(--ink-dim);background:transparent;border:0;border-radius:999px;padding:8px 14px;min-height:40px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--cyan);color:#021018}
+.seg.small button{font-size:13px;padding:6px 11px;min-height:36px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;margin:0 0 16px}
+.tile{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+.tile .tl{font-size:14px;color:var(--ink-dim);font-weight:700}
+.tile b{font-family:var(--f-display);font-weight:400;font-size:28px;line-height:1.3;color:var(--ink);font-variant-numeric:tabular-nums}
+.tile .ts{font-size:13px;color:var(--ink-faint)}
+.tiles.small .tile b{font-size:22px}
+.chartcard{position:relative;padding:16px;border-radius:16px;border:1px solid var(--line);background:rgba(0,0,0,.22);margin-bottom:8px}
+.charthead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chart svg{display:block;overflow:visible}
+.chart .bar{fill:var(--cyan)}
+.chart .hit{fill:transparent;cursor:crosshair}
+.chart .hit.on{fill:rgba(255,255,255,.06)}
+.chart .grid{stroke:rgba(128,196,255,.12);stroke-width:1}
+.chart .base{stroke:rgba(169,185,220,.5);stroke-width:1}
+.chart .ax{fill:var(--ink-faint);font-size:11.5px;font-family:var(--f-body)}
+.tip{position:absolute;transform:translate(-50%,-100%);pointer-events:none;padding:6px 10px;border-radius:10px;background:#0b1236;border:1px solid var(--line-hi);font-size:13px;line-height:1.35;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.tip b{font-size:15px}.tip span{color:var(--ink-dim)}
+.tableview{margin-top:10px;font-size:14px}
+.tableview summary{cursor:pointer;color:var(--cyan);font-weight:700}
+.tablewrap{overflow-x:auto;margin-top:8px}
+.tablewrap table{width:100%;border-collapse:collapse;font-size:14px}
+.tablewrap th,.tablewrap td{text-align:left;padding:7px 10px;border-bottom:1px solid rgba(128,196,255,.14);vertical-align:top}
+.tablewrap th{color:var(--ink-dim);font-weight:700}
+.tablewrap .num{text-align:right;font-variant-numeric:tabular-nums}
+.errs td{word-break:break-word}.errs small{color:var(--ink-faint)}
+.errs .src{display:inline-block;font-size:12px;font-weight:700;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--gold)}
+.empty{color:var(--ink-dim);padding:14px 16px;border-radius:14px;border:1px dashed var(--line);margin:0}
+.note{margin-top:22px}

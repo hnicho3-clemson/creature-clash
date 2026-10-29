@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS users (
   created_at      timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT username_shape CHECK (username_key ~ '^[a-z0-9_]{3,20}$')
 );
+-- Player card, chosen the first time a player enters the game. Shown only to that player.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name text;   -- checked by Sec.displayName (public/js/security.js)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS portrait text;       -- one of Sec.PORTRAITS, a picture of a game creature
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users (username_key);
 CREATE INDEX IF NOT EXISTS users_pending_created ON users (created_at) WHERE status = 'pending';
 
