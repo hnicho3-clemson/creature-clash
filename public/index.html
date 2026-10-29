@@ -1,10 +1,19 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;padding:0}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}.pcard{display:grid;gap:14px}
+.pcard label.lbl{display:block;font-weight:700;margin-bottom:6px}
+.pcard input.pname{width:100%;box-sizing:border-box;font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--ink);min-height:48px}
+.pcard input.pname:focus{outline:2px solid var(--lime);outline-offset:2px}
+.pcard input.pname[aria-invalid=true]{border-color:var(--red)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.pgrid button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.05);min-height:44px;color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer}
+.pgrid button img{width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.06)}
+.pgrid button[aria-checked=true]{border-color:var(--lime);box-shadow:0 0 0 2px var(--lime);background:rgba(196,255,110,.1)}
+.perr{color:#ffb4b4;font-weight:700;min-height:1.2em;margin:0}
+.acct img.apor{width:28px;height:28px;border-radius:50%;vertical-align:middle;background:rgba(255,255,255,.08)}
+</style>
 <title>Creature Clash Arena</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" referrerpolicy="no-referrer" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Fredoka:wght@500;600;700&family=Michroma&display=swap">
+<link rel="stylesheet" href="/vendor/fonts/atkinson-hyperlegible/400.css"><link rel="stylesheet" href="/vendor/fonts/atkinson-hyperlegible/700.css"><link rel="stylesheet" href="/vendor/fonts/michroma/400.css">
 </head><body>
 <style>
 /* Layout: one fullscreen WebGL arena with glassy Y2K panels floating at the edges. Dark galactic look on purpose, single theme. */
@@ -803,7 +812,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 </div>
 <div id="a11y" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="a11yTitle">
   <div class="sheet panel wide">
-    <div class="sheethead"><div><div class="eyebrow">Settings</div><h2 id="a11yTitle" class="sheettitle">Accessibility</h2></div><button class="btn primary small" id="a11yClose" data-autofocus>Done</button></div>
+    <div class="sheethead"><div><div class="eyebrow">Settings</div><h2 id="a11yTitle" class="sheettitle">Accessibility</h2></div><div class="row" style="margin:0"><button class="btn ghost small" id="a11yWalk">Walkthrough</button><button class="btn ghost small" id="a11yCard" hidden>Player card</button><button class="btn primary small" id="a11yClose" data-autofocus>Done</button></div></div>
     <p class="note">Changes save automatically and apply right away. Team colors apply from the next match.</p>
     <p class="note live" id="a11yNote" role="status" aria-live="polite"></p>
     <div id="a11yBody" class="opts"></div>
@@ -823,6 +832,19 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
     <div class="row"><button class="btn primary" id="welcomePlay">Start playing</button><button class="btn ghost" id="welcomeA11y">All accessibility settings</button></div>
   </div>
 </div>
+<div id="profile" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+  <div class="sheet panel wide">
+    <div class="eyebrow">Your player card</div>
+    <h2 id="profileTitle" class="sheettitle">Pick a name and a portrait</h2>
+    <p class="note">This is how the game greets you. Only you can see it. Don't use your full real name.</p>
+    <form class="pcard" id="profileForm" novalidate>
+      <div><label class="lbl" for="pName">Player name</label><input class="pname" id="pName" maxlength="20" autocomplete="off" spellcheck="false" aria-describedby="pErr" data-autofocus></div>
+      <div><span class="lbl" id="pPicLbl">Portrait</span><div class="pgrid" id="pGrid" role="radiogroup" aria-labelledby="pPicLbl"></div></div>
+      <p class="perr" id="pErr" role="alert"></p>
+      <div class="row"><button class="btn primary" type="submit" id="pSave">Save my card</button><button class="btn ghost" type="button" id="pLater">Later</button></div>
+    </form>
+  </div>
+</div>
 <div id="devcon" class="panel" hidden>
   <div class="hd"><span>Developer console · dev profile</span><span>Esc to close</span></div>
   <div id="devlog"></div>
@@ -832,14 +854,14 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <div id="boot" role="status" aria-live="polite"><p class="bootlogo" aria-hidden="true">Creature Clash</p><div class="bootring" aria-hidden="true"></div><p data-boot-text>Loading the arena…</p><a class="bootreload" href="/" data-boot-reload hidden>Reload</a></div>
 <div id="loaderr" hidden><div><b>The 3D engine didn't load.</b><br>Check your connection and reload the page.</div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js" integrity="sha384-vV17nr/rMaJqmeZkFUzXLpHdQ+ME5QHKdydaqqN+3Ga39RJlNrTatJxHwGV4ml2C" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/CopyShader.js" integrity="sha384-jEqYdJwVhbnk5LMD7OzkM7Zn+m7ziM3b+VsGVfa/5BJobkk7Y0Gv8UWSFMs6lww0" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/LuminosityHighPassShader.js" integrity="sha384-pemnF+L/kioV52+hCxIKwYFCATMpS1eg1Jsq8tKbIwG9j4G3v6v1OpEuBnwFDfHe" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/EffectComposer.js" integrity="sha384-R0mna39OFXOi0vozEMV5F7tgsuOL4JYlJA1zMRSF/G36T6DdB9tLl4u4sGx195Te" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/RenderPass.js" integrity="sha384-MvqV+yMfQqfT4GMD7NmeHbAcLhOaki0I2139ZAxe6+VyME2ys9TLRrRTsFtBJK21" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/ShaderPass.js" integrity="sha384-ZiGZOW8SNIUe2yogdaaTRbEdiEpMlAIx9hL5bw50EwSpa4fbthhT67TiAHlC9x5U" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/MaskPass.js" integrity="sha384-gIi7RFX7Tfx4uZNXqq8zYoylQ5Gfp1c5ttIgteXJoKbbvy9CGQ9ZWNjygulWgS/P" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/UnrealBloomPass.js" integrity="sha384-EYOqTmLl8GhcXCeuHZ88cRp7inJaG/+pOg9hPG2GjQp535CVdHPNqMDbJMBbOypa" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="/vendor/three/build/three.min.js"></script>
+<script src="/vendor/three/examples/js/shaders/CopyShader.js"></script>
+<script src="/vendor/three/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="/vendor/three/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="/vendor/three/examples/js/postprocessing/RenderPass.js"></script>
+<script src="/vendor/three/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="/vendor/three/examples/js/postprocessing/MaskPass.js"></script>
+<script src="/vendor/three/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script src="js/security.js"></script>
 <script src="js/telemetry.js"></script>
 <script src="js/core.js"></script>
@@ -852,6 +874,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 <script src="js/intro.js"></script>
 <script src="js/menus.js"></script>
 <script src="js/cloud.js"></script>
+<script src="js/profile.js"></script>
 <script src="js/usage.js"></script>
 
 </body></html>

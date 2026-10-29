@@ -6,8 +6,8 @@
      Skipped when the browser asks not to be tracked (Global Privacy Control or Do Not Track).
    - Errors: the message and where in our code it happened, with emails, codes and tokens scrubbed out. */
 const Telemetry=(function(){
-  const host=location.hostname;
-  const local=location.protocol==='file:'||host==='localhost'||host==='127.0.0.1'||host==='[::1]'||/\.local$/.test(host);
+  // The game server runs on this computer, so localhost counts. Opening a file directly or with #dev does not.
+  const local=location.protocol==='file:';
   const dev=location.hash==='#dev';
   const optOut=navigator.globalPrivacyControl===true||navigator.doNotTrack==='1'||window.doNotTrack==='1';
   const enabled=!local&&!dev;

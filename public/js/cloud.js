@@ -48,7 +48,12 @@ function renderAccountChip() {
   box.classList.toggle('on', Cloud.on);
   if (Cloud.state === 'loading') { text.textContent = 'Checking your account…'; btn.hidden = true; return; }
   btn.hidden = false;
-  if (Cloud.on) { text.textContent = ''; const b = document.createElement('b'); b.textContent = Cloud.user.username; text.append('Saving online as ', b); btn.textContent = 'Account'; btn.href = '/account'; }
+  if (Cloud.on) {
+    text.textContent = ''; const b = document.createElement('b'); b.textContent = Cloud.user.displayName || Cloud.user.username;
+    const src = Cloud.user.portrait && typeof Profile !== 'undefined' ? Profile.imgFor(Cloud.user.portrait) : '';
+    if (src) { const img = document.createElement('img'); img.className = 'apor'; img.alt = ''; img.src = src; text.append(img, ' '); }
+    text.append('Saving online as ', b); btn.textContent = 'Account'; btn.href = '/account';
+  }
   else if (Cloud.state === 'offline') { text.textContent = "Couldn't reach the server. Playing as a guest; progress stays in this browser."; btn.textContent = 'Try again'; btn.href = '/'; }
   else { text.textContent = 'Playing as a guest. Progress stays in this browser.'; btn.textContent = 'Save online'; btn.href = '/signin'; }
 }
@@ -191,5 +196,6 @@ async function cloudInit() {
     Cloud.state = e.status === 401 ? 'guest' : 'offline';
   }
   renderAccountChip();
+  if (Cloud.on && typeof Profile !== 'undefined') Profile.signedIn();
 }
 cloudInit();

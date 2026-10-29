@@ -3,8 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Creature Clash Account</title>
 <meta name="description" content="Sign in to save your Creature Clash creatures and progress online.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" referrerpolicy="no-referrer" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Michroma&display=swap">
+<link rel="stylesheet" href="/vendor/fonts/atkinson-hyperlegible/400.css"><link rel="stylesheet" href="/vendor/fonts/atkinson-hyperlegible/700.css"><link rel="stylesheet" href="/vendor/fonts/michroma/400.css">
 <link rel="stylesheet" href="/css/site.css">
 </head><body>
 <header class="top"><a class="brand" href="/">Creature Clash</a><a class="back" href="/">Back to the game</a></header>
@@ -118,7 +117,8 @@
     <div class="who"><span class="badge" aria-hidden="true" data-initial></span><div><h1 id="h-account" style="margin:0" data-username></h1><span class="muted" data-kind></span></div></div>
     <div class="alert ok" role="status" data-ok></div>
     <p class="lead">Your creatures, DNA, parts and challenge progress save online automatically while you play.</p>
-    <div class="row"><a class="btn" href="/">Play</a><button class="btn ghost" type="button" id="signout">Sign out</button></div>
+    <div class="row"><a class="btn" href="/">Play</a><button class="btn ghost" type="button" id="signout">Sign out</button><a class="btn ghost" id="admin-link" href="/admin" hidden>Admin Analytics</a></div>
+    <p class="muted">Change your player name and portrait in the game: Settings, then Player card.</p>
 
     <div class="danger-zone">
       <h2>Delete account</h2>

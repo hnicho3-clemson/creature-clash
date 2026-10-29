@@ -2,13 +2,19 @@
   "name": "creature-clash",
   "private": true,
   "type": "module",
-  "engines": { "node": "22.x" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "start": "node server.mjs",
+    "restore": "node scripts/restore.mjs",
     "catalog": "node scripts/build-catalog.mjs",
-    "migrate": "node scripts/migrate.mjs",
     "test": "node --test --test-concurrency=1 tests/*.test.mjs && node tests/client-security.test.cjs"
   },
   "dependencies": {
-    "@neondatabase/serverless": "0.10.4"
+    "@electric-sql/pglite": "^0.2.12",
+    "@fontsource/atkinson-hyperlegible": "^5.0.0",
+    "@fontsource/michroma": "^5.0.0",
+    "three": "0.147.0"
   }
 }

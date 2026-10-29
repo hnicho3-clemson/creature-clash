@@ -31,14 +31,15 @@ function addCaption(name,at,vol){if(phase!=='battle'||!CAPTION_TEXT[name]||vol<.
   const d=document.createElement('div');d.className='cap';d.innerHTML=(dir?'<span class="capdir">'+dir+'</span>':'')+esc(CAPTION_TEXT[name])+(vol<.4?' <span class="capfar">(far)</span>':'');capEl.appendChild(d);while(capEl.children.length>3)capEl.firstChild.remove();setTimeout(()=>d.remove(),3200);}
 
 /* ---------- focus handling for dialogs ---------- */
-const MODALS=['howto','a11y','welcome','pause','death','results'];
+const MODALS=['howto','a11y','welcome','pause','death','results','profile'];
 function visibleModal(){for(let i=MODALS.length-1;i>=0;i--){const el=$('#'+MODALS[i]);if(el&&!el.hidden)return el;}return null;}
 function focusables(el){return Array.from(el.querySelectorAll('button,input,select,[href],[tabindex]:not([tabindex="-1"])')).filter(x=>!x.disabled&&!x.hidden&&x.offsetParent!==null);}
 const lastFocus={};
 for(const id of MODALS){const el=$('#'+id);if(!el)continue;new MutationObserver(()=>{if(!el.hidden){lastFocus[id]=document.activeElement;setTimeout(()=>{const f=focusables(el);(el.querySelector('[data-autofocus]')||f[0]||el).focus();},30);}else if(lastFocus[id]&&lastFocus[id].focus&&document.contains(lastFocus[id])){try{lastFocus[id].focus();}catch(e){}}}).observe(el,{attributes:true,attributeFilter:['hidden']});}
 addEventListener('keydown',e=>{const m=visibleModal();if(!m)return;
   if(e.key==='Tab'){const f=focusables(m);if(!f.length)return;const i=f.indexOf(document.activeElement);e.preventDefault();e.stopImmediatePropagation();const n=f[(i+(e.shiftKey?-1:1)+f.length)%f.length];n.focus();}
-  else if(e.key==='Escape'&&(m.id==='a11y'||m.id==='welcome'||m.id==='howto')&&!rebinding){e.preventDefault();e.stopImmediatePropagation();closeA11y();$('#welcome').hidden=true;$('#howto').hidden=true;}},true);
+  else if(e.key==='Escape'&&(m.id==='a11y'||m.id==='welcome'||m.id==='howto')&&!rebinding){e.preventDefault();e.stopImmediatePropagation();closeA11y();$('#welcome').hidden=true;$('#howto').hidden=true;}
+  else if(e.key==='Escape'&&m.id==='profile'){e.preventDefault();e.stopImmediatePropagation();Profile.later();}},true);
 
 /* ---------- accessibility panel ---------- */
 let rebinding=null;
@@ -98,7 +99,11 @@ $('#a11yClose').addEventListener('click',()=>{sfx('ui');closeA11y();});
 $('#mA11y').addEventListener('click',()=>{AudioFX.init();sfx('ui');openA11y();});
 $('#pA11y').addEventListener('click',()=>{sfx('ui');openA11y();});
 $('#welcomeA11y').addEventListener('click',()=>{A11Y.welcomed=true;saveA11y();$('#welcome').hidden=true;openA11y();});
-$('#welcomePlay').addEventListener('click',()=>{A11Y.welcomed=true;saveA11y();$('#welcome').hidden=true;});
+/* Walkthrough: the intro cutscene, then How to play. The tour no longer starts by itself. */
+let walkthroughPending=false;
+$('#a11yWalk').addEventListener('click',()=>{sfx('ui');closeA11y();walkthroughPending=true;AudioFX.init();startIntro();});
+function finishWalkthrough(){if(!walkthroughPending)return;walkthroughPending=false;$('#howto').hidden=false;}
+$('#welcomePlay').addEventListener('click',()=>{A11Y.welcomed=true;saveA11y();$('#welcome').hidden=true;if(typeof Profile!=='undefined')Profile.maybeShow();});
 $$('#welcome [data-preset]').forEach(b=>b.addEventListener('click',()=>{applyPreset(b.dataset.preset);b.classList.add('on');b.setAttribute('aria-pressed','true');}));
 applyA11y();
 function showWelcomeIfNeeded(){if(!A11Y.welcomed&&phase==='menu')$('#welcome').hidden=false;}
