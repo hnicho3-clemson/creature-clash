@@ -11,6 +11,7 @@ const save = (await import('../api/save.js')).default;
 const match = (await import('../api/match/[action].js')).default;
 const shop = (await import('../api/shop.js')).default;
 const account = (await import('../api/account/[action].js')).default;
+const admin = (await import('../api/admin/[action].js')).default;
 const { outbox } = await import('../lib/email.js');
 const { resetDbForTests } = await import('../lib/db.js');
 after(teardownDb);
@@ -437,6 +438,48 @@ test('delete account needs DELETE and the password, then removes everything', as
   assert.equal(rawQuery(`SELECT count(*) FROM users WHERE username_key = '${name}';`).trim(), '0');
   assert.equal(rawQuery(`SELECT count(*) FROM saves s LEFT JOIN users u ON u.id = s.user_id WHERE u.id IS NULL;`).trim(), '0');
   assert.equal((await c.call(me, { method: 'GET' })).data.user, null);
+});
+
+// ---------------------------------------------------------------- player card and Admin Analytics
+test('player card: new accounts need one; name and portrait are checked on the server', async () => {
+  const { c } = await adult();
+  let u = (await c.call(me, { method: 'GET' })).data.user;
+  assert.equal(u.needsProfile, true); assert.equal(u.displayName, null);
+  const P = body => c.call(account, { body, query: { action: 'profile' } });
+  for (const bad of [{ displayName: 'x', portrait: 'c1' }, { displayName: '<b>hi</b>', portrait: 'c1' }, { displayName: 'Sh1t Lord', portrait: 'c1' },
+    { displayName: '555 123 4567', portrait: 'c1' }, { displayName: 'Good Name', portrait: 'c99' }, { displayName: 'Good Name', portrait: '../x' },
+    { displayName: ['a'], portrait: 'c1' }, { displayName: 'Good Name' }]) {
+    const r = await P(bad); assert.equal(r.status, 400, JSON.stringify(bad));
+  }
+  const ok = await P({ displayName: '  Captain   Wobble ', portrait: 'c3' });
+  assert.equal(ok.status, 200); assert.equal(ok.data.user.displayName, 'Captain Wobble');
+  u = (await c.call(me, { method: 'GET' })).data.user;
+  assert.equal(u.needsProfile, false); assert.equal(u.portrait, 'c3');
+  assert.equal((await new Client().call(account, { body: { displayName: 'Sneaky', portrait: 'c1' }, query: { action: 'profile' } })).status, 401);
+});
+
+test('admin analytics: only ADMIN_USERNAMES can read it, and it only holds totals', async () => {
+  const boss = await adult(), other = await adult();
+  rawQuery(`INSERT INTO daily_stats (day, event, count, minutes) VALUES ((now() AT TIME ZONE 'UTC')::date, 'battle_start', 4, 0), ((now() AT TIME ZONE 'UTC')::date, 'match_end', 4, 90), ((now() AT TIME ZONE 'UTC')::date - 3, 'page_view', 9, 0), ((now() AT TIME ZONE 'UTC')::date, 'daily_visitor', 2, 0) ON CONFLICT (day, event) DO UPDATE SET count = EXCLUDED.count, minutes = EXCLUDED.minutes;`);
+  const prev = process.env.ADMIN_USERNAMES;
+  process.env.ADMIN_USERNAMES = ' someone , ' + boss.name.toUpperCase();
+  try {
+    const G = (c, query) => c.call(admin, { method: 'GET', query: { action: 'stats', ...query } });
+    assert.equal((await G(new Client())).status, 401);
+    assert.equal((await G(other.c)).status, 403);
+    assert.equal((await other.c.call(me, { method: 'GET' })).data.user.isAdmin, undefined);
+    assert.equal((await boss.c.call(me, { method: 'GET' })).data.user.isAdmin, true);
+    const r = await G(boss.c, { days: '7' });
+    assert.equal(r.status, 200, JSON.stringify(r.data));
+    assert.equal(r.data.days, 7); assert.equal(r.data.series.length, 7);
+    assert.equal(r.data.totals.games, 4); assert.equal(r.data.totals.hours, 1.5);
+    assert.equal(r.data.totals.pageViews, 9); assert.equal(r.data.totals.playersToday, 2);
+    assert.ok(r.data.accounts.total >= 2);
+    assert.equal((await G(boss.c, { days: '9999' })).data.days, 30);
+    const text = JSON.stringify(r.data);
+    assert.ok(!text.includes('@example.com') && !text.includes(other.name), 'no emails or usernames');
+    assert.equal((await boss.c.call(admin, { method: 'POST', body: {}, query: { action: 'stats' } })).status, 405);
+  } finally { if (prev === undefined) delete process.env.ADMIN_USERNAMES; else process.env.ADMIN_USERNAMES = prev; }
 });
 
 test('every query used bound values (no string-built SQL in the app)', async () => {

@@ -1,12 +1,13 @@
 // /api/account/parent-info | parent-approve | parent-decline : parent approval for under-13 accounts (no sign-in; the emailed link is the key)
 // /api/account/delete : the signed-in player deletes their account (password + typing DELETE)
+// /api/account/profile : the signed-in player sets their player card {displayName, portrait}
 import { sql } from '../../lib/db.js';
 import { route, ApiError, bad, clientIp } from '../../lib/http.js';
 import * as V from '../../lib/validate.js';
 import { hit } from '../../lib/ratelimit.js';
 import { lookupParentLink, useParentLink } from '../../lib/codes.js';
 import { sendParentApproved } from '../../lib/email.js';
-import { requireUser, clearSessionCookie } from '../../lib/session.js';
+import { requireUser, clearSessionCookie, publicUser } from '../../lib/session.js';
 import { verifyPassword } from '../../lib/security.js';
 
 const LINK_GONE = new ApiError(410, 'link_expired', 'This link has expired or was already used. If your child still wants an account, they can sign up again.');
@@ -36,6 +37,15 @@ const actions = {
     if (!(await useParentLink(row.code_id))) throw LINK_GONE;
     await sql`DELETE FROM users WHERE id = ${row.user_id} AND status = 'pending'`; // cascades to codes
     return { ok: true };
+  },
+  async profile({ req, body }) {
+    const user = await requireUser(req);
+    await hit('profileUser', user.id);
+    const name = V.displayName(body.displayName);
+    const pic = V.portrait(body.portrait);
+    const rows = await sql`UPDATE users SET display_name = ${name}, portrait = ${pic} WHERE id = ${user.id}
+      RETURNING id, username, is_child, display_name, portrait`;
+    return { ok: true, user: publicUser(rows[0]) };
   },
   async delete({ req, res, body }) {
     const user = await requireUser(req);

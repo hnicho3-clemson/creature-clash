@@ -167,7 +167,8 @@
     if (state.me) {
       state.username = state.me.username;
       $('[data-initial]').textContent = state.me.username[0].toUpperCase();
-      $('[data-kind]').textContent = state.me.isChild ? 'Player account · a grown-up approved it' : 'Player account';
+      $('[data-kind]').textContent = (state.me.displayName ? state.me.displayName + ' · ' : '') + (state.me.isChild ? 'Player account · a grown-up approved it' : 'Player account');
+      $('#admin-link').hidden = !state.me.isAdmin;
     }
   }
   function route() {

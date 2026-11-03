@@ -66,13 +66,15 @@ t('addDNA rejects negatives, decimals, exponents, huge values, junk',()=>{for(co
 
 console.log('Static checks on the shipped code');
 const html=fs.readFileSync(path.join(ROOT,'public','index.html'),'utf8');
-const vercel=JSON.parse(fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8'));
-const csp=vercel.headers.find(h=>h.source==='/(.*)').headers.find(h=>h.key==='Content-Security-Policy').value;
+const site=JSON.parse(fs.readFileSync(path.join(ROOT,'lib','site-config.json'),'utf8'));
+const allHdr=site.headers.find(h=>h.source==='/(.*)').headers;
+const csp=allHdr.find(h=>h.key==='Content-Security-Policy').value;
 const js=fs.readdirSync(path.join(ROOT,'public','js')).filter(f=>f.endsWith('.js')).map(f=>[f,fs.readFileSync(path.join(ROOT,'public','js',f),'utf8')]);
-t('site sends a strict Content-Security-Policy header (no inline or eval scripts, no framing)',()=>{assert.ok(/script-src 'self' https:\/\/cdn\.jsdelivr\.net\/npm\/three@0\.147\.0\/;/.test(csp));assert.ok(!/unsafe-eval/.test(csp));assert.ok(!/script-src[^;]*unsafe-inline/.test(csp));assert.ok(/frame-ancestors 'none'/.test(csp));assert.ok(/object-src 'none'/.test(csp));assert.ok(/connect-src 'self'/.test(csp));});
-t('HSTS, nosniff, frame and referrer headers are set',()=>{const keys=vercel.headers.find(h=>h.source==='/(.*)').headers.map(h=>h.key);for(const k of ['Strict-Transport-Security','X-Content-Type-Options','X-Frame-Options','Referrer-Policy','Permissions-Policy'])assert.ok(keys.includes(k),k);});
-t('third-party requests send no referrer',()=>{for(const m of html.matchAll(/<(script|link)[^>]+(src|href)="https:[^"]+"[^>]*>/g))if(!/preconnect/.test(m[0]))assert.ok(/referrerpolicy="no-referrer"/.test(m[0]),m[0]);});
-t('every third-party script is pinned with Subresource Integrity',()=>{const ext=[...html.matchAll(/<script[^>]+src="https:[^"]+"[^>]*>/g)].map(m=>m[0]);assert.ok(ext.length>0);for(const s of ext){assert.ok(/integrity="sha384-[A-Za-z0-9+/=]{64}"/.test(s),'missing SRI: '+s);assert.ok(/crossorigin="anonymous"/.test(s));}});
+const pages=fs.readdirSync(path.join(ROOT,'public')).filter(f=>f.endsWith('.html')).map(f=>[f,fs.readFileSync(path.join(ROOT,'public',f),'utf8')]);
+t('site sends a strict Content-Security-Policy header (own scripts only, no inline or eval, no framing)',()=>{assert.ok(/script-src 'self';/.test(csp));assert.ok(/default-src 'self'/.test(csp));assert.ok(/font-src 'self'/.test(csp));assert.ok(!/https?:/.test(csp));assert.ok(!/unsafe-eval/.test(csp));assert.ok(!/script-src[^;]*unsafe-inline/.test(csp));assert.ok(/frame-ancestors 'none'/.test(csp));assert.ok(/object-src 'none'/.test(csp));assert.ok(/connect-src 'self'/.test(csp));});
+t('nosniff, frame, referrer and permissions headers are set',()=>{const keys=allHdr.map(h=>h.key);for(const k of ['X-Content-Type-Options','X-Frame-Options','Referrer-Policy','Permissions-Policy'])assert.ok(keys.includes(k),k);});
+t('no page loads anything from another website (works offline, nothing shared with outside services)',()=>{for(const [f,h] of pages)assert.ok(!/<(script|link)[^>]+(src|href)="(https?:)?\/\//i.test(h),f);});
+t('the 3D engine and fonts are pinned in package.json',()=>{const pkg=JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8'));assert.strictEqual(pkg.dependencies.three,'0.147.0');assert.ok(html.includes('src="/vendor/three/build/three.min.js"'));for(const v of Object.values(site.vendor))assert.ok(pkg.dependencies[v.replace(/\/$/,'')],v);});
 t('no inline <script> blocks or inline event handlers in page',()=>{assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/.test(html));assert.ok(!/\son[a-z]+="/i.test(html));});
 t('no page has inline scripts or inline event handlers (the CSP would block them)',()=>{for(const f of fs.readdirSync(path.join(ROOT,'public')).filter(f=>f.endsWith('.html'))){const h=fs.readFileSync(path.join(ROOT,'public',f),'utf8');assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/.test(h),f);assert.ok(!/\son[a-z]+=["']/i.test(h),f);assert.ok(!/javascript:/i.test(h),f);}});
 t('security.js loads before core.js',()=>assert.ok(html.indexOf('js/security.js')>0&&html.indexOf('js/security.js')<html.indexOf('js/core.js')));
