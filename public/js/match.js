@@ -35,7 +35,7 @@ const DUMMY=D('Training Dummy','#e8d2a0','#c84a3a','stripes',[.85,1.25,.85],[P('
 /* ---------- MatchManager ---------- */
 let phase='menu';let match=null;let timeScale=1,ffMul=1;let paused=false;
 const cam={yaw:Math.PI/2,pitch:.34,dist:11,shake:0,lock:null,fx:0,fy:0,fz:0,spect:null,cine:null};
-const BOT_COLORS=[['#8fd16a','#f2b84b'],['#7ec8e3','#4a6fa5'],['#5f9a3c','#d9473b'],['#ff9ec4','#fff3b0'],['#b49ae0','#7fe3c0'],['#e08a4a','#6b4226'],['#7fe3c0','#3fa89a'],['#f4ead2','#8fd16a'],['#a8b860','#5f7a3a'],['#7d8a86','#ff9ec4']];
+const BOT_COLORS=[['#8a8a80','#6fae4a'],['#7f98a0','#5f8a3c'],['#e8d8b8','#ff9ec4'],['#c8704a','#8a4a32'],['#7a6a8a','#b49ae0'],['#d8909a','#ffc8d8'],['#8fc8a0','#c8ffe0'],['#6a88a0','#3f6a5a'],['#d8c070','#8a7a4a'],['#4a4a50','#6fae4a']];
 const BOT_NAMES=['Blorbo','Puddlesprout','Acorn Al','Lady Lichen','Thistlewump','Sir Noodlethigh','Gloria Gumbo','Captain Wigglebottom','Snackrifice','Professor Plonk','Muffinmaw','Dame Squelch','Tater Thunk','Lord Flopsy','Mossbottom','Gristle McGee','Nibbles the Unkind','Bean Supreme','Count Chompula','Puddlebutt'];
 const CAPTIONS=['Returned to the primordial soup.','Cause of death: bit off more than it could chew.','Extinction speedrun complete.','Evolution has requested a refund.','Your genes have left the chat.','Fossil record updated.','Natural selection said no.','Tragically out-wobbled.','Now a cautionary tale for future species.','Respawning is a myth. Sorry.','Reclassified as a snack.','Achievement unlocked: Fossil.','Returned to the forest floor.','Composted, lovingly.','Now fertilizer for a very proud mushroom.','Gone to sprout another day.','The moss will remember you.'];
 

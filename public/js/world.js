@@ -221,10 +221,10 @@ function buildGeyserView(B){
   const disc=new T.Mesh(geo('geyDisc',()=>new T.CircleGeometry(.9,20)),own(new T.MeshBasicMaterial({color:col(B.geyser).multiplyScalar(2),toneMapped:false})));disc.rotation.x=-Math.PI/2;disc.position.y=.45;g.add(disc);g.userData.disc=disc;
   return g;
 }
-const CRITTER=D('Snorflet','#ffd23d','#ff7ae8','plain',[.55,.62,.55],[P('shortLegs',.42,-.86,.08,{s:.5}),P('beadEye',.3,.22,.93,{s:.8})]);
-const BOSS=D('The Grand Gobbler','#4f7a5a','#d9473b','spots',[2.3,1.9,2.6],[P('shortLegs',.6,-.62,.55,{s:1.9}),P('shortLegs',.6,-.62,0,{s:1.9}),P('shortLegs',.6,-.62,-.55,{s:1.9}),P('horns',.35,.75,.5,{s:1.8}),P('basicJaw',0,-.2,.98,{s:2.2}),P('spikes',0,.98,-.2,{s:1.8}),P('spikes',0,.85,-.55,{s:1.6}),P('beadEye',.36,.42,.82,{s:1.6}),P('googlyEye',0,.6,.8,{s:1.5,m:false}),P('crownMini',0,1,.1,{s:2})]);
+const CRITTER=D('Snorflet','#9a9a90','#6fae4a','hood',[.6,.55,.6],[P('shortLegs',.45,-.86,.3,{s:.45}),P('shortLegs',.45,-.86,-.3,{s:.45}),P('beadEye',.24,.05,.96,{s:.75})]);
+const BOSS=D('The Grand Gobbler','#6a6a64','#4f7a3a','spots',[2.3,1.9,2.6],[P('shortLegs',.6,-.62,.55,{s:1.9}),P('shortLegs',.6,-.62,0,{s:1.9}),P('shortLegs',.6,-.62,-.55,{s:1.9}),P('horns',.35,.75,.5,{s:1.8}),P('basicJaw',0,-.2,.98,{s:2.2}),P('spikes',0,.98,-.2,{s:1.8}),P('spikes',0,.85,-.55,{s:1.6}),P('beadEye',.36,.42,.82,{s:1.6}),P('googlyEye',0,.6,.8,{s:1.5,m:false}),P('crownMini',0,1,.1,{s:2})]);
 function spawnNeutral(type,x,z,B){
-  const boss=type==='boss';const d=clone(boss?BOSS:CRITTER);if(!boss){d.color=B.critter;d.accent=pick(['#ff9ec4','#7fe3c0','#f4ead2','#f2b84b']);d.seed=Math.floor(Math.random()*9999);}
+  const boss=type==='boss';const d=clone(boss?BOSS:CRITTER);if(!boss){d.color=pick(['#9a9a90','#8a8a80','#7f98a0','#c8a878','#d8c070']);d.accent=pick(['#6fae4a','#5f8a3c','#a8d0e8','#b49ae0']);d.seed=Math.floor(Math.random()*9999);}
   const n={kind:'neutral',type,name:d.name,d,x,z,y:world.map.heightAt(x,z),hx:x,hz:z,vx:0,vz:0,vy:0,yaw:Math.random()*TAU,radius:boss?2.6:.6,maxHp:boss?900:60,alive:true,respawnT:0,wanderT:0,tx:x,tz:z,slamCd:2,slamT:0,lastHurt:-99,team:'neutral',state:'alive',kx:0,kz:0,grounded:true,flee:0};
   n.hp=n.maxHp;n.view=buildCreatureView(d,{});n.height=n.view.height;n.view.root.position.set(x,n.y,z);world.group.add(n.view.root);
   n.tag=makeTag('tag3d neutral','<div class="tn">'+esc(n.name)+'</div><div class="tb"><i></i></div>');
