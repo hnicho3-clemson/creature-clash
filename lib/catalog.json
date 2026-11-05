@@ -325,7 +325,9 @@
     "spots",
     "stripes",
     "belly",
-    "plain"
+    "plain",
+    "hood",
+    "skirt"
   ],
   "rewards": {
     "dnaPlayer": 25,

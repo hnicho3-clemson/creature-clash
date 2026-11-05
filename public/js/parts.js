@@ -8,30 +8,30 @@ const BUDGET={weight:60,complexity:40,parts:24}; // SUGGESTION
    mount: leg (hangs down), cover (wraps the body), surface (everything else). */
 const PARTS={
   // Locomotion
-  shortLegs:{name:'Short Legs',fam:'Locomotion',tier:'Basic',lv:1,mount:'leg',leg:{len:.72,thick:.22,speed:.4,splay:.16},s:{stability:.5,weight:1},cx:1,def:[.6,-.62,.48],desc:'Stubby and stable. Hard to knock over.'},
-  longLegs:{name:'Long Legs',fam:'Locomotion',tier:'Standard',lv:2,mount:'leg',leg:{len:1.55,thick:.15,speed:2.2,splay:.16},s:{stability:-.4,weight:1},cx:1,mut:'Zoomies',def:[.6,-.62,.48],desc:'Fast strides, but easy to tip over.'},
+  shortLegs:{name:'Short Legs',fam:'Locomotion',tier:'Basic',lv:1,mount:'leg',leg:{len:.72,thick:.22,speed:.4,splay:.16},s:{stability:.5,weight:1},cx:1,def:[.42,-.86,.08],desc:'Stubby and stable. Hard to knock over.'},
+  longLegs:{name:'Long Legs',fam:'Locomotion',tier:'Standard',lv:2,mount:'leg',leg:{len:1.55,thick:.15,speed:2.2,splay:.16},s:{stability:-.4,weight:1},cx:1,mut:'Zoomies',def:[.42,-.86,.08],desc:'Fast strides, but easy to tip over.'},
   spiderLegs:{name:'Spider Legs',fam:'Locomotion',tier:'Advanced',lv:5,mount:'leg',leg:{len:1.9,thick:.1,speed:1.5,splay:2.0,knee:-1.75},s:{stability:.9,weight:.7},cx:1.3,def:[.72,-.45,.3],desc:'Wide, creepy stance. Very stable.'},
-  frogLegs:{name:'Frog Legs',fam:'Locomotion',tier:'Advanced',lv:6,mount:'leg',leg:{len:1.0,thick:.27,speed:1.0,splay:.3,frog:true},s:{stability:.2,weight:1.4},jump:1.45,cx:1.4,def:[.62,-.6,-.4],desc:'Springy. Jumps much higher.'},
-  fins:{name:'Fins',fam:'Locomotion',tier:'Standard',lv:3,mount:'surface',build:'fin',s:{speed:.5,stability:.3,weight:.5},once:true,cx:1,def:[.97,-.15,0],desc:'Flappy side fins. A little extra speed.'},
-  wings:{name:'Wings',fam:'Locomotion',tier:'Rare',lv:8,mount:'surface',build:'wing',s:{speed:.6,weight:1},once:true,glide:true,mut:'Zoomies',cx:2,def:[.55,.75,-.2],desc:'Hold jump in the air to glide.'},
+  frogLegs:{name:'Frog Legs',fam:'Locomotion',tier:'Advanced',lv:6,mount:'leg',leg:{len:1.0,thick:.27,speed:1.0,splay:.3,frog:true},s:{stability:.2,weight:1.4},jump:1.45,cx:1.4,def:[.5,-.8,-.12],desc:'Springy. Jumps much higher.'},
+  fins:{name:'Fins',fam:'Locomotion',tier:'Standard',lv:3,mount:'surface',build:'fin',s:{speed:.5,stability:.3,weight:.5},once:true,cx:1,def:[.97,-.1,-.1],desc:'Flappy side fins. A little extra speed.'},
+  wings:{name:'Wings',fam:'Locomotion',tier:'Rare',lv:8,mount:'surface',build:'wing',s:{speed:.6,weight:1},once:true,glide:true,mut:'Zoomies',cx:2,def:[.55,.45,-.7],desc:'Hold jump in the air to glide.'},
   // Offense
-  basicJaw:{name:'Basic Jaw',fam:'Offense',tier:'Basic',lv:1,mount:'surface',build:'jaw',s:{damage:2,weight:2},atk:'bite',mut:'Big Bite',cx:2,def:[0,-.2,.98],mirror:false,desc:'Chomp. Reliable melee damage.'},
-  beak:{name:'Beak',fam:'Offense',tier:'Standard',lv:3,mount:'surface',build:'beak',s:{damage:1.5,weight:1},atk:'peck',cx:1.5,def:[0,-.05,1],mirror:false,desc:'Fast pecks that pierce armor.'},
-  smallClaws:{name:'Small Claws',fam:'Offense',tier:'Basic',lv:1,mount:'surface',build:'claw',s:{damage:.8,weight:.6},atk:'slash',cx:1,def:[.78,-.3,.55],desc:'Quick swipes in front of you.'},
-  bigClaws:{name:'Big Claws',fam:'Offense',tier:'Advanced',lv:6,mount:'surface',build:'bigclaw',s:{damage:1.4,weight:1.4},atk:'maul',cx:1.5,def:[.78,-.3,.55],desc:'Slow, heavy mauls that hit everything in front.'},
-  pincers:{name:'Pincers',fam:'Offense',tier:'Standard',lv:4,mount:'surface',build:'pincer',s:{damage:1.2,weight:1.2},atk:'pinch',cx:1.5,def:[.78,-.25,.55],desc:'Pinch and slow your target.'},
-  horns:{name:'Horns',fam:'Offense',tier:'Standard',lv:2,mount:'surface',build:'horn',s:{damage:1,stability:-.2,weight:1.2},atk:'charge',mut:'Big Bite',cx:1.2,def:[.35,.75,.55],desc:'Charge forward and ram.'},
+  basicJaw:{name:'Basic Jaw',fam:'Offense',tier:'Basic',lv:1,mount:'surface',build:'jaw',s:{damage:2,weight:2},atk:'bite',mut:'Big Bite',cx:2,def:[0,-.14,.99],mirror:false,desc:'Chomp. Reliable melee damage.'},
+  beak:{name:'Beak',fam:'Offense',tier:'Standard',lv:3,mount:'surface',build:'beak',s:{damage:1.5,weight:1},atk:'peck',cx:1.5,def:[0,-.02,1],mirror:false,desc:'Fast pecks that pierce armor.'},
+  smallClaws:{name:'Small Claws',fam:'Offense',tier:'Basic',lv:1,mount:'surface',build:'claw',s:{damage:.8,weight:.6},atk:'slash',cx:1,def:[.92,-.18,.3],desc:'Quick swipes in front of you.'},
+  bigClaws:{name:'Big Claws',fam:'Offense',tier:'Advanced',lv:6,mount:'surface',build:'bigclaw',s:{damage:1.4,weight:1.4},atk:'maul',cx:1.5,def:[.92,-.18,.3],desc:'Slow, heavy mauls that hit everything in front.'},
+  pincers:{name:'Pincers',fam:'Offense',tier:'Standard',lv:4,mount:'surface',build:'pincer',s:{damage:1.2,weight:1.2},atk:'pinch',cx:1.5,def:[.92,-.15,.32],desc:'Pinch and slow your target.'},
+  horns:{name:'Horns',fam:'Offense',tier:'Standard',lv:2,mount:'surface',build:'horn',s:{damage:1,stability:-.2,weight:1.2},atk:'charge',mut:'Big Bite',cx:1.2,def:[.3,.9,.2],desc:'Charge forward and ram.'},
   tailClub:{name:'Tail Club',fam:'Offense',tier:'Advanced',lv:5,mount:'surface',build:'tail',tailEnd:'club',s:{damage:2.5,weight:3.5},atk:'spin',cx:2.5,def:[0,-.05,-1],mirror:false,desc:'Spin to hit everything around you.'},
-  spitGland:{name:'Spit Gland',fam:'Offense',tier:'Advanced',lv:5,mount:'surface',build:'gland',gland:'spit',s:{damage:1.5,weight:1.5},atk:'spit',cx:2,def:[0,-.55,.82],mirror:false,desc:'Lob glowing goo from range.'},
+  spitGland:{name:'Spit Gland',fam:'Offense',tier:'Advanced',lv:5,mount:'surface',build:'gland',gland:'spit',s:{damage:1.5,weight:1.5},atk:'spit',cx:2,def:[0,-.4,.9],mirror:false,desc:'Lob glowing goo from range.'},
   stinger:{name:'Stinger',fam:'Offense',tier:'Rare',lv:9,mount:'surface',build:'tail',tailEnd:'stinger',s:{damage:2,weight:1.5},atk:'sting',mut:'Venom',cx:2,def:[0,.1,-1],mirror:false,desc:'Venom that eats through armor.'},
-  zapAntennae:{name:'Firefly Stalks',fam:'Offense',tier:'Rare',lv:10,mount:'surface',build:'antenna',s:{damage:1,weight:.5},atk:'zap',cx:2,def:[.3,.92,.25],desc:'Firefly sparks that leap between nearby foes.'},
+  zapAntennae:{name:'Firefly Stalks',fam:'Offense',tier:'Rare',lv:10,mount:'surface',build:'antenna',s:{damage:1,weight:.5},atk:'zap',cx:2,def:[.25,.95,.1],desc:'Firefly sparks that leap between nearby foes.'},
   // Weapons: one weapon slot per creature, held out front. SUGGESTION: names, stats and unlock levels.
-  fishSword:{name:'Fish Sword',fam:'Weapon',tier:'Basic',lv:1,mount:'surface',build:'weapon',weapon:'fish',s:{damage:1.2,weight:1},atk:'fishSlap',max:1,cx:1.5,def:[.62,-.12,.78],mirror:false,desc:'A sword made of fish. Wide, slappy swings.'},
-  rubberMallet:{name:'Mushroom Mallet',fam:'Weapon',tier:'Standard',lv:2,mount:'surface',build:'weapon',weapon:'mallet',s:{damage:1.6,weight:1.8},atk:'bonk',max:1,cx:1.8,def:[.62,-.12,.78],mirror:false,desc:'Squishy bonks that send enemies flying.'},
-  poolNoodle:{name:'Cattail Lance',fam:'Weapon',tier:'Standard',lv:3,mount:'surface',build:'weapon',weapon:'noodle',s:{damage:.6,weight:.5},atk:'noodle',max:1,cx:1.2,def:[.62,-.12,.78],mirror:false,desc:'Huge reach and big pushback, tiny damage.'},
-  spatula:{name:'Flipping Spatula',fam:'Weapon',tier:'Advanced',lv:4,mount:'surface',build:'weapon',weapon:'spatula',s:{damage:1.3,weight:1.2},atk:'flip',max:1,cx:1.8,def:[.62,-.12,.78],mirror:false,desc:'Flips enemies into the air like pancakes.'},
-  bubbleBlaster:{name:'Dewdrop Popper',fam:'Weapon',tier:'Advanced',lv:6,mount:'surface',build:'weapon',weapon:'blaster',s:{damage:1,weight:1.6},atk:'bubble',max:1,cx:2,def:[.62,-.12,.78],mirror:false,desc:'Rapid-fire dewdrops from range.'},
-  boomerangBone:{name:'Boomerang Bone',fam:'Weapon',tier:'Rare',lv:9,mount:'surface',build:'weapon',weapon:'bone',s:{damage:1.8,weight:1.2},atk:'boomerang',max:1,cx:2.2,def:[.62,-.12,.78],mirror:false,desc:'Throw it out and it comes back. Hits both ways.'},
+  fishSword:{name:'Fish Sword',fam:'Weapon',tier:'Basic',lv:1,mount:'surface',build:'weapon',weapon:'fish',s:{damage:1.2,weight:1},atk:'fishSlap',max:1,cx:1.5,def:[.88,-.12,.42],mirror:false,desc:'A sword made of fish. Wide, slappy swings.'},
+  rubberMallet:{name:'Mushroom Mallet',fam:'Weapon',tier:'Standard',lv:2,mount:'surface',build:'weapon',weapon:'mallet',s:{damage:1.6,weight:1.8},atk:'bonk',max:1,cx:1.8,def:[.88,-.12,.42],mirror:false,desc:'Squishy bonks that send enemies flying.'},
+  poolNoodle:{name:'Cattail Lance',fam:'Weapon',tier:'Standard',lv:3,mount:'surface',build:'weapon',weapon:'noodle',s:{damage:.6,weight:.5},atk:'noodle',max:1,cx:1.2,def:[.88,-.12,.42],mirror:false,desc:'Huge reach and big pushback, tiny damage.'},
+  spatula:{name:'Flipping Spatula',fam:'Weapon',tier:'Advanced',lv:4,mount:'surface',build:'weapon',weapon:'spatula',s:{damage:1.3,weight:1.2},atk:'flip',max:1,cx:1.8,def:[.88,-.12,.42],mirror:false,desc:'Flips enemies into the air like pancakes.'},
+  bubbleBlaster:{name:'Dewdrop Popper',fam:'Weapon',tier:'Advanced',lv:6,mount:'surface',build:'weapon',weapon:'blaster',s:{damage:1,weight:1.6},atk:'bubble',max:1,cx:2,def:[.88,-.12,.42],mirror:false,desc:'Rapid-fire dewdrops from range.'},
+  boomerangBone:{name:'Boomerang Bone',fam:'Weapon',tier:'Rare',lv:9,mount:'surface',build:'weapon',weapon:'bone',s:{damage:1.8,weight:1.2},atk:'boomerang',max:1,cx:2.2,def:[.88,-.12,.42],mirror:false,desc:'Throw it out and it comes back. Hits both ways.'},
   // Defense
   spikes:{name:'Spikes',fam:'Defense',tier:'Standard',lv:2,mount:'surface',build:'spike',s:{toughness:.6,weight:.5},thorns:2,cx:.7,def:[0,.98,0],mirror:false,desc:'Anyone who bites you gets poked back.'},
   quills:{name:'Quills',fam:'Defense',tier:'Advanced',lv:7,mount:'surface',build:'quills',s:{toughness:.8,weight:.8},thorns:3,cx:1,def:[0,.85,-.5],mirror:false,desc:'A pincushion of pain for attackers.'},
@@ -40,23 +40,23 @@ const PARTS={
   bellyPadding:{name:'Belly Padding',fam:'Defense',tier:'Basic',lv:1,mount:'cover',build:'belly',s:{toughness:1.5,weight:2},kbResist:.6,special:'bellyflop',max:1,cx:1.5,desc:'Soaks knockback. Unlocks Belly Flop.'},
   inflateSac:{name:'Inflate Sac',fam:'Defense',tier:'Rare',lv:11,mount:'surface',build:'gland',gland:'inflate',s:{toughness:1,weight:1},special:'inflate',max:1,cx:2,def:[0,-.42,.88],mirror:false,desc:'Puff up and bounce attacks away.'},
   // Utility
-  wideEyes:{name:'Wide Eyes',fam:'Utility',tier:'Basic',lv:1,mount:'surface',build:'eye',eye:.36,s:{weight:.2},detect:4,cx:.5,def:[.34,.5,.8],desc:'Spot enemies from farther away.'},
-  bigEars:{name:'Big Ears',fam:'Utility',tier:'Standard',lv:3,mount:'surface',build:'ear',s:{weight:.3},detect:7,cx:.6,def:[.5,.8,.1],desc:'Hear enemies coming on the minimap.'},
-  snoot:{name:'Sniffer Snoot',fam:'Utility',tier:'Basic',lv:1,mount:'surface',build:'nose',s:{weight:.4},detect:5,cx:.6,def:[0,.05,1],mirror:false,desc:'Smell out nearby creatures.'},
+  wideEyes:{name:'Wide Eyes',fam:'Utility',tier:'Basic',lv:1,mount:'surface',build:'eye',eye:.36,s:{weight:.2},detect:4,cx:.5,def:[.3,.24,.92],desc:'Spot enemies from farther away.'},
+  bigEars:{name:'Big Ears',fam:'Utility',tier:'Standard',lv:3,mount:'surface',build:'ear',s:{weight:.3},detect:7,cx:.6,def:[.48,.84,0],desc:'Hear enemies coming on the minimap.'},
+  snoot:{name:'Sniffer Snoot',fam:'Utility',tier:'Basic',lv:1,mount:'surface',build:'nose',s:{weight:.4},detect:5,cx:.6,def:[0,.02,1],mirror:false,desc:'Smell out nearby creatures.'},
   healingGland:{name:'Healing Gland',fam:'Utility',tier:'Rare',lv:8,mount:'surface',build:'gland',gland:'heal',s:{weight:1.5},special:'heal',max:1,cx:2,def:[0,.9,-.35],mirror:false,desc:'Heal Pulse for you and nearby teammates.'},
   shieldNode:{name:'Moonstone Seed',fam:'Utility',tier:'Advanced',lv:4,mount:'surface',build:'crystal',s:{weight:1},special:'shield',max:1,cx:2,def:[0,.95,.15],mirror:false,desc:'Shield Bubble that absorbs damage.'},
   inkSac:{name:'Ink Sac',fam:'Utility',tier:'Advanced',lv:6,mount:'surface',build:'gland',gland:'ink',s:{weight:1},special:'ink',max:1,cx:2,def:[0,-.45,-.85],mirror:false,desc:'Ink Cloud that blinds and slows enemies.'},
   camoCrest:{name:'Camo Crest',fam:'Utility',tier:'Rare',lv:10,mount:'surface',build:'crest',s:{weight:.8},special:'camo',max:1,cx:2,def:[0,.97,-.2],mirror:false,desc:'Camouflage. Turn invisible for a few seconds.'},
   burrowPaws:{name:'Burrow Paws',fam:'Utility',tier:'Advanced',lv:7,mount:'surface',build:'paw',s:{weight:1},special:'burrow',cx:1.5,def:[.6,-.7,.6],desc:'Burrow underground, then pop up.'},
   // Cosmetic (looks only, no stats)
-  beadEye:{name:'Bead Eyes',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'eye',eye:.3,s:{},cx:0,def:[.34,.42,.84],desc:'Big, shiny and impossibly cute.'},
-  googlyEye:{name:'Googly Eye',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'eye',eye:.26,s:{},cx:0,def:[.34,.46,.82],desc:'Essential.'},
+  beadEye:{name:'Bead Eyes',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'eye',eye:.3,s:{},cx:0,def:[.27,.2,.94],desc:'Big, shiny and impossibly cute.'},
+  googlyEye:{name:'Googly Eye',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'eye',eye:.26,s:{},cx:0,def:[.28,.22,.93],desc:'Essential.'},
   partyHat:{name:'Toadstool Cap',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'hat',hat:'party',s:{},cx:0,def:[.1,.99,.1],mirror:false,desc:'Every battle is a party. A fungi party.'},
   topHat:{name:'Acorn Cap',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'hat',hat:'top',s:{},cx:0,def:[0,1,.1],mirror:false,desc:'Distinguished, for a nut.'},
   beanie:{name:'Maple Spinner',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'hat',hat:'beanie',s:{},cx:0,def:[0,1,.05],mirror:false,desc:'A spinning maple seed. Does not help you fly.'},
   crownMini:{name:'Flower Crown',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'hat',hat:'crown',s:{},cx:0,def:[0,1,.1],mirror:false,desc:'Royalty of the meadow, technically.'},
-  bowTie:{name:'Petal Bow',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'bow',s:{},cx:0,def:[0,-.58,.82],mirror:false,desc:'Formal violence.'},
-  mustache:{name:'Moss Mustache',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'stache',s:{},cx:0,def:[0,.02,1],mirror:false,desc:'Instantly 30% more trustworthy.'},
+  bowTie:{name:'Petal Bow',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'bow',s:{},cx:0,def:[0,-.45,.88],mirror:false,desc:'Formal violence.'},
+  mustache:{name:'Moss Mustache',fam:'Cosmetic',tier:'Free',lv:1,mount:'surface',build:'stache',s:{},cx:0,def:[0,-.04,1],mirror:false,desc:'Instantly 30% more trustworthy.'},
 };
 for(const id in PARTS)PARTS[id].id=id;
 const partPrice=id=>TIER_PRICE[PARTS[id].tier];
@@ -101,42 +101,43 @@ const STYLE_IDS=Object.keys(STYLES);
 const ROLE_STYLE={Tank:'tank',Bruiser:'bruiser',Spitter:'spitter',Support:'support',Scout:'scout',Allrounder:'allrounder'};
 
 /* ---------- designs ---------- */
-const PATTERNS=['spots','stripes','belly','plain'];
+const PATTERNS=['spots','stripes','belly','plain','hood','skirt'];
 const SWATCHES=['#8fd16a','#5f9a3c','#7fe3c0','#3fa89a','#7ec8e3','#4a6fa5','#b49ae0','#ff9ec4','#d9473b','#f2b84b','#f4ead2','#8a6a52','#7d8a86','#2f3a33'];
 function P(id,x,y,z,o){o=o||{};const d=PARTS[id];return {id,p:norm3([x,y,z]),s:o.s||1,r:o.r||0,m:o.m!=null?o.m:d.mirror!==false};}
 function D(name,color,accent,pattern,body,parts,extra){return Object.assign({v:2,name,color,accent,pattern,body:{w:body[0],h:body[1],l:body[2]},parts,seed:(name.length*7919)%99991+13},extra||{});}
 const PRESETS=[
-  D('Sprig','#8fd16a','#f2b84b','belly',[1.05,1,1.05],[P('shortLegs',.6,-.62,.42),P('shortLegs',.6,-.62,-.42),P('basicJaw',0,-.28,.96,{s:.8}),P('smallClaws',.78,-.25,.55),P('beadEye',.36,.36,.86,{s:1.15}),P('fishSword',.62,-.12,.78)],{blurb:'A brave little sprout with a fish sword. Quick, sturdy and very huggable.',sprout:'leaf'}),
-  D('Sir Shellby','#3fa89a','#5f9a3c','spots',[1.25,1,1.35],[P('shortLegs',.62,-.62,.55),P('shortLegs',.62,-.62,0),P('shortLegs',.62,-.62,-.55),P('shell',0,1,0),P('spikes',0,.98,.25,{s:1.2}),P('spikes',0,.92,-.4),P('tailClub',0,-.05,-1),P('basicJaw',0,-.2,.98),P('beadEye',.34,.5,.8),P('shieldNode',0,.6,.8,{s:.8}),P('topHat',0,.98,.3,{s:.9}),P('rubberMallet',.62,-.12,.78)],{blurb:'Armored tank with a mushroom mallet. Slow and sturdy, with a tail club for crowds.'}),
-  D('Gloopa','#b49ae0','#7fe3c0','stripes',[1,1.05,1.1],[P('shortLegs',.6,-.62,.45),P('shortLegs',.6,-.62,-.45),P('fins',.97,-.15,0),P('spitGland',0,-.55,.82),P('basicJaw',0,-.2,.98),P('wideEyes',.42,.42,.8),P('wideEyes',0,.6,.8,{m:false}),P('shieldNode',0,.98,-.1),P('beanie',0,1,.15)],{blurb:'Ranged spitter. Lobs glowing goo from a safe distance.'}),
-  D('Doc Wobble','#ff9ec4','#8fd16a','belly',[.95,.95,1.1],[P('longLegs',.6,-.62,.45),P('longLegs',.6,-.62,-.45),P('wings',.55,.75,-.2),P('stinger',0,.1,-1),P('healingGland',0,.9,-.35),P('smallClaws',.78,-.25,.55),P('beadEye',.34,.46,.82),P('mustache',0,.0,1),P('poolNoodle',.62,-.12,.78)],{blurb:'Support. Heals the team, pokes from afar with a cattail lance and stings armor with venom.'}),
+  // starter forest spirits, modelled on the inspiration board (cactus sprout, tulip chick, hooded duckling, koala knight)
+  D('Sprig','#7fae4a','#ff9eb0','skirt',[1.05,1.3,.95],[P('shortLegs',.42,-.86,.08),P('smallClaws',.92,-.18,.3),P('beadEye',0.27,0.2,0.94,{s:1}),P('fishSword',.88,-.12,.42)],{blurb:'A little cactus sprout in a petal skirt, with a fish sword. Quick, sturdy and very huggable.',sprout:'bud'}),
+  D('Sir Shellby','#a8c4c8','#7a5232','belly',[1.25,1.25,1.1],[P('shortLegs',.42,-.86,.32),P('shortLegs',.42,-.86,-.3),P('shell',0,1,0),P('tailClub',0,-.45,-1),P('beadEye',0.3,0.18,0.93,{s:1}),P('snoot',0,-.02,1,{s:.8}),P('shieldNode',0,.3,-.95,{s:.8}),P('topHat',0,1,.05,{s:1.1}),P('rubberMallet',.88,-.12,.42)],{blurb:'A koala knight under an acorn cap. Slow and sturdy, with a mushroom mallet and a pinecone tail.'}),
+  D('Gloopa','#ffd24a','#ff9ec4','plain',[1,1.3,.9],[P('longLegs',.42,-.86,.08),P('fins',.97,-.1,-.1,{s:.8}),P('spitGland',0,-.42,.9,{s:.8}),P('beak',0,-.02,1,{s:.7}),P('wideEyes',.3,.2,.93,{s:.8}),P('shieldNode',0,.3,-.95,{s:.8})],{blurb:'A tulip-headed chick that lobs glowing goo from a safe distance.',sprout:'tulip'}),
+  D('Doc Wobble','#ffd86a','#d9473b','hood',[.95,1.3,.9],[P('longLegs',.42,-.86,.08),P('wings',.55,.45,-.7,{s:.8}),P('stinger',0,-.4,-1),P('healingGland',0,.6,-.8,{s:.8}),P('smallClaws',.92,-.18,.3),P('beadEye',0.26,0.16,0.95,{s:1}),P('beak',0,-.04,1,{s:.7}),P('poolNoodle',.88,-.12,.42)],{blurb:'A duckling in a red petal hood. Heals the team, pokes from afar with a cattail lance and stings armor.',sprout:'none'}),
 ];
 const BOT_PRESETS=PRESETS.concat([
-  D('Zappity','#f2b84b','#4a6fa5','stripes',[.95,.9,1.05],[P('frogLegs',.62,-.6,.4),P('frogLegs',.62,-.6,-.45),P('zapAntennae',.3,.92,.25),P('beak',0,-.05,1),P('bigEars',.62,.7,0),P('beadEye',.32,.42,.84)],{blurb:'Hops in and fizzles everyone with firefly sparks.'}),
-  D('Inkwell','#4a6fa5','#ff9ec4','spots',[1.1,.85,1.2],[P('spiderLegs',.72,-.45,.45),P('spiderLegs',.72,-.45,0),P('spiderLegs',.72,-.45,-.45),P('pincers',.78,-.25,.6),P('inkSac',0,-.45,-.85),P('armorPlates',.75,.45,0),P('snoot',0,.05,1),P('beadEye',.3,.5,.8)],{blurb:'Armored pincher that hides in ink.'}),
-  D('Burrowbelly','#8a6a52','#8fd16a','belly',[1.15,1,1.2],[P('shortLegs',.6,-.62,-.4),P('burrowPaws',.62,-.65,.55),P('bigClaws',.82,-.1,.45),P('basicJaw',0,-.2,.98),P('quills',0,.85,-.5),P('beadEye',.32,.5,.82)],{blurb:'Digs under you, then mauls.'}),
-  D('Puffington','#ff9ec4','#f4ead2','plain',[1.1,1.1,1.1],[P('shortLegs',.6,-.62,.4),P('shortLegs',.6,-.62,-.4),P('inflateSac',0,-.42,.88),P('quills',0,.9,0),P('beak',0,0,1),P('wideEyes',.34,.46,.82),P('bowTie',0,-.62,.78)],{blurb:'Spiky pufferball. Do not hug.'}),
-  D('Sir Bonksalot','#b49ae0','#f2b84b','spots',[1.2,1,1.25],[P('shortLegs',.62,-.62,.5),P('shortLegs',.62,-.62,-.45),P('armorPlates',.75,.45,0),P('rubberMallet',.62,-.12,.78),P('basicJaw',0,-.2,.98),P('beadEye',.34,.5,.8),P('crownMini',0,1,.1)],{blurb:'Bark-armored knight with a squishy mushroom mallet.'}),
-  D('Flipjack','#e08a4a','#6b4226','stripes',[1,.95,1.15],[P('longLegs',.6,-.62,.45),P('longLegs',.6,-.62,-.45),P('spatula',.62,-.12,.78),P('smallClaws',.78,-.3,.55),P('wideEyes',.34,.46,.82),P('mustache',0,.02,1)],{blurb:'Short-order cook. Flips you, then claws you.'}),
-  D('Boomer','#7fe3c0','#3fa89a','plain',[.95,.9,1.1],[P('frogLegs',.62,-.6,.4),P('frogLegs',.62,-.6,-.45),P('boomerangBone',.62,-.12,.78),P('snoot',0,.05,1),P('bigEars',.5,.8,.1),P('beadEye',.32,.42,.84)],{blurb:'Throws a bone from far away, then hops off.'}),
-  D('Chompsworth','#f2b84b','#8fd16a','spots',[1.05,.9,1.25],[P('longLegs',.6,-.62,.45),P('longLegs',.6,-.62,-.45),P('basicJaw',0,-.2,.98),P('smallClaws',.78,-.25,.55),P('horns',.35,.75,.5),P('beadEye',.34,.46,.8),P('bellyPadding',0,-1,0),P('partyHat',.15,.99,.05),P('fishSword',.62,-.12,.78)],{blurb:'Long-legged biter with a fish sword. Fast and hits hard, but tips over easily.'}),
+  D('Zappity','#a8ecc8','#5f9a3c','plain',[1.05,1.15,1],[P('frogLegs',.5,-.8,-.1),P('zapAntennae',.25,.95,.1),P('beadEye',0.42,0.22,0.88,{s:1.3})],{blurb:'A minty puddle-frog that fizzles everyone with firefly sparks.',sprout:'none'}),
+  D('Inkwell','#5a3a5a','#6fae4a','hood',[1.05,1.3,.95],[P('shortLegs',.42,-.86,.08),P('pincers',.92,-.15,.32),P('inkSac',0,-.4,-.95),P('armorPlates',.85,.15,-.35,{s:.8}),P('beadEye',0.25,0.16,0.95,{s:1})],{blurb:'A plum seedling in a leaf hood that pinches, then hides in ink.',sprout:'stem'}),
+  D('Burrowbelly','#6b4226','#6fae4a','skirt',[1.1,1.25,1],[P('shortLegs',.42,-.86,.08),P('burrowPaws',.6,-.7,.5),P('bigClaws',.92,-.18,.3),P('quills',0,.4,-.9,{s:.8}),P('beadEye',0.28,0.18,0.94,{s:1})],{blurb:'A seed spirit with a pale mask and a leaf skirt. Digs under you, then mauls.',sprout:'stem'}),
+  D('Puffington','#ffb3c8','#d9473b','plain',[1.1,1.3,1],[P('shortLegs',.42,-.86,.08),P('inflateSac',0,-.42,.88,{s:.8}),P('quills',0,.4,-.9,{s:.7}),P('bigEars',.42,.86,0),P('wideEyes',.28,.18,.94,{s:.8}),P('bowTie',0,-.45,.88)],{blurb:'A puffy pink bunny-sprite. Spiky when squeezed. Do not hug.',sprout:'none'}),
+  D('Sir Bonksalot','#f2a03a','#ffd24a','plain',[1.15,1.25,1.05],[P('shortLegs',.42,-.86,.08),P('armorPlates',.85,.15,-.35,{s:.8}),P('rubberMallet',.88,-.12,.42),P('beadEye',0.26,0.18,0.94,{s:1})],{blurb:'A sunflower lion in bark armor with a squishy mushroom mallet.',sprout:'sunflower'}),
+  D('Flipjack','#e8553a','#f2c84b','plain',[1,1.3,.9],[P('longLegs',.42,-.86,.08),P('spatula',.88,-.12,.42),P('smallClaws',.92,-.18,.3),P('wideEyes',.27,.18,.94,{s:.8}),P('wings',.55,.45,-.7,{s:.6})],{blurb:'A flame-bud sprite with leaf wings. Flips you like a pancake, then claws you.',sprout:'bud'}),
+  D('Boomer','#c8e8a0','#8a5a32','belly',[1.05,1.2,1],[P('frogLegs',.5,-.8,-.1),P('boomerangBone',.88,-.12,.42),P('snoot',0,-.02,1,{s:.7}),P('beadEye',0.28,0.2,0.93,{s:1})],{blurb:'A fluffy fawn spirit with twig antlers. Throws a bone from far away, then hops off.',sprout:'antlers'}),
+  D('Chompsworth','#d9473b','#f4ead2','plain',[1,1.35,.9],[P('longLegs',.42,-.86,.08),P('basicJaw',0,-.16,.99,{s:.75}),P('smallClaws',.92,-.18,.3),P('zapAntennae',0,.98,.05,{m:false,s:.8}),P('beadEye',0.25,0.22,0.94,{s:1}),P('fishSword',.88,-.12,.42)],{blurb:'A tall red bean with a lantern pin. Fast and bitey, but tips over easily.',sprout:'none'}),
 ]);
-function newDesign(){return D('New Spirit',pick(SWATCHES),pick(SWATCHES),'spots',[1,.95,1.15],[P('shortLegs',.6,-.62,.45),P('shortLegs',.6,-.62,-.45),P('basicJaw',0,-.2,.98),P('beadEye',.34,.46,.82)],{seed:Math.floor(Math.random()*99991)});}
+function newDesign(){return D('New Spirit',pick(SWATCHES),pick(SWATCHES),pick(['plain','skirt','hood','belly']),[1,1.3,.95],[P('shortLegs',.42,-.86,.08),P('beadEye',.27,.2,.94)],{seed:Math.floor(Math.random()*99991)});}
 
 /* Starter template for a play style, built from the best parts the player owns. Each row is one "slot":
    the first owned option is used. Legs come in mirrored pairs. SUGGESTION: the layouts. */
 const STYLE_TEMPLATES={
-  tank:{body:[1.25,1,1.35],color:'#3fa89a',accent:'#5f9a3c',pattern:'spots',rows:[['shell','bellyPadding'],['rubberMallet','fishSword'],['basicJaw','beak'],['armorPlates','spikes'],['shieldNode'],['beadEye']],legs:[['shortLegs'],3]},
-  bruiser:{body:[1.05,.9,1.25],color:'#f2b84b',accent:'#8fd16a',pattern:'stripes',rows:[['fishSword','spatula','rubberMallet'],['bigClaws','smallClaws'],['basicJaw','beak'],['horns'],['bellyPadding'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
-  spitter:{body:[1,1.05,1.1],color:'#b49ae0',accent:'#7fe3c0',pattern:'stripes',rows:[['bubbleBlaster','boomerangBone','fishSword'],['spitGland','zapAntennae','basicJaw'],['wideEyes'],['shieldNode','bellyPadding'],['fins'],['beadEye']],legs:[['shortLegs'],2]},
-  support:{body:[.95,.95,1.1],color:'#ff9ec4',accent:'#8fd16a',pattern:'belly',rows:[['poolNoodle','fishSword'],['healingGland','shieldNode','bellyPadding'],['basicJaw','beak'],['bigEars','snoot'],['beadEye']],legs:[['shortLegs'],2]},
-  scout:{body:[.9,.85,1.1],color:'#f2b84b',accent:'#4a6fa5',pattern:'spots',rows:[['fishSword','poolNoodle'],['wings','fins'],['camoCrest','snoot'],['smallClaws','basicJaw'],['bigEars','wideEyes'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
-  allrounder:{body:[1,.95,1.15],color:'#7ec8e3',accent:'#f2b84b',pattern:'spots',rows:[['spatula','fishSword'],['basicJaw'],['smallClaws'],['spikes','bellyPadding'],['wideEyes'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
+  tank:{body:[1.25,1.3,1.1],color:'#3fa89a',accent:'#5f9a3c',pattern:'spots',rows:[['shell','bellyPadding'],['rubberMallet','fishSword'],['basicJaw','beak'],['armorPlates','spikes'],['shieldNode'],['beadEye']],legs:[['shortLegs'],2]},
+  bruiser:{body:[1.05,1.25,.95],color:'#f2b84b',accent:'#8fd16a',pattern:'stripes',rows:[['fishSword','spatula','rubberMallet'],['bigClaws','smallClaws'],['basicJaw','beak'],['horns'],['bellyPadding'],['beadEye']],legs:[['longLegs','shortLegs'],1]},
+  spitter:{body:[1,1.35,.95],color:'#b49ae0',accent:'#7fe3c0',pattern:'stripes',rows:[['bubbleBlaster','boomerangBone','fishSword'],['spitGland','zapAntennae','basicJaw'],['wideEyes'],['shieldNode','bellyPadding'],['fins'],['beadEye']],legs:[['shortLegs'],1]},
+  support:{body:[.95,1.3,.9],color:'#ff9ec4',accent:'#8fd16a',pattern:'belly',rows:[['poolNoodle','fishSword'],['healingGland','shieldNode','bellyPadding'],['basicJaw','beak'],['bigEars','snoot'],['beadEye']],legs:[['shortLegs'],1]},
+  scout:{body:[.9,1.2,.9],color:'#f2b84b',accent:'#4a6fa5',pattern:'spots',rows:[['fishSword','poolNoodle'],['wings','fins'],['camoCrest','snoot'],['smallClaws','basicJaw'],['bigEars','wideEyes'],['beadEye']],legs:[['longLegs','shortLegs'],1]},
+  allrounder:{body:[1,1.3,.95],color:'#7ec8e3',accent:'#f2b84b',pattern:'spots',rows:[['spatula','fishSword'],['basicJaw'],['smallClaws'],['spikes','bellyPadding'],['wideEyes'],['beadEye']],legs:[['longLegs','shortLegs'],1]},
 };
 function styleTemplate(style,owned){
   owned=owned||(id=>isOwned(id));const t=STYLE_TEMPLATES[style]||STYLE_TEMPLATES.allrounder;
   const parts=[];const add=id=>{const d=PARTS[id];parts.push({id,p:norm3(d.def||[0,1,0]),s:1,r:0,m:d.mirror!==false});};
-  const leg=t.legs[0].find(owned)||'shortLegs';const n=t.legs[1];for(let i=0;i<n;i++){const z=n===1?0:.5-i*(1/(n-1));const L=PARTS[leg].def;parts.push({id:leg,p:norm3([L[0],L[1],z]),s:1,r:0,m:true});}
+  const leg=t.legs[0].find(owned)||'shortLegs';const n=t.legs[1];for(let i=0;i<n;i++){const z=n===1?.05:.35-i*(.7/(n-1));const L=PARTS[leg].def;parts.push({id:leg,p:norm3([L[0],L[1],z]),s:1,r:0,m:true});}
   for(const row of t.rows){const id=row.find(owned);if(id)add(id);}
   const d=D('New '+STYLES[style].name,t.color,t.accent,t.pattern,t.body,parts,{style,seed:Math.floor(Math.random()*99991)+1});
   // keep it inside the budget: drop extras from the end, never the legs

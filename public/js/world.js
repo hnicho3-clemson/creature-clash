@@ -221,7 +221,7 @@ function buildGeyserView(B){
   const disc=new T.Mesh(geo('geyDisc',()=>new T.CircleGeometry(.9,20)),own(new T.MeshBasicMaterial({color:col(B.geyser).multiplyScalar(2),toneMapped:false})));disc.rotation.x=-Math.PI/2;disc.position.y=.45;g.add(disc);g.userData.disc=disc;
   return g;
 }
-const CRITTER=D('Snorflet','#ffd23d','#ff7ae8','spots',[.5,.46,.56],[P('shortLegs',.6,-.62,.45,{s:.45}),P('shortLegs',.6,-.62,-.45,{s:.45}),P('beadEye',.34,.4,.84,{s:.85})]);
+const CRITTER=D('Snorflet','#ffd23d','#ff7ae8','plain',[.55,.62,.55],[P('shortLegs',.42,-.86,.08,{s:.5}),P('beadEye',.3,.22,.93,{s:.8})]);
 const BOSS=D('The Grand Gobbler','#4f7a5a','#d9473b','spots',[2.3,1.9,2.6],[P('shortLegs',.6,-.62,.55,{s:1.9}),P('shortLegs',.6,-.62,0,{s:1.9}),P('shortLegs',.6,-.62,-.55,{s:1.9}),P('horns',.35,.75,.5,{s:1.8}),P('basicJaw',0,-.2,.98,{s:2.2}),P('spikes',0,.98,-.2,{s:1.8}),P('spikes',0,.85,-.55,{s:1.6}),P('beadEye',.36,.42,.82,{s:1.6}),P('googlyEye',0,.6,.8,{s:1.5,m:false}),P('crownMini',0,1,.1,{s:2})]);
 function spawnNeutral(type,x,z,B){
   const boss=type==='boss';const d=clone(boss?BOSS:CRITTER);if(!boss){d.color=B.critter;d.accent=pick(['#ff9ec4','#7fe3c0','#f4ead2','#f2b84b']);d.seed=Math.floor(Math.random()*9999);}
