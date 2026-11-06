@@ -432,7 +432,7 @@ function buildCreatureView(d,opts){
     v.partGroups.push(holder);
     if(built.weapon)v.weapons.push(built.weapon);if(built.eye)v.eyes.push(built.eye);if(built.jaw)v.jaws.push(built.jaw);if(built.arm){built.arm.side=it.mir?-1:1;v.arms.push(built.arm);}if(built.pincer)v.pincers.push(built.pincer);
     if(built.tail)v.tails.push(built.tail);if(built.wing)v.wings.push(built.wing);if(built.fin)v.fins.push(built.fin);if(built.gland)v.glands.push(built.gland);if(built.prop)v.props.push(built.prop);if(built.zap)v.zaps.push(built.zap);if(built.crest)v.crests.push(built.crest);}
-  if(!expandParts(d).some(it=>it.def.build==='hat')){const sp=buildSprout(d,b);if(sp){pivot.add(sp.g);v.sprout=sp;}}
+  if(!expandParts(d).some(it=>it.def.build==='hat')){const sp=buildSprout(d,b);if(sp){pivot.add(sp.g);sp.base=sp.g.scale.x;v.sprout=sp;}}
   if(false){const ag=geo('nubArm',()=>taperTube([[0,0,-.06],[0,-.05,.12],[0,-.14,.24]],.085,.075,{segs:10,radial:12,cap:false}));
     for(const sd of [-1,1]){const fr=surfaceFrame(norm3([sd*.95,-.14,.12]),b);const h=new T.Group();h.position.copy(fr.pos);h.quaternion.copy(fr.q);const arm=new T.Group();arm.rotation.x=.55;h.add(arm);
       const a=new T.Mesh(ag,solid);a.userData.noInk=true;arm.add(a);const hand=new T.Mesh(sphereG(),solid);hand.scale.set(.1,.09,.11);hand.position.set(0,-.15,.26);arm.add(hand);
@@ -484,6 +484,7 @@ function animateCreatureView(c,dt,time){
   let py=v.baseY*(v.inf>1.01?1+(v.inf-1)*.6:1)+Math.abs(Math.sin(v.phase))*.13*walk;let tz=0,tx=clamp(sp*.012,0,.15)+(c.dashT>0?.35:0);
   if(c.state==='downed'){tz=1.35;py=v.R[0]*.72;tx=0;}
   else if(c.state==='dead'){tz=Math.PI;py=v.R[1]*.85+(v.legLen*.2)-Math.max(0,c.deadT-6)*.5;tx=0;}
+  if(c.sleep)py=lerp(py,v.R[1]*.88,clamp(c.sleep,0,1));// asleep: settled on the ground like a plain stone, legs tucked under
   if(c.emoteT>0&&c.state==='alive')py+=Math.abs(Math.sin(c.emoteT*9))*.8;
   if(c.slamT>0)py+=(.85-c.slamT)*2.2;
   if(c.burrowT>0)v.bur=lerp(v.bur||0,1,1-Math.exp(-dt*8));else v.bur=lerp(v.bur||0,0,1-Math.exp(-dt*10));
@@ -497,7 +498,7 @@ function animateCreatureView(c,dt,time){
     v.ringMat.opacity=c.state==='downed'?.35+.3*Math.sin(time*8):.75;}
   // eyes: googly pupils wobble, real eyes look around and blink
   v.blinkT-=dt;if(v.blinkT<=0){v.blink=.16;v.blinkT=2+Math.random()*4.5;}if(v.blink>0)v.blink-=dt;
-  const bl=c.state==='dead'?1:c.state==='downed'?.7:(v.blink>0?Math.sin((1-v.blink/.16)*Math.PI):0);
+  let bl=c.state==='dead'?1:c.state==='downed'?.7:(v.blink>0?Math.sin((1-v.blink/.16)*Math.PI):0);if(c.eyesShut)bl=Math.max(bl,c.eyesShut);
   for(const e of v.eyes){
     if(c.state==='dead'){e.x=Math.cos(time*14+e.er*40)*e.er*.3;e.y=Math.sin(time*14+e.er*40)*e.er*.3;}
     else{const tx2=clamp(-v.turn*.04,-.3,.3)*e.er+(e.kind!=='googly'?Math.sin(time*.7+v.phase*.05)*e.er*.12:0),ty2=clamp(-(c.vy||0)*.02,-.3,.3)*e.er+(c.state==='downed'?-e.er*.25:0);
@@ -521,6 +522,7 @@ function animateCreatureView(c,dt,time){
   for(const z of v.zaps){const f=c.zapT>0?2.5+Math.random()*3:1+Math.sin(time*9)*.3+(Math.random()<.03?1.5:0);z.scale.setScalar(.1*(c.zapT>0?1.5:1));z.material.color.setRGB(1.0*f,.84*f,.42*f);}
   for(const m of v.crests){m.emissiveIntensity=c.camoT>0?1.5+Math.sin(time*12):.2+Math.sin(time*2)*.1;}
   for(const p of v.props)p.rotation.z+=dt*(8+sp*3);
+  if(v.sprout&&c.sproutK!=null)v.sprout.g.scale.setScalar(v.sprout.base*Math.max(.001,c.sproutK));
   if(v.sprout){const w=v.sprout.sway;w.rotation.x=Math.sin(time*2.1+v.phase*.2)*.1-clamp((c.vy||0)*.02,-.3,.3)-walk*.18;w.rotation.y=Math.sin(time*1.7+1)*.08-clamp(v.turn*.04,-.3,.3);if(v.sprout.k==='wisp')w.position.z=Math.sin(time*2.6)*.05;}
   v.shield.visible=(c.shield||0)>0;if(v.shield.visible){const s=Math.max(v.R[0],v.R[1],v.R[2])*1.75*(1+Math.sin(time*6)*.03);v.shield.scale.setScalar(s);}
   v.stars.visible=c.state==='downed';if(v.stars.visible)v.stars.rotation.y+=dt*4;
