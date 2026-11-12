@@ -8,6 +8,18 @@ A goofy 3D creature-building battle game in the browser: build cute forest spiri
 
 Guests can play without an account; their progress stays in the browser. Signed-in players' DNA, XP, levels and parts are kept and awarded by the server.
 
+## Play locally
+
+No install needed. Open `public/index.html` in Chrome, Edge, Firefox or Safari (double-click it) and play as a guest. For the smoothest start (and so the browser can't block anything), you can also serve the folder:
+
+```
+python3 -m http.server 8080 --directory public   # then open http://localhost:8080
+```
+
+### Art direction
+
+Creatures and the forest share one low-poly look, inspired by Animal Crossing and Pikmin: matte, flat-shaded, chunky shapes with soft two-tone lighting. Only the eyes stay glossy. The shared helpers live in `core.js` (`lpSph`, `lpCyl`, `windify`), `creature.js` (`lowpolyfy`) and `world.js` (`buildTrees`, `buildGarden`, `nearFade`). Trees, grass, flowers, bushes and pebbles are instanced and sway in the wind, and trees fade out when the camera gets close so they never hide your spirit.
+
 ## Deploy on Vercel (one-time setup)
 
 1. **Import the repo.** In Vercel, choose *Add New → Project*, pick this GitHub repo, and deploy with the default settings. The first deploy works as a guest-only game until the steps below are done.

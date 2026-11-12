@@ -199,11 +199,34 @@ function makeEnvMap(B){
 /* ---------- shared geometry & materials ---------- */
 const GEO={};const geo=(k,fn)=>GEO[k]||(GEO[k]=fn());
 const MAT={};const matc=(k,fn)=>MAT[k]||(MAT[k]=fn());
-const sphereG=()=>geo('sph',()=>new T.SphereGeometry(1,28,18));
-const capsuleG=(r,l)=>geo('cap'+r.toFixed(2)+'_'+l.toFixed(2),()=>new T.CapsuleGeometry(r,l,6,12));
-const coneG=(r,h,n=12)=>geo('cone'+r+'_'+h+'_'+n,()=>new T.ConeGeometry(r,h,n));
-const cylG=(a,b,h,n=12)=>geo('cyl'+a+'_'+b+'_'+h+'_'+n,()=>new T.CylinderGeometry(a,b,h,n));
+/* Low-poly art direction: every primitive is capped to a small number of segments so the whole game reads as one
+   retro, faceted style (flat shading does the rest). Eyes and the sky keep their smooth geometry. */
+// Flat shading rebuilds normals from screen derivatives; sub-pixel slivers (distant grass) give a zero vector and NaN pixels
+// that bloom smears into black blots. Guard it once for every material.
+T.ShaderChunk.normal_fragment_begin=T.ShaderChunk.normal_fragment_begin.replace('vec3 normal = normalize( cross( fdx, fdy ) );','vec3 fcr = cross( fdx, fdy );\n\tvec3 normal = dot( fcr, fcr ) > 1e-30 ? normalize( fcr ) : vec3( 0.0, 0.0, 1.0 );');
+const LP={sph:[12,8],rad:9,tube:10,torR:6,torT:16,circ:12};
+const lpSph=(r,w,h,...a)=>new T.SphereGeometry(r,Math.min(w==null?LP.sph[0]:w,LP.sph[0]),Math.min(h==null?LP.sph[1]:h,LP.sph[1]),...a);
+const lpCyl=(a,b,h,n,hs,...x)=>new T.CylinderGeometry(a,b,h,Math.min(n==null?LP.rad:n,LP.rad),hs==null?1:hs,...x);
+const lpCone=(r,h,n,hs,...x)=>new T.ConeGeometry(r,h,Math.min(n==null?LP.rad:n,LP.rad),hs==null?1:hs,...x);
+const lpTor=(r,t,rs,ts,arc)=>new T.TorusGeometry(r,t,Math.min(rs==null?LP.torR:rs,LP.torR),Math.min(ts==null?LP.torT:ts,LP.torT),arc==null?TAU:arc);
+const lpCirc=(r,n,...x)=>new T.CircleGeometry(r,Math.min(n==null?LP.circ:n,LP.circ),...x);
+const sphereG=()=>geo('sph',()=>lpSph(1,12,8));
+const smoothSphereG=()=>geo('sphSmooth',()=>new T.SphereGeometry(1,28,18));
+const capsuleG=(r,l)=>geo('cap'+r.toFixed(2)+'_'+l.toFixed(2),()=>new T.CapsuleGeometry(r,l,3,8));
+const coneG=(r,h,n=12)=>geo('cone'+r+'_'+h+'_'+n,()=>lpCone(r,h,n));
+const cylG=(a,b,h,n=12)=>geo('cyl'+a+'_'+b+'_'+h+'_'+n,()=>lpCyl(a,b,h,n));
+/* wind clock shared by grass, trees and leaves (vertex sway, see windify) */
+const WIND={value:0};
+function windify(m,k,y0){const prev=m.onBeforeCompile;m.onBeforeCompile=(sh,r)=>{if(prev)prev(sh,r);sh.uniforms.windT=WIND;sh.uniforms.windK={value:k};sh.uniforms.windY0={value:y0||0};
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float windT,windK,windY0;').replace('#include <begin_vertex>',
+   '#include <begin_vertex>\n#ifdef USE_INSTANCING\nvec3 wp0=vec3(instanceMatrix[3][0],0.,instanceMatrix[3][2]);\n#else\nvec3 wp0=vec3(modelMatrix[3][0],0.,modelMatrix[3][2]);\n#endif\nfloat wh=max(0.,transformed.y-windY0);float wph=windT*1.7+wp0.x*.21+wp0.z*.17;'+
+   'transformed.x+=(sin(wph)*.7+sin(wph*2.3+1.3)*.3)*windK*wh;transformed.z+=(cos(wph*.8+.6)*.5)*windK*wh;');};
+  const ck=m.customProgramCacheKey?m.customProgramCacheKey():'';m.customProgramCacheKey=()=>ck+'wind'+k+'_'+(y0||0);return m;}
+/* toon-ish matte material for the low-poly look: flat shaded, no gloss, a soft painted rim light */
+function lpMatOpts(o){return Object.assign({roughness:.86,metalness:0,flatShading:true},o||{});}
 function physMat(hex,o){return new T.MeshPhysicalMaterial(Object.assign({color:col(hex),roughness:.42,metalness:0,clearcoat:.85,clearcoatRoughness:.2},o||{}));}
+/* low-poly matte variant (used by the world dressing) */
+const lmat=(hex,o)=>matc('l'+hex+JSON.stringify(o||{}),()=>new T.MeshStandardMaterial(Object.assign({color:col(hex)},lpMatOpts(o))));
 const pmat=(hex,o)=>matc('p'+hex+JSON.stringify(o||{}),()=>physMat(hex,o));
 const glowMat=(hex,i)=>matc('g'+hex+i,()=>new T.MeshBasicMaterial({color:col(hex).multiplyScalar(i),toneMapped:false}));
 let disposables=[];const own=x=>{disposables.push(x);return x;};

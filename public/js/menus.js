@@ -152,30 +152,30 @@ function initStudio(){
   const mossM=new T.MeshStandardMaterial({color:col('#4f7a3a'),roughness:.95,flatShading:true});
   const glow=(c,i)=>new T.MeshBasicMaterial({color:col(c).multiplyScalar(i),toneMapped:false});
   // the stump stage
-  const stump=new T.Mesh(new T.CylinderGeometry(4.1,4.6,1.4,48,2),bark);stump.position.y=-.7;stump.receiveShadow=true;stump.castShadow=true;sc.add(stump);
-  const top=new T.Mesh(new T.CircleGeometry(4.1,64),new T.MeshStandardMaterial({map:ringTex(),roughness:.85}));top.rotation.x=-Math.PI/2;top.position.y=.005;top.receiveShadow=true;sc.add(top);
-  const mossRim=new T.Mesh(new T.TorusGeometry(4.1,.22,8,64),mossM);mossRim.rotation.x=Math.PI/2;mossRim.scale.z=.6;mossRim.position.y=0;sc.add(mossRim);
+  const stump=new T.Mesh(lpCyl(4.1,4.6,1.4,48,2),bark);stump.position.y=-.7;stump.receiveShadow=true;stump.castShadow=true;sc.add(stump);
+  const top=new T.Mesh(lpCirc(4.1,64),new T.MeshStandardMaterial({map:ringTex(),roughness:.85}));top.rotation.x=-Math.PI/2;top.position.y=.005;top.receiveShadow=true;sc.add(top);
+  const mossRim=new T.Mesh(lpTor(4.1,.22,8,64),mossM);mossRim.rotation.x=Math.PI/2;mossRim.scale.z=.6;mossRim.position.y=0;sc.add(mossRim);
   for(let k=0;k<7;k++){const a=k/7*TAU+.3;const x0=Math.cos(a)*4.1,z0=Math.sin(a)*4.1,x1=Math.cos(a+.15)*7.2,z1=Math.sin(a+.15)*7.2;
     const rt=new T.Mesh(taperTube([[x0*.95,-.2,z0*.95],[x0*1.25,-.55,z0*1.25],[x1,-.9,z1]],.55,.12,{segs:16,radial:10}),bark);rt.castShadow=true;rt.receiveShadow=true;sc.add(rt);}
   const segs=new T.Group();for(let k=0;k<6;k++){const a=new T.Mesh(new T.RingGeometry(2.25,2.36,24,1,k/6*TAU,TAU/6*.6),new T.MeshBasicMaterial({color:col('#ffd88a').multiplyScalar(1.1),toneMapped:false,transparent:true,opacity:.35,side:T.DoubleSide,depthWrite:false}));segs.add(a);}segs.rotation.x=-Math.PI/2;segs.position.y=.012;sc.add(segs);studio.segs=segs;
   // forest floor, ferns and little toadstools
-  const floor=new T.Mesh(new T.CircleGeometry(40,64),new T.MeshStandardMaterial({color:col('#24381e'),roughness:.95}));floor.rotation.x=-Math.PI/2;floor.position.y=-.9;floor.receiveShadow=true;sc.add(floor);
-  const R=mulberry32(91);const leaf=new T.SphereGeometry(1,8,6);leaf.scale(.22,.04,.9);leaf.translate(0,0,.9);
+  const floor=new T.Mesh(lpCirc(40,64),new T.MeshStandardMaterial({color:col('#24381e'),roughness:.95}));floor.rotation.x=-Math.PI/2;floor.position.y=-.9;floor.receiveShadow=true;sc.add(floor);
+  const R=mulberry32(91);const leaf=lpSph(1,8,6);leaf.scale(.22,.04,.9);leaf.translate(0,0,.9);
   const fernM=new T.MeshStandardMaterial({color:col('#3f7a34'),roughness:.8,side:T.DoubleSide});
   for(let k=0;k<26;k++){const a=R()*TAU,r=6.5+R()*6;const g=new T.Group();g.position.set(Math.cos(a)*r,-.9,Math.sin(a)*r);g.scale.setScalar(.8+R()*.9);for(let i=0;i<7;i++){const f=new T.Mesh(leaf,fernM);f.rotation.set(-.5-(i%2)*.3,i/7*TAU,0);g.add(f);}sc.add(g);}
   const capM=new T.MeshPhysicalMaterial({color:col('#d9473b'),roughness:.4,clearcoat:.7}),stemM=new T.MeshStandardMaterial({color:col('#efe2c4'),roughness:.8});
-  for(let k=0;k<12;k++){const a=R()*TAU,r=5+R()*7;const s=.4+R()*.7;const st=new T.Mesh(new T.CylinderGeometry(.12*s,.18*s,.9*s,8),stemM);st.position.set(Math.cos(a)*r,-.9+.45*s,Math.sin(a)*r);sc.add(st);
-    const cp=new T.Mesh(new T.SphereGeometry(.5*s,16,8,0,TAU,0,Math.PI/2),capM);cp.scale.y=.7;cp.position.set(st.position.x,-.9+.88*s,st.position.z);cp.castShadow=true;sc.add(cp);}
+  for(let k=0;k<12;k++){const a=R()*TAU,r=5+R()*7;const s=.4+R()*.7;const st=new T.Mesh(lpCyl(.12*s,.18*s,.9*s,8),stemM);st.position.set(Math.cos(a)*r,-.9+.45*s,Math.sin(a)*r);sc.add(st);
+    const cp=new T.Mesh(lpSph(.5*s,16,8,0,TAU,0,Math.PI/2),capM);cp.scale.y=.7;cp.position.set(st.position.x,-.9+.88*s,st.position.z);cp.castShadow=true;sc.add(cp);}
   // a ring of giant trunks with hanging moss
-  for(let k=0;k<14;k++){const a=k/14*TAU+R()*.2;const r=15+R()*4;const tr=new T.Mesh(new T.CylinderGeometry(1+R()*.6,1.8+R()*.8,40,10),bark);tr.position.set(Math.cos(a)*r,18,Math.sin(a)*r);sc.add(tr);
-    for(let v=0;v<3;v++){const vn=new T.Mesh(new T.CylinderGeometry(.04,.14,4+R()*5,4),mossM);vn.position.set(tr.position.x+(R()-.5)*2.4,9+R()*5,tr.position.z+(R()-.5)*2.4);sc.add(vn);}}
+  for(let k=0;k<14;k++){const a=k/14*TAU+R()*.2;const r=15+R()*4;const tr=new T.Mesh(lpCyl(1+R()*.6,1.8+R()*.8,40,10),bark);tr.position.set(Math.cos(a)*r,18,Math.sin(a)*r);sc.add(tr);
+    for(let v=0;v<3;v++){const vn=new T.Mesh(lpCyl(.04,.14,4+R()*5,4),mossM);vn.position.set(tr.position.x+(R()-.5)*2.4,9+R()*5,tr.position.z+(R()-.5)*2.4);sc.add(vn);}}
   // glowing flower lanterns, each with a floating seed and drifting motes
   studio.tubes=[];const tubeCols=['#8fffd0','#ffa8cc','#ffd88a','#b8a0ff','#8fffd0','#ffd88a'];
   for(let k=0;k<6;k++){const a=k/6*TAU+.52;const g=new T.Group();g.position.set(Math.cos(a)*9,-.9,Math.sin(a)*9);const c=tubeCols[k];
     const stem=new T.Mesh(taperTube([[0,0,0],[.3,2.4,0],[0,4.2,0],[-.5,5.2,0]],.12,.07,{segs:20,radial:8}),new T.MeshStandardMaterial({color:col('#3f6a34'),roughness:.7}));g.add(stem);
     for(const s of [-1,1]){const lf=new T.Mesh(leaf,fernM);lf.position.set(.1,1.2+s*.3,0);lf.rotation.set(-.3,s>0?0:Math.PI,0);lf.scale.setScalar(1.1);g.add(lf);}
-    const bulb=new T.Mesh(new T.SphereGeometry(1,32,20,0,TAU,0,Math.PI*.78),new T.MeshPhysicalMaterial({color:col(c),emissive:col(c),emissiveIntensity:.35,roughness:.3,transparent:true,opacity:.4,side:T.DoubleSide,depthWrite:false}));bulb.rotation.z=Math.PI;bulb.position.set(-.5,4.4,0);bulb.scale.set(1,1.2,1);g.add(bulb);
-    const liq=new T.Mesh(new T.SphereGeometry(.7,20,14),new T.MeshBasicMaterial({color:col(c).multiplyScalar(.6),transparent:true,opacity:.35,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false}));liq.position.set(-.5,3.9,0);g.add(liq);
+    const bulb=new T.Mesh(lpSph(1,32,20,0,TAU,0,Math.PI*.78),new T.MeshPhysicalMaterial({color:col(c),emissive:col(c),emissiveIntensity:.35,roughness:.3,transparent:true,opacity:.4,side:T.DoubleSide,depthWrite:false}));bulb.rotation.z=Math.PI;bulb.position.set(-.5,4.4,0);bulb.scale.set(1,1.2,1);g.add(bulb);
+    const liq=new T.Mesh(lpSph(.7,20,14),new T.MeshBasicMaterial({color:col(c).multiplyScalar(.6),transparent:true,opacity:.35,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false}));liq.position.set(-.5,3.9,0);g.add(liq);
     const spec=new T.Mesh(new T.IcosahedronGeometry(.28,3),glow(c,2.2));spec.position.set(-.5,3.9,0);g.add(spec);
     const bub=[];for(let i=0;i<7;i++){const b=new T.Mesh(sphereG(),new T.MeshBasicMaterial({color:col(c).multiplyScalar(1.6),toneMapped:false,transparent:true,opacity:.7}));b.scale.setScalar(.03+Math.random()*.04);b.position.set(-.5+(Math.random()-.5)*1.2,.8+Math.random()*3.8,(Math.random()-.5)*1.2);g.add(b);bub.push(b);}
     sc.add(g);studio.tubes.push({g,spec,bub,ph:Math.random()*TAU,base:3.9});}
@@ -186,16 +186,17 @@ function initStudio(){
   const hb=new T.Mesh(new T.DodecahedronGeometry(.9,0),new T.MeshStandardMaterial({color:col('#6a6e62'),roughness:.9,flatShading:true}));hb.scale.y=.5;hb.position.y=-.8;helix.add(hb);
   sc.add(helix);studio.helix=helix;
   // light shaft from the canopy
-  const cone=new T.Mesh(new T.ConeGeometry(3.4,10,48,1,true),new T.MeshBasicMaterial({color:col('#fff0d0'),transparent:true,opacity:.012,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}));cone.position.set(0,4.6,0);sc.add(cone);studio.cone=cone;
+  const cone=new T.Mesh(lpCone(3.4,10,48,1,true),new T.MeshBasicMaterial({color:col('#fff0d0'),transparent:true,opacity:.012,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}));cone.position.set(0,4.6,0);sc.add(cone);studio.cone=cone;
   // spirit scan ring
-  const scan=new T.Mesh(new T.TorusGeometry(1,.012,6,96),new T.MeshBasicMaterial({color:col('#8fffd0').multiplyScalar(2),toneMapped:false,transparent:true,opacity:.8}));scan.rotation.x=Math.PI/2;sc.add(scan);studio.scan=scan;
+  const scan=new T.Mesh(lpTor(1,.012,6,96),new T.MeshBasicMaterial({color:col('#8fffd0').multiplyScalar(2),toneMapped:false,transparent:true,opacity:.8}));scan.rotation.x=Math.PI/2;sc.add(scan);studio.scan=scan;
   // drifting pollen and fireflies
   const N=320,dp=new Float32Array(N*3);for(let i=0;i<N;i++){const a=Math.random()*TAU,r=Math.sqrt(Math.random())*9;dp[i*3]=Math.cos(a)*r;dp[i*3+1]=Math.random()*9;dp[i*3+2]=Math.sin(a)*r;}
   const dg=new T.BufferGeometry();dg.setAttribute('position',new T.BufferAttribute(dp,3));
   const dust=new T.Points(dg,new T.PointsMaterial({color:col('#ffe9a0').multiplyScalar(1.5),size:.06,transparent:true,opacity:.6,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false}));sc.add(dust);studio.dust=dust;
-  const mk=(c,s)=>{const m=new T.Mesh(new T.TorusGeometry(.32,.035,8,40),new T.MeshBasicMaterial({color:col(c).multiplyScalar(3),toneMapped:false,depthTest:false,transparent:true}));m.renderOrder=10;m.visible=false;m.scale.setScalar(s||1);sc.add(m);return m;};
+  const mk=(c,s)=>{const m=new T.Mesh(lpTor(.32,.035,8,40),new T.MeshBasicMaterial({color:col(c).multiplyScalar(3),toneMapped:false,depthTest:false,transparent:true}));m.renderOrder=10;m.visible=false;m.scale.setScalar(s||1);sc.add(m);return m;};
   studio.hover=mk('#ffa8cc');studio.sel=[mk('#8fffd0'),mk('#8fffd0')];
   studio.ray=new T.Raycaster();studio.ptr=new T.Vector2();
+  lowpolyfy(sc);
 }
 const ws={design:null,slot:-1,sel:-1,placing:null,tab:'Body',mode:'menu',drag:null,orbit:null,undo:[],redo:[],moved:false,statsOpen:false,dirty:false,lastNudge:0,confirm:null};
 function openWorkshop(mode,design,slot){
@@ -535,7 +536,7 @@ devin.addEventListener('keydown',e=>{e.stopPropagation();if(e.code==='Escape'||e
 let last=performance.now();const clock={t:0};
 function frame(now){
   requestAnimationFrame(frame);
-  const rdt=Math.min(.05,(now-last)/1000);last=now;
+  const rdt=Math.min(.05,(now-last)/1000);last=now;WIND.value=A11Y.reduceMotion?WIND.value:WIND.value+rdt;
   if(phase==='intro'){updateIntro(rdt,now);renderFrame(now*.001,0);return;}
   if(build)updateBuild(rdt);
   if(AudioFX.ctx&&((frame.n=(frame.n||0)+1)%30===0))musicFor();
