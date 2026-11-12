@@ -14,7 +14,7 @@ function applyA11y(){
   document.documentElement.style.setProperty('--ui',String(A11Y.uiScale));
   const p=PALETTES[A11Y.palette]||PALETTES.default;for(const t of ['blue','red']){TEAMS[t].hex=p[t][0];TEAMS[t].name=p[t][1];document.documentElement.style.setProperty('--'+t,p[t][0]);}
   $('#tnBlue').textContent=TEAMS.blue.name+' nests';$('#tnRed').textContent=TEAMS.red.name+' nests';$('#bBlueTitle').textContent=TEAMS.blue.name+' team';$('#bRedTitle').textContent=TEAMS.red.name+' team';
-  if(bloomPass)bloomPass.strength=A11Y.flashes&&!A11Y.reduceMotion?.6:.38;
+  if(bloomPass)bloomPass.strength=(typeof REAL!=='undefined'&&REAL)?(A11Y.flashes&&!A11Y.reduceMotion?.32:.22):(A11Y.flashes&&!A11Y.reduceMotion?.6:.38);
   renderControlsHelp();
 }
 function renderControlsHelp(){const K=A11Y.keys,k=c=>'<kbd>'+esc(keyName(c))+'</kbd>';

@@ -41,7 +41,7 @@ function shadowTex(){if(TEXC.shadow)return TEXC.shadow;const c=document.createEl
    Materials
    ========================================================= */
 // soft, slightly fuzzy creature skin: textured bumps, sheen for a subsurface-like rim, light coat
-function skinMat(hex,kind,o){return matc('skin'+hex+kind+JSON.stringify(o||{}),()=>{const bumpy=!!(o&&o.normalScale);const t=bumpy?skinTex(kind||'pebble'):null;const c=col(hex);
+function skinMat(hex,kind,o){if(REAL)return matc('rskin'+hex,()=>tpMat({tex:'rock',space:'object',tint:stoneTint(hex),scale:.9,nStr:2,rough:.8,key:'skin'}));return matc('skin'+hex+kind+JSON.stringify(o||{}),()=>{const bumpy=!!(o&&o.normalScale);const t=bumpy?skinTex(kind||'pebble'):null;const c=col(hex);
   return stylize(new T.MeshPhysicalMaterial(Object.assign({color:c,normalMap:t?t.normal:null,normalScale:new T.Vector2(.1,.1),roughness:.62,metalness:0,sheen:.55,sheenColor:c.clone().lerp(new T.Color(1,.95,.9),.3),sheenRoughness:.42,clearcoat:.28,clearcoatRoughness:.35},o||{})));});}
 const keratinMat=()=>matc('keratin',()=>new T.MeshPhysicalMaterial({vertexColors:true,roughness:.42,clearcoat:.55,clearcoatRoughness:.25,sheen:.4,sheenColor:new T.Color(1,1,.95)}));
 const enamelMat=()=>matc('enamel',()=>new T.MeshPhysicalMaterial({color:col('#fffaf0'),roughness:.18,clearcoat:.8,sheen:.5,sheenColor:new T.Color(1,1,1)}));
@@ -78,7 +78,7 @@ function addOutlines(root,skip){const list=[];root.traverse(o=>{if(!o.isMesh||sk
 
 /* One art style for every creature: each part is matte, flat shaded and low-poly like the body, so a spirit reads as
    one carved-stone toy rather than a rock with shiny plastic bits stuck on. Eyes (userData.keep) stay glossy. */
-function lowpolyMat(m,o){if(!m||m.userData.lp||m.userData.keep||m.isMeshBasicMaterial||m.isShaderMaterial||m.isSpriteMaterial)return;m.userData.lp=true;
+function lowpolyMat(m,o){if(REAL){if(m&&!m.userData.lp&&(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial)){m.userData.lp=true;m.flatShading=false;if(m.isMeshPhysicalMaterial){m.clearcoat=Math.min(m.clearcoat,.35);}m.needsUpdate=true;}return;}if(!m||m.userData.lp||m.userData.keep||m.isMeshBasicMaterial||m.isShaderMaterial||m.isSpriteMaterial)return;m.userData.lp=true;
   if(!(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial))return;
   m.flatShading=true;m.normalMap=null;m.roughnessMap=null;m.roughness=o&&o.satin?clamp(m.roughness,.5,.68):Math.max(m.roughness,m.transparent?.55:.78);m.metalness=Math.min(m.metalness,.1);if(o&&o.satin)m.envMapIntensity=1.25;
   if(m.isMeshPhysicalMaterial){m.clearcoat=o&&o.satin?Math.min(Math.max(m.clearcoat,.18),.3):Math.min(m.clearcoat,.12);m.clearcoatRoughness=.55;m.sheen=0;m.iridescence=0;m.transmission=0;}
@@ -89,7 +89,7 @@ function lowpolyfy(root,opt){root.traverse(o=>{if(!o.isMesh||o.userData.keep)ret
    Geometry helpers
    ========================================================= */
 // smooth tapered tube along a curve; optional ridges and a base→tip color gradient
-function taperTube(pts,r0,r1,o){o=o||{};const curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(p[0],p[1],p[2])));const segs=Math.min(o.segs||18,10),rad=Math.min(o.radial||12,7);
+function taperTube(pts,r0,r1,o){o=o||{};const curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(p[0],p[1],p[2])));const segs=Math.min(o.segs||18,REAL?40:10),rad=Math.min(o.radial||12,REAL?20:7);
   const g=new T.TubeGeometry(curve,segs,1,rad,false);const pos=g.attributes.position;const cols=o.c0?new Float32Array(pos.count*3):null;const c0=o.c0?col(o.c0):null,c1=o.c1?col(o.c1):null,tmp=new T.Color();
   for(let ring=0;ring<=segs;ring++){const t=ring/segs;const ctr=curve.getPointAt(t);let r=lerp(r0,r1,Math.pow(t,o.pow||1));if(o.ridges)r*=1+Math.sin(t*o.ridges*TAU)*.06*(1-t);if(o.bulge)r*=1+Math.sin(t*Math.PI)*o.bulge;
     if(c0){tmp.copy(c0).lerp(c1,Math.pow(t,o.cpow||1.3));if(o.bands)tmp.multiplyScalar(Math.sin(t*o.bands*TAU)>0?1:.35);}
@@ -105,7 +105,7 @@ function mergeGeos(list){const gs=list.map(g=>g.index?g.toNonIndexed():g);const 
 // muscle-shaped limb segment hanging down -Y from the joint
 function limbGeo(len,rTop,rBot){const key='limb'+len.toFixed(2)+'_'+rTop.toFixed(3)+'_'+rBot.toFixed(3);return geo(key,()=>{const pts=[];const n=2;
   for(let i=0;i<=n;i++){const t=i/n;const r=lerp(rTop,rBot,t);pts.push(new T.Vector2(r,-t*len));}
-  pts.reverse();const g=new T.LatheGeometry(pts,7);g.computeVertexNormals();return g;});}
+  pts.reverse();const g=new T.LatheGeometry(pts,REAL?22:7);g.computeVertexNormals();return g;});}
 // gentle organic body shape: fuller chest, tapered rump, slightly flattened belly (radial, so part placement stays exact)
 // soft gumdrop: rounder and fuller toward the bottom, a little narrower at the crown, slightly fuller in front for the face
 function bodyShape(x,y,z){const lo=Math.max(0,-y);return 1+.09*lo*(1-lo*.6)-.04*Math.max(0,y)*Math.max(0,y)+.02*z;}
@@ -116,7 +116,19 @@ function bodyShape(x,y,z){const lo=Math.max(0,-y);return 1+.09*lo*(1-lo*.6)-.04*
    hood and skirt are painted per pixel in paintBody. */
 function rockJitter(x,y,z,seed){const k=Math.round(x*997)*73856093^Math.round(y*997)*19349663^Math.round(z*997)*83492791^seed*2654435761;const h=((Math.sin(k*.000123)*43758.5453)%1+1)%1;
   return 1+(h-.5)*.09+.055*Math.sin(x*3.1+seed)*Math.sin(y*2.7+seed*.7)*Math.sin(z*3.3+seed*.3);}
-function bodyGeometry(color,accent,seed,pattern,face,shaderPaint){
+function realBodyGeometry(color,accent,seed,pattern){
+  const g=new T.SphereGeometry(1,110,76);const pos=g.attributes.position;const cols=new Float32Array(pos.count*3);
+  const r=mulberry32(seed|0);const c1=col(stoneTint(color)),c2=col(stoneTint(accent,.2)),belly=c1.clone().lerp(new T.Color(1,.97,.9),.3);const ph=r()*6;
+  const spots=[];for(let i=0;i<14;i++){const v=new T.Vector3(r()*2-1,r()*1.4-.2,r()*2-1).normalize();spots.push({v,s:.93+r()*.04});}
+  const v=new T.Vector3(),tmp=new T.Color();
+  for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i).normalize();
+    const bt=pattern==='belly'?smooth(-.1,-.6,v.y):0;let sp=0;
+    if(pattern==='spots')for(const q of spots)sp=Math.max(sp,smooth(q.s,q.s+.025,v.dot(q.v)));
+    else if(pattern==='stripes')sp=smooth(.35,.65,Math.sin(v.y*8+ph+Math.sin(v.x*2.2+v.z*1.7)*.5)*.5+.5);
+    tmp.copy(c1).lerp(belly,bt).lerp(c2,sp*.85);const ao=1-.3*smooth(-.5,-1,v.y);tmp.multiplyScalar(ao);cols[i*3]=tmp.r;cols[i*3+1]=tmp.g;cols[i*3+2]=tmp.b;
+    const k=bodyShape(v.x,v.y,v.z)*(1+(rockShape(v,(seed%97)*.37,{bump:.32,cuts:5})-1)*.8);let y=v.y*k;if(y<-.86)y=-.86+(y+.86)*.3;pos.setXYZ(i,v.x*k,y,v.z*k);}
+  g.setAttribute('color',new T.BufferAttribute(cols,3));return weldNormals(g);}
+function bodyGeometry(color,accent,seed,pattern,face,shaderPaint){if(REAL)return realBodyGeometry(color,accent,seed,pattern);
   const g=new T.IcosahedronGeometry(1,2);const pos=g.attributes.position;const cols=new Float32Array(pos.count*3);
   const r=mulberry32(seed|0);const c1=col(color),c2=col(accent),belly=col(color).lerp(new T.Color(1,.97,.9),.35);
   const ph=r()*6;const spots=[];for(let i=0;i<14;i++){const v=new T.Vector3(r()*2-1,r()*1.4-.2,r()*2-1).normalize();spots.push({v,s:.93+r()*.04});}
@@ -296,7 +308,7 @@ const BUILDERS={
     const sg=geo('shellScutes',()=>{const s=lpSph(1,40,20,0,TAU,0,Math.PI/2).toNonIndexed();const p=s.attributes.position;const cc=new Float32Array(p.count*3);
       for(let i=0;i<p.count;i+=6){const k=.78+hash2(i,7)*.32;for(let j=0;j<6&&i+j<p.count;j++){cc[(i+j)*3]=k;cc[(i+j)*3+1]=k;cc[(i+j)*3+2]=k;}}s.setAttribute('color',new T.BufferAttribute(cc,3));return s;});
     const sm=matc('shellM'+ctx.d.accent,()=>new T.MeshPhysicalMaterial({color:col(ctx.d.accent),vertexColors:true,roughness:.45,clearcoat:.8,clearcoatRoughness:.2,sheen:.4,sheenColor:new T.Color(1,1,1)}));
-    const sh=new T.Mesh(sg,sm);sh.scale.set(b.w*1.12,b.h*.98,b.l*1.08);sh.position.set(0,b.h*.06,-b.l*.06);g.add(sh);
+    const sh=new T.Mesh(REAL?geo('shellR',()=>rockGeo(2.2,{w:64,h:40,bump:.3,cuts:3,flat:0,fine:.05})):sg,REAL?matc('shellRk'+ctx.d.accent,()=>tpMat({tex:'rock',space:'object',tint:stoneTint(ctx.d.accent,.25),moss:.5,mossLo:.55,scale:.8,nStr:2.2,key:'shell'})):sm);sh.scale.set(b.w*1.12,b.h*.98,b.l*1.08);sh.position.set(0,b.h*.06,-b.l*.06);g.add(sh);
     const rim=new T.Mesh(geo('rim',()=>lpTor(1,.07,10,64)),skinMat('#6fae4a','scales',{normalScale:new T.Vector2(1.4,1.4)}));rim.rotation.x=Math.PI/2;rim.scale.set(b.w*1.12,b.l*1.08,1);rim.position.set(0,b.h*.06,-b.l*.06);g.add(rim);return {g};},
   belly(ctx){const g=new T.Group();const b=ctx.b;const bm=skinMat(ctx.d.color==='#f4ead2'?'#ffe0b0':'#fff1d6','scales',{normalScale:new T.Vector2(.35,.35)});
     const m=new T.Mesh(sphereG(),bm);m.scale.set(b.w*.8,b.h*.42,b.l*.85);m.position.y=-b.h*.55;g.add(m);
@@ -404,9 +416,9 @@ const k=MOUTHS[(d.seed||1)%MOUTHS.length];const my=f.ay-f.er*1.15;
 let _viewOwn=null;function own2(x){if(_viewOwn)_viewOwn.push(x);else own(x);return x;}
 
 // chunky carved-stone legs: a short faceted post, a hidden knee, and a big pebble foot (like a toy figure's base)
-const jointG=()=>geo('legJoint',()=>lpSph(1,7,5));
-const pebbleGeo=()=>geo('pebbleFoot',()=>{const g=new T.IcosahedronGeometry(1,1);const p=g.attributes.position;for(let i=0;i<p.count;i++){const y=p.getY(i);if(y<-.3)p.setY(i,-.3-(y+.3)*.2);}g.computeVertexNormals();return g;});
-function footMat(skin){return matc('foot'+skin.uuid,()=>{const m=new T.MeshStandardMaterial(lpMatOpts({color:skin.color.clone().multiplyScalar(.74)}));stylize(m,.22);m.userData.lp=true;return m;});}
+const jointG=()=>geo('legJoint',()=>REAL?new T.SphereGeometry(1,22,16):lpSph(1,7,5));
+const pebbleGeo=()=>geo('pebbleFoot',()=>{if(REAL){const g=rockGeo(7.3,{w:40,h:28,bump:.35,cuts:4,flat:-.3});return g;}const g=new T.IcosahedronGeometry(1,1);const p=g.attributes.position;for(let i=0;i<p.count;i++){const y=p.getY(i);if(y<-.3)p.setY(i,-.3-(y+.3)*.2);}g.computeVertexNormals();return g;});
+function footMat(skin){if(REAL)return matc('rfoot'+skin.uuid,()=>tpMat({tex:'rock',space:'object',tint:'#'+skin.color.clone().convertLinearToSRGB().multiplyScalar(.78).getHexString(),scale:.9,nStr:1.4,moss:.35,mossLo:.75,rough:.85,key:'foot'}));return matc('foot'+skin.uuid,()=>{const m=new T.MeshStandardMaterial(lpMatOpts({color:skin.color.clone().multiplyScalar(.74)}));stylize(m,.22);m.userData.lp=true;return m;});}
 function legBuild(def,s,side,skin,acc){
   const L=def.leg.len*s,th=Math.max(def.leg.thick*Math.sqrt(s)*1.3,def.leg.knee?0:L*.2)*(def.leg.knee?.85:1);const hip=new T.Group();hip.rotation.z=side*def.leg.splay;
   const rK=th*.9;
@@ -431,7 +443,13 @@ function buildCreatureView(d,opts){
   const kind=d.pattern==='stripes'?'scales':'pebble';const tx=skinTex(kind);
   const fiP=d.face===true?faceInfo(d):null;const patId=d.pattern==='hood'?1:d.pattern==='skirt'?2:0;const fdir=fiP?new T.Vector3(fiP.c[0],fiP.c[1],fiP.c[2]).normalize():new T.Vector3(0,.1,1);
   const bodyU={pat:{value:patId},ph:{value:((d.seed||1)%7)*.9},hasFace:{value:fiP?1:0},faceTop:{value:fdir.y-.1},faceC:{value:col(d.color).lerp(col('#fff6e6'),.62)},accC:{value:col(d.accent)},faceDir:{value:fdir},faceR:{value:new T.Vector2(fiP?fiP.rx:.4,fiP?fiP.ry:.34)}};
-  const bodyMat=vown(paintBody(new T.MeshPhysicalMaterial({vertexColors:true,roughness:.66,clearcoat:.22,clearcoatRoughness:.5,envMapIntensity:1.25,flatShading:true,emissive:new T.Color(0,0,0)}),bodyU));v.bodyMat=bodyMat;
+  const bodyMat=vown(REAL?tpMat({tex:'rock',space:'object',vertexColors:true,scale:.5,nStr:2.2,rough:.82,moss:.18,mossLo:.55,mossHi:.9,mossCol:d.accent,uniforms:bodyU,key:'body',
+      fsHead:'uniform float pat,ph,hasFace,faceTop;uniform vec3 faceC,accC,faceDir;uniform vec2 faceR;',
+      paint:'{vec3 vd=normalize(vTP);float fm=0.;if(hasFace>.5){float fd=dot(vd,faceDir);vec2 q2=vec2(vd.x/faceR.x,(vd.y-faceDir.y)/faceR.y);float q=dot(q2,q2);fm=(1.-smoothstep(.85,1.15,q))*smoothstep(.2,.35,fd);}'+
+        'float ang=atan(vd.z,vd.x);float sp=0.;float wob=.07*sin(ang*5.+ph)+.04*sin(ang*11.+ph*2.3+vd.y*6.)+(tpNz-.5)*.25;'+
+        'if(pat>.5&&pat<1.5){sp=smoothstep(.3+wob-.04,.3+wob+.04,vd.y);}else if(pat>1.5){sp=1.-smoothstep(-.42+wob-.04,-.42+wob+.04,vd.y);}'+
+        'tpM=max(tpM,sp*(1.-fm));tpMA=tpTri(tpMossA,tpP*1.4,tpW)*2.*accC;diffuseColor.rgb=mix(diffuseColor.rgb,faceC,fm*.85);}'})
+   :paintBody(new T.MeshPhysicalMaterial({vertexColors:true,roughness:.66,clearcoat:.22,clearcoatRoughness:.5,envMapIntensity:1.25,flatShading:true,emissive:new T.Color(0,0,0)}),bodyU));v.bodyMat=bodyMat;
   const solid=skinMat(d.color,kind);const acc=skinMat(d.accent,'pebble',{clearcoat:.55,clearcoatRoughness:.2});
   const fi=d.face===true?faceInfo(d):null;const body=new T.Mesh(vown(bodyGeometry(d.color,d.accent,d.seed||1,d.pattern||'spots',fi,true)),bodyMat);body.scale.set(b.w,b.h,b.l);body.userData.body=true;pivot.add(body);v.body=body;
   const ctxBase={d,b,solid,acc,vown};

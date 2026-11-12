@@ -534,9 +534,15 @@ devin.addEventListener('keydown',e=>{e.stopPropagation();if(e.code==='Escape'||e
    Main loop
    ========================================================= */
 let last=performance.now();const clock={t:0};
+/* auto quality: if frames stay slow for a few seconds, step down (sharpness, then volumetric light, then ambient occlusion) */
+const perf={ema:1/60,t:0,step:0};
+function autoQuality(rdt){if(typeof isAutomation==='function'&&isAutomation())return;if(phase!=='battle'&&phase!=='menu'&&phase!=='build')return;perf.ema=perf.ema*.97+rdt*.03;perf.t+=rdt;
+  if(perf.t>4&&perf.ema>.034&&perf.step<3){perf.t=0;perf.ema=1/45;perf.step++;
+    if(perf.step===1&&pixelRatio>1){pixelRatio=1;renderer.setPixelRatio(1);if(composer)composer.setPixelRatio(1);onResize();}else if(quality.vol!==false){quality.vol=false;}else{quality.ao=false;}
+    if(DEV_BUILD)console.log('auto quality step',perf.step);}}
 function frame(now){
   requestAnimationFrame(frame);
-  const rdt=Math.min(.05,(now-last)/1000);last=now;WIND.value=A11Y.reduceMotion?WIND.value:WIND.value+rdt;
+  const rdt=Math.min(.05,(now-last)/1000);last=now;autoQuality(rdt);WIND.value=A11Y.reduceMotion?WIND.value:WIND.value+rdt;
   if(phase==='intro'){updateIntro(rdt,now);renderFrame(now*.001,0);return;}
   if(build)updateBuild(rdt);
   if(AudioFX.ctx&&((frame.n=(frame.n||0)+1)%30===0))musicFor();

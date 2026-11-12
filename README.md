@@ -22,6 +22,16 @@ Creatures and the forest share one low-poly look, inspired by Animal Crossing an
 
 Lighting (`core.js`, `makeLitPass`): the scene renders with 4x anti-aliasing into a target that keeps its depth, then a half-resolution SSAO pass adds soft contact shading, a composite blurs it along depth edges, tints creases cool and adds a sun glow into the haze, and the final pass applies a filmic grade (cool shadows, warm highlights). A golden-hour sun gives long shadows. Ambient occlusion can be turned off in Settings.
 
+### Remaster graphics (branch `realistic-remaster`)
+
+This version aims for the look of the Unreal Engine 5 Ocarina of Time fan remakes (Lumen lighting, Nanite-dense rocks, scanned materials, volumetric fog), rebuilt for WebGL in `js/realism.js`:
+
+- **Scanned-style materials, generated at load:** tileable granite, moss, bark, grass and soil textures (albedo + normal) are painted from noise in about half a second. A triplanar shader (`tpMat`) wraps them onto any shape without UVs and grows moss on upward faces.
+- **Real rocks:** creatures, boulders, flagstones, nest pads and standing stones use displaced high-detail rock geometry (`rockGeo`) with split faces, ridges and fine relief.
+- **Foliage cards:** trees and bushes are clouds of alpha-tested leaf cards with dappled shadows; grass is crossed-card clumps and ferns are arched fronds, all swaying in the wind.
+- **Lighting** (`core.js`, `makeLitPass`): 4x MSAA scene render, SSAO, ground-tinted bounce light in place of Lumen GI, exponential haze with sun glow, volumetric light shafts ray-marched through the sun's shadow map, soft background blur and a filmic grade.
+- **Auto quality:** if frames stay slow, the game lowers resolution, then turns off volumetric light, then ambient occlusion. Ambient occlusion can also be turned off in Settings.
+
 ## Deploy on Vercel (one-time setup)
 
 1. **Import the repo.** In Vercel, choose *Add New → Project*, pick this GitHub repo, and deploy with the default settings. The first deploy works as a guest-only game until the steps below are done.

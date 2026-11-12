@@ -177,12 +177,23 @@ const AO_FS=AO_COMMON+'uniform vec2 res;uniform float radius,power;'+
  'vec3 s=p+(tg*h.x+bt*h.y+n*h.z)*rad*sc;vec4 c=proj*vec4(s,1.);vec2 su=c.xy/c.w*.5+.5;if(su.x<0.||su.x>1.||su.y<0.||su.y>1.)continue;'+
  'float sz=vp(su).z;float rc=smoothstep(0.,1.,rad/max(abs(p.z-sz),1e-4));occ+=(sz>=s.z+.03*rad?1.:0.)*rc;}'+
  'float ao=clamp(1.-occ/12.*power,0.,1.);gl_FragColor=vec4(ao,ao,ao,1.);}';
-const COMP_FS=AO_COMMON+'uniform sampler2D tColor,tAO;uniform vec2 aoRes;uniform float aoK,fogNear,fogFar,glowK;uniform vec3 sunDirV,sunCol,aoTint;'+
+const COMP_FS='#include <packing>\n'+AO_COMMON+'uniform sampler2D tColor,tAO,shMap;uniform vec2 aoRes,colRes;uniform float aoK,fogNear,fogFar,fogDen,glowK,volK,dofK;uniform vec3 sunDirV,sunCol,aoTint,camPos,sunDirW;uniform mat4 camWorld,shMat;'+
  'void main(){vec4 c=texture2D(tColor,vUv);float d0=texture2D(tDepth,vUv).x;vec3 p0=vp(vUv);float ao=1.;'+
  'if(aoK>0.&&d0<.99999){float sum=0.,w=0.;for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y))/aoRes;float dz=vp(vUv+o).z;float ww=exp(-abs(dz-p0.z)*2.5);sum+=texture2D(tAO,vUv+o).x*ww;w+=ww;}ao=sum/max(w,1e-4);}'+
  'c.rgb*=mix(vec3(1.),mix(aoTint,vec3(1.),ao),aoK);'+
  'float dist=d0>.99999?1e5:length(p0);vec3 vd=normalize(p0);float g=max(dot(vd,sunDirV),0.);float fogF=smoothstep(fogNear,fogFar,dist);'+
- 'c.rgb+=sunCol*(pow(g,7.)*.85+pow(g,40.)*1.2)*fogF*glowK;gl_FragColor=c;}';
+ 'if(fogDen>0.)fogF=1.-exp(-pow(fogDen*min(dist,4000.),2.));'+
+ // distance blur (soft depth of field on the far background)
+ 'if(dofK>0.){float bk=smoothstep(32.,120.,dist)*dofK;if(bk>.01){vec3 acc=c.rgb;for(int i=0;i<8;i++){float a=float(i)*.785398;acc+=texture2D(tColor,vUv+vec2(cos(a),sin(a))*bk*2.6/colRes).rgb;}c.rgb=acc/9.;}}'+
+ 'c.rgb+=sunCol*(pow(g,7.)*.85+pow(g,40.)*1.2)*fogF*glowK;'+
+ // volumetric light: march the view ray through the sun shadow map, so light shafts appear where sunlight reaches the haze
+ 'if(volK>0.){vec3 wp=(camWorld*vec4(d0>.99999?vd*80.:p0,1.)).xyz;vec3 rd=wp-camPos;float L=min(length(rd),80.);rd=normalize(rd);'+
+ 'float ign=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))));float lit=0.;const int NS=20;'+
+ 'for(int i=0;i<NS;i++){float t=(float(i)+ign)/float(NS);vec3 q=camPos+rd*L*t*t;vec4 sc=shMat*vec4(q,1.);sc.xyz/=sc.w;float v=1.;'+
+ 'if(sc.x>0.&&sc.x<1.&&sc.y>0.&&sc.y<1.&&sc.z<1.)v=step(sc.z-.003,unpackRGBAToDepth(texture2D(shMap,sc.xy)));lit+=v;}lit/=float(NS);'+
+ 'float mu=dot(rd,sunDirW);float ph=.35+1.15*pow(max(mu,0.),5.)+.25*(1.+mu*mu)*.5;float dens=1.-exp(-L*.022);'+
+ 'c.rgb+=sunCol*lit*dens*ph*volK;}'+
+ 'gl_FragColor=c;}';
 let litPass=null;
 function makeLitPass(w,h){
   const gl2=renderer.capabilities.isWebGL2;const dt=new T.DepthTexture(w,h);dt.type=T.UnsignedIntType;
@@ -191,14 +202,17 @@ function makeLitPass(w,h){
   const shared={tDepth:{value:dt},proj:{value:new T.Matrix4()},invProj:{value:new T.Matrix4()}};
   const aoMat=new T.ShaderMaterial({uniforms:Object.assign({res:{value:new T.Vector2(w,h)},radius:{value:1.15},power:{value:1.7}},shared),vertexShader:AO_VS,fragmentShader:AO_FS,depthTest:false,depthWrite:false});
   const compMat=new T.ShaderMaterial({uniforms:Object.assign({tColor:{value:rt.texture},tAO:{value:aoRT.texture},aoRes:{value:new T.Vector2(w>>1,h>>1)},aoK:{value:.95},aoTint:{value:new T.Color(.16,.2,.32)},
-    fogNear:{value:60},fogFar:{value:300},glowK:{value:0},sunDirV:{value:new T.Vector3()},sunCol:{value:new T.Color()}},shared),vertexShader:AO_VS,fragmentShader:COMP_FS,depthTest:false,depthWrite:false});
+    fogNear:{value:60},fogFar:{value:300},fogDen:{value:0},glowK:{value:0},volK:{value:0},dofK:{value:0},sunDirV:{value:new T.Vector3()},sunCol:{value:new T.Color()},shMap:{value:null},shMat:{value:new T.Matrix4()},camWorld:{value:new T.Matrix4()},camPos:{value:new T.Vector3()},sunDirW:{value:new T.Vector3()},colRes:{value:new T.Vector2(w,h)}},shared),vertexShader:AO_VS,fragmentShader:COMP_FS,depthTest:false,depthWrite:false});
   const pass=new T.Pass();pass.needsSwap=true;pass.scene=scene;pass.camera=camera;
   const aoQ=new T.FullScreenQuad(aoMat),compQ=new T.FullScreenQuad(compMat);const _sd=new T.Vector3();
-  pass.setSize=(W,H)=>{rt.setSize(W,H);dt.image.width=W;dt.image.height=H;aoRT.setSize(Math.max(1,W>>1),Math.max(1,H>>1));aoMat.uniforms.res.value.set(W,H);compMat.uniforms.aoRes.value.set(Math.max(1,W>>1),Math.max(1,H>>1));};
+  pass.setSize=(W,H)=>{rt.setSize(W,H);compMat.uniforms.colRes.value.set(W,H);dt.image.width=W;dt.image.height=H;aoRT.setSize(Math.max(1,W>>1),Math.max(1,H>>1));aoMat.uniforms.res.value.set(W,H);compMat.uniforms.aoRes.value.set(Math.max(1,W>>1),Math.max(1,H>>1));};
   pass.render=(r,writeBuffer)=>{const sc=pass.scene,cm=pass.camera;r.setRenderTarget(rt);r.clear();r.render(sc,cm);
     shared.proj.value.copy(cm.projectionMatrix);shared.invProj.value.copy(cm.projectionMatrixInverse);
     const useAO=quality.ao;if(useAO){r.setRenderTarget(aoRT);aoQ.render(r);}compMat.uniforms.aoK.value=useAO?.95:0;
-    const f=sc.fog;const U=compMat.uniforms;if(f&&f.isFog&&sc===scene){U.fogNear.value=f.near*.35;U.fogFar.value=f.far;U.glowK.value=.55;
+    const f=sc.fog;const U=compMat.uniforms;const inWorld=sc===scene&&f&&(f.isFog||f.isFogExp2);U.volK.value=0;U.dofK.value=0;U.fogDen.value=0;
+    if(inWorld){if(f.isFog){U.fogNear.value=f.near*.35;U.fogFar.value=f.far;}else{U.fogDen.value=f.density*.8;}U.glowK.value=pass.glowK!=null?pass.glowK:.55;
+      if(pass.volK&&quality.vol!==false&&quality.shadows&&sun.castShadow&&sun.shadow.map){U.volK.value=pass.volK;U.shMap.value=sun.shadow.map.texture;U.shMat.value.copy(sun.shadow.matrix);U.camWorld.value.copy(cm.matrixWorld);U.camPos.value.setFromMatrixPosition(cm.matrixWorld);U.sunDirW.value.copy(sun.position).sub(sun.target.position).normalize();}
+      U.dofK.value=pass.dofK||0;
       _sd.copy(sun.position).sub(sun.target.position).normalize().transformDirection(cm.matrixWorldInverse);U.sunDirV.value.copy(_sd);U.sunCol.value.copy(sun.color).multiplyScalar(.5);}else U.glowK.value=0;
     r.setRenderTarget(pass.renderToScreen?null:writeBuffer);compQ.render(r);};
   return pass;}
@@ -214,7 +228,7 @@ let curScene=scene,curCam=camera;
     renderer.toneMapping=T.NoToneMapping;renderer.outputEncoding=T.LinearEncoding;
   }catch(e){composer=null;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.outputEncoding=T.sRGBEncoding;renderer.toneMappingExposure=1.05;}
 })();
-function setRenderView(sc,cm,bloomT){curScene=sc;curCam=cm;if(renderPass){renderPass.scene=sc;renderPass.camera=cm;}if(bloomPass&&bloomT!=null)bloomPass.threshold=bloomT;}
+function setRenderView(sc,cm,bloomT){curScene=sc;curCam=cm;if(renderPass){renderPass.scene=sc;renderPass.camera=cm;}if(bloomPass&&bloomT!=null)bloomPass.threshold=(typeof REAL!=="undefined"&&REAL)?bloomT*1.1:bloomT;}
 function renderFrame(time,desat){if(composer){finalPass.uniforms.time.value=time;finalPass.uniforms.desat.value=desat||0;composer.render();}else renderer.render(curScene,curCam);}
 function onResize(){const w=innerWidth,h=innerHeight;for(const c of cameras){c.aspect=w/h;c.updateProjectionMatrix();}renderer.setSize(w,h,false);if(composer)composer.setSize(w,h);}
 addEventListener('resize',onResize);

@@ -61,6 +61,10 @@ function buildWorld(seed,opts){
   hemi.color.copy(col(B.hemiSky));hemi.groundColor.copy(col(B.hemiGround));hemi.intensity=.5;
   sun.color.copy(col(B.sun));sun.intensity=B.sunI;
   scene.fog=new T.Fog(col(B.fog),75,330);
+  if(REAL){// remaster light: thick sunlit haze, bounced ground light (a stand-in for Lumen GI), volumetric shafts
+    const fogC=col(B.fog).lerp(col(B.skyHorizon),.45).lerp(col(B.sun),.12);scene.fog=new T.FogExp2(fogC,B.id==='frost'?.0105:.0125);
+    hemi.intensity=.62;hemi.groundColor.copy(col(B.ground)).multiplyScalar(.75);hemi.color.lerp(col(B.skyHorizon),.3);sun.intensity=B.sunI*1.05;
+    if(litPass){litPass.volK=B.id==='glow'||B.id==='ruins'?.2:.15;litPass.dofK=1;litPass.glowK=.45;}}
   if(envRT)envRT.dispose();envRT=makeEnvMap(B);scene.environment=envRT.texture;
   if(skyMesh){scene.remove(skyMesh);skyMesh.material.dispose();}
   skyMesh=new T.Mesh(geo('skysph',()=>new T.SphereGeometry(1000,48,24)),skyMaterial(B,.35));skyMesh.renderOrder=-1;scene.add(skyMesh);
@@ -70,14 +74,14 @@ function buildWorld(seed,opts){
   planet.add(new T.Mesh(geo('moon',()=>new T.SphereGeometry(34,48,32)),pm));
   const halo=new T.Sprite(own(new T.SpriteMaterial({map:haloTex(),color:col(B.planet).multiplyScalar(.9),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false,fog:false,toneMapped:false})));halo.scale.setScalar(300);planet.add(halo);
   planet.position.set(300,250,-640);scene.add(planet);
-  buildTerrain(map,group,B);buildProps(map,group,B);buildDetails(map,group,B);buildGarden(map,group,B);buildTrees(map,group,B);buildBases(map,group);buildForestWall(map,group,B);buildFireflies(map,group,B);
+  buildTerrain(map,group,B);buildProps(map,group,B);buildDetails(map,group,B);if(REAL){buildFlagstones(map,group,B);buildBoulders(map,group,B);buildGardenReal(map,group,B);buildTreesReal(map,group,B);}else{buildGarden(map,group,B);buildTrees(map,group,B);}buildBases(map,group);buildForestWall(map,group,B);buildFireflies(map,group,B);
   for(const ns of map.nests)addNest(ns);
   for(const g of map.geysers){const gy={x:g.x,z:g.z,y:map.heightAt(g.x,g.z),period:g.period,t:g.off,hit:new Set(),erupting:0};gy.view=buildGeyserView(B);gy.view.position.set(gy.x,gy.y,gy.z);group.add(gy.view);world.geysers.push(gy);}
   for(const sp of map.spawns)spawnNeutral('critter',sp.x,sp.z,B);
   for(const b of map.boulders){const bo={x:b.x,z:0,y:0,dir:b.dir,period:b.period,t:b.off,r:2.2,active:false,warn:false,hit:new Set()};bo.view=buildBoulderView(B);bo.view.visible=false;group.add(bo.view);world.boulders.push(bo);}
   if(map.mode!=='test')spawnNeutral('boss',map.boss.x,map.boss.z,B);
   lowpolyfy(group);
-  if(bloomPass)bloomPass.threshold=B.bloom;
+  if(bloomPass){bloomPass.threshold=REAL?B.bloom*1.1:B.bloom;if(REAL)bloomPass.strength=.32;}
   return world;
 }
 function addNest(ns,hpOverride){const map=world.map;const n={kind:'nest',team:ns.team,lane:ns.lane,main:ns.main,outer:ns.outer,x:ns.x,z:ns.z,y:map.heightAt(ns.x,ns.z),radius:ns.main?4.4:2.5,maxHp:hpOverride||(ns.main?S.mainNestHp:S.laneNestHp),alive:true,spitCd:1+Math.random(),lastHurt:-99,height:ns.main?7:3};
@@ -92,16 +96,16 @@ function teardownWorld(){
 function buildTerrain(map,group,B){
   const SX=212,SZ=2*(map.zWall+14);const W=212,H=Math.round(SZ);
   const g=own(new T.PlaneGeometry(SX,SZ,W,H));g.rotateX(-Math.PI/2);
-  const pos=g.attributes.position;const cols=new Float32Array(pos.count*3);
-  const cg=col(B.ground),cg2=col(B.ground2),cl=col(B.lane),ce=col(B.laneEdge),cw=col(B.wall),tmp=new T.Color(),blueC=col('#3ba7ff'),redC=col('#ff4d5e');const hw=map.lw*.5;
+  const pos=g.attributes.position;const cols=new Float32Array(pos.count*3);const laneA=new Float32Array(pos.count);
+  const cg=col(B.ground),cg2=col(B.ground2),cl=REAL?col(B.lane).lerp(col('#8a7d6a'),.55):col(B.lane),ce=col(B.laneEdge),cw=col(B.wall),tmp=new T.Color(),blueC=col('#3ba7ff'),redC=col('#ff4d5e');const hw=map.lw*.5;
   for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);const h=map.heightAt(x,z);pos.setY(i,h);const d=map.laneDistAt(x,z);
     const n=fbm(x*.12+3,z*.12+7);tmp.copy(cg).lerp(cg2,clamp(n*1.6-.35,0,1));const patch=vnoise(x*.05+11,z*.05+3);tmp.multiplyScalar(.94+patch*.14);
     const lane=1-smooth(hw-.5,hw+.3,d);const edge=Math.exp(-((d-hw)*(d-hw))/.35);tmp.lerp(cl,lane*(.85+.15*n));tmp.lerp(ce,edge*.45);if(lane>.5)tmp.multiplyScalar(1+(1-smooth(0,hw*.7,d))*.08);
     const bd=Math.hypot(Math.abs(x)-86,z);if(bd<15){const pad=1-smooth(12,15,bd);tmp.lerp(cl,pad*.8);const rim=Math.exp(-((bd-12.5)*(bd-12.5))/.25);tmp.lerp(x<0?blueC:redC,rim*.7);}
     const wall=smooth(.5,4,Math.max(Math.abs(z)-map.zWall,Math.abs(x)-map.xWall));tmp.lerp(cw,wall);if(h>1.2&&wall<.5)tmp.multiplyScalar(1+(h-1.2)*.05);
-    const sp=.9+hash2(Math.floor(x*2),Math.floor(z*2))*.18;cols[i*3]=tmp.r*sp;cols[i*3+1]=tmp.g*sp;cols[i*3+2]=tmp.b*sp;}
-  g.setAttribute('color',new T.BufferAttribute(cols,3));g.computeVertexNormals();
-  const mesh=new T.Mesh(g,own(new T.MeshStandardMaterial({vertexColors:true,roughness:.95,metalness:0,envMapIntensity:.5,flatShading:true})));mesh.material.userData.keep=true;mesh.receiveShadow=true;group.add(mesh);
+    laneA[i]=Math.max(1-smooth(hw-1.2,hw+.6,d),Math.hypot(Math.abs(x)-86,z)<13?1:0);const sp=REAL?1:.9+hash2(Math.floor(x*2),Math.floor(z*2))*.18;cols[i*3]=tmp.r*sp;cols[i*3+1]=tmp.g*sp;cols[i*3+2]=tmp.b*sp;}
+  g.setAttribute('color',new T.BufferAttribute(cols,3));g.setAttribute('lane',new T.BufferAttribute(laneA,1));g.computeVertexNormals();
+  const mesh=new T.Mesh(g,own(REAL?groundMat():new T.MeshStandardMaterial({vertexColors:true,roughness:.95,metalness:0,envMapIntensity:.5,flatShading:true})));mesh.material.userData.keep=true;mesh.receiveShadow=true;group.add(mesh);
   const sk=new T.Mesh(own(new T.PlaneGeometry(1400,1400)),own(new T.MeshStandardMaterial({color:col(B.wall),roughness:1})));sk.rotation.x=-Math.PI/2;sk.position.y=-1;group.add(sk);
 }
 function makeInstanced(geom,mat,list,localM,colors){
@@ -114,7 +118,8 @@ function buildProps(map,group,B){
   const byType={};for(const p of map.props){p.y=map.heightAt(p.x,p.z)-.1;(byType[p.type]=byType[p.type]||[]).push(p);}
   const add=(type,geom,mat,lm,colors)=>{const list=byType[type];if(!list||!list.length)return;group.add(makeInstanced(own(geom),mat,list,lm,colors));};
   const collide=(type,r)=>{for(const p of byType[type]||[])world.colliders.push({x:p.x,z:p.z,r:r*p.s});};
-  const rock=own(new T.MeshStandardMaterial({color:0xffffff,roughness:.85,flatShading:true}));const palette=B.detail.map(col);
+  const rock=own(REAL?tpMat({tex:'rock',moss:B.id==='frost'?.9:.75,mossCol:B.id==='frost'?'#f4f8ff':(B.grass||B.detail)[0],mossLo:.25,scale:.42,nStr:2,key:'prop'}):new T.MeshStandardMaterial({color:0xffffff,roughness:.85,flatShading:true}));
+  const RG=(seed,sy)=>REAL?rockGeo(seed,{sy:sy||.8,w:48,h:32}):null;const palette=B.detail.map(col);
   const leafG=(w,l)=>{const g=lpSph(1,10,6);g.scale(w,.06,l);g.translate(0,0,l);const p=g.attributes.position;for(let i=0;i<p.count;i++){const z=p.getZ(i);p.setY(i,p.getY(i)+z*.5-z*z*.22);}g.computeVertexNormals();return g;};
   const glowB=(hex,k)=>own(new T.MeshBasicMaterial({color:col(hex).multiplyScalar(k),toneMapped:false}));
   switch(B.id){
@@ -125,8 +130,8 @@ function buildProps(map,group,B){
       [[.55,.95,.3],[-.6,.85,.45],[.1,1.08,-.55],[-.2,1.1,.05],[.85,.55,-.6],[-.95,.45,-.3]].forEach(([x,y,z])=>add('toadstool',lpSph(.2,10,8),own(new T.MeshStandardMaterial({color:col('#fff6e6'),roughness:.6})),LM(x,2.15+y*.72,z,0,0,0,1,.5,1)));
       collide('toadstool',.55);
       for(let i=0;i<7;i++){const a=i/7*TAU;add('fern',leafG(.28,1.15),own(new T.MeshStandardMaterial({color:col('#4f8a34'),roughness:.7,side:T.DoubleSide})),LM(0,.15,0,-.55-(i%2)*.25,a,0),(it)=>col('#4f8a34').lerp(col('#7fbf5a'),it.tint));}
-      add('mossrock',new T.DodecahedronGeometry(1.5,1),rock,LM(0,.55,0,0,0,0,1,.7,1),(it)=>col('#6a6e62').lerp(col('#7d8076'),it.tint));
-      add('mossrock',lpSph(1.45,18,8,0,TAU,0,Math.PI*.42),own(new T.MeshStandardMaterial({color:col('#5f9a3c'),roughness:.95,flatShading:true})),LM(0,.82,0,0,0,0,1,.55,1),(it)=>col('#5f9a3c').lerp(col('#8fd16a'),it.tint*.5));collide('mossrock',1.3);break;
+      add('mossrock',REAL?RG(3.1,.75).scale(1.5,1.5,1.5):new T.DodecahedronGeometry(1.5,1),rock,LM(0,REAL?.35:.55,0,0,0,0,1,.7,1),(it)=>col('#6a6e62').lerp(col('#7d8076'),it.tint));
+      if(!REAL)add('mossrock',lpSph(1.45,18,8,0,TAU,0,Math.PI*.42),own(new T.MeshStandardMaterial({color:col('#5f9a3c'),roughness:.95,flatShading:true})),LM(0,.82,0,0,0,0,1,.55,1),(it)=>col('#5f9a3c').lerp(col('#8fd16a'),it.tint*.5));collide('mossrock',1.3);break;
     case 'glow':
       add('glowshroom',lpCyl(.18,.3,3.2,10),own(new T.MeshStandardMaterial({color:col('#cfd8e0'),roughness:.7,emissive:col('#2a6a6a'),emissiveIntensity:.25})),LM(0,1.6,0,0,0,.08));
       add('glowshroom',lpSph(1.25,24,12,0,TAU,0,Math.PI/2),own(new T.MeshPhysicalMaterial({color:0xffffff,roughness:.3,clearcoat:.8,emissive:0xffffff,emissiveIntensity:.0})),LM(.25,3.15,0,0,0,0,1,.55,1),(it)=>it.tint>.5?col('#4fd6c0'):col('#9a7ae0'));
@@ -169,12 +174,12 @@ function buildProps(map,group,B){
       add('pillar',lpTor(.92,.05,6,24),glowB('#c8a0ff',2.2),LM(0,2.3,0,Math.PI/2,0,0));collide('pillar',1);
       add('rootarch',lpTor(2.6,.42,10,24,Math.PI),own(new T.MeshStandardMaterial({color:col('#4a3626'),roughness:.9,flatShading:true})),LM(0,0,0,0,0,0,1,1.15,1));
       add('rootarch',lpSph(.16,8,6),glowB('#d8c0ff',2.6),LM(.6,3.1,0));
-      add('rock',new T.DodecahedronGeometry(1.5,0),rock,LM(0,.7,0,0,0,0,1,.75,1),(it)=>col('#4a4a44').lerp(col('#5e5e56'),it.tint));collide('rock',1.3);break;
+      add('rock',REAL?RG(5.7,.8).scale(1.5,1.5,1.5):new T.DodecahedronGeometry(1.5,0),rock,LM(0,.7,0,0,0,0,1,.75,1),(it)=>col('#4a4a44').lerp(col('#5e5e56'),it.tint));collide('rock',1.3);break;
     case 'frost':
       add('pine',lpCyl(.22,.3,1.4,8),own(new T.MeshStandardMaterial({color:col('#6a4a34'),roughness:.9})),LM(0,.7,0));
       [[2.1,2.4,1.9],[1.65,2.1,3.0],[1.1,1.8,4.0]].forEach(([r,h,y])=>{add('pine',lpCone(r,h,9),own(new T.MeshStandardMaterial({color:col('#1f5a4a'),roughness:.8,flatShading:true})),LM(0,y,0));add('pine',lpCone(r*.62,h*.45,9),own(new T.MeshStandardMaterial({color:col('#f4f8ff'),roughness:.7,flatShading:true})),LM(0,y+h*.32,0));});collide('pine',1.2);
       add('crystal',new T.OctahedronGeometry(1,0),own(new T.MeshPhysicalMaterial({color:col('#c8fff0'),emissive:col('#3fd6a0'),emissiveIntensity:.45,roughness:.08,clearcoat:1,transparent:true,opacity:.85,flatShading:true})),LM(0,1.6,0,0,0,.15,1,2.4,1));collide('crystal',.9);
-      add('snowrock',new T.DodecahedronGeometry(1.5,1),rock,LM(0,.6,0,0,0,0,1,.7,1),()=>col('#dfe9f6'));collide('snowrock',1.3);break;
+      add('snowrock',REAL?RG(8.2,.75).scale(1.5,1.5,1.5):new T.DodecahedronGeometry(1.5,1),rock,LM(0,.6,0,0,0,0,1,.7,1),()=>col('#dfe9f6'));collide('snowrock',1.3);break;
   }
 }
 function buildDetails(map,group,B){return;
@@ -187,30 +192,32 @@ function buildDetails(map,group,B){return;
   im.castShadow=false;group.add(im);
 }
 function buildBases(map,group){
-  const stoneM=own(new T.MeshStandardMaterial({color:col('#6e6e64'),roughness:.92,flatShading:true}));const mossM=own(new T.MeshStandardMaterial({color:col('#4f7a3a'),roughness:.95,flatShading:true}));
+  const stoneM=own(REAL?tpMat({tex:'rock',tint:'#8a887c',moss:.8,mossCol:'#5f7f2e',scale:.45,nStr:2,key:'base'}):new T.MeshStandardMaterial({color:col('#6e6e64'),roughness:.92,flatShading:true}));const mossM=own(new T.MeshStandardMaterial({color:col('#4f7a3a'),roughness:.95,flatShading:true}));
   for(const team of ['blue','red']){const s=TEAMS[team].sign;const g=new T.Group();g.position.set(s*86,map.heightAt(s*86,0),0);
-    const disc=new T.Mesh(own(lpCyl(9.4,10,.4,40)),own(new T.MeshStandardMaterial({color:col('#5a5a50'),roughness:.9})));disc.position.y=.1;disc.receiveShadow=true;g.add(disc);
-    const moss=new T.Mesh(own(new T.RingGeometry(3,9.2,40,2)),own(new T.MeshStandardMaterial({color:col('#4f7a3a'),roughness:.95,transparent:true,opacity:.55})));moss.rotation.x=-Math.PI/2;moss.position.y=.32;g.add(moss);
+    if(!REAL){const disc=new T.Mesh(own(lpCyl(9.4,10,.4,40)),own(new T.MeshStandardMaterial({color:col('#5a5a50'),roughness:.9})));disc.position.y=.1;disc.receiveShadow=true;g.add(disc);
+    const moss=new T.Mesh(own(new T.RingGeometry(3,9.2,40,2)),own(new T.MeshStandardMaterial({color:col('#4f7a3a'),roughness:.95,transparent:true,opacity:.55})));moss.rotation.x=-Math.PI/2;moss.position.y=.32;g.add(moss);}
     const glow=new T.Mesh(own(lpTor(9.5,.07,4,48)),own(new T.MeshBasicMaterial({color:col(TEAMS[team].hex).multiplyScalar(1.4),toneMapped:false})));glow.rotation.x=Math.PI/2;glow.position.y=.34;g.add(glow);
-    for(let i=0;i<7;i++){const a=i/7*TAU+.2;const st=new T.Mesh(own(new T.DodecahedronGeometry(1,0)),stoneM);st.scale.set(.7,2.4+((i*37)%5)*.25,.55);st.position.set(Math.cos(a)*9.8,1.9,Math.sin(a)*9.8);st.rotation.y=-a;st.castShadow=true;g.add(st);
-      const cap=new T.Mesh(own(lpSph(.75,10,6,0,TAU,0,Math.PI/2)),mossM);cap.scale.set(.9,.4,.8);cap.position.set(st.position.x,st.position.y+st.scale.y*.82,st.position.z);g.add(cap);
+    for(let i=0;i<7;i++){const a=i/7*TAU+.2;const st=new T.Mesh(own(REAL?rockGeo(i*2.3+1,{w:32,h:24,cuts:6}):new T.DodecahedronGeometry(1,0)),stoneM);st.scale.set(.7,2.4+((i*37)%5)*.25,.55);st.position.set(Math.cos(a)*9.8,1.9,Math.sin(a)*9.8);st.rotation.y=-a;st.castShadow=true;g.add(st);
+      if(!REAL){const cap=new T.Mesh(own(lpSph(.75,10,6,0,TAU,0,Math.PI/2)),mossM);cap.scale.set(.9,.4,.8);cap.position.set(st.position.x,st.position.y+st.scale.y*.82,st.position.z);g.add(cap);}
       const tip=new T.Mesh(sphereG(),glowMat(TEAMS[team].hex,2.6));tip.scale.setScalar(.26);tip.position.set(Math.cos(a)*9.8,st.position.y+st.scale.y+.75,Math.sin(a)*9.8);g.add(tip);}
     group.add(g);}
 }
 function buildNestView(n,B){
   const g=new T.Group();const s=n.main?1.85:1;const tc=TEAMS[n.team].hex;
-  const pad=new T.Mesh(geo('nestPad',()=>lpCyl(3,3.4,.35,40)),pmat('#5a5c50',{roughness:.9}));const pmoss=new T.Mesh(geo('nestMoss',()=>lpCyl(2.7,2.9,.08,40)),pmat('#4f7a3a',{roughness:.95}));pmoss.position.y=.3;g.add(pmoss);pad.position.y=.1;pad.receiveShadow=true;g.add(pad);
+  const pad=new T.Mesh(geo(REAL?'nestPadR':'nestPad',()=>REAL?rockGeo(4.4,{w:64,h:24,sy:.12,bump:.18,cuts:0,flat:-.02,fine:.04}).scale(3.2,1,3.2):lpCyl(3,3.4,.35,40)),REAL?matc('nestStone',()=>tpMat({tex:'rock',tint:'#a49e90',moss:.7,mossLo:1.0,mossHi:1.4,mossCol:'#5f7f2e',scale:.5,nStr:2,key:'nest'})):pmat('#5a5c50',{roughness:.9}));const pmoss=new T.Mesh(geo('nestMoss',()=>lpCyl(2.7,2.9,.08,40)),pmat('#4f7a3a',{roughness:.95}));pmoss.position.y=.3;if(!REAL)g.add(pmoss);pad.position.y=.1;pad.receiveShadow=true;g.add(pad);
   const ringMat=own(new T.MeshBasicMaterial({color:col(tc).multiplyScalar(4),toneMapped:false}));
   const ring=new T.Mesh(geo('nestRing',()=>lpTor(3.15,.09,8,64)),ringMat);ring.rotation.x=Math.PI/2;ring.position.y=.3;g.add(ring);
-  const twig=pmat(B.twig,{roughness:.85,clearcoat:.1});const twig2=pmat('#a07a50',{roughness:.85,clearcoat:.1});
+  const twig=REAL?matc('twigR'+B.twig,()=>tpMat({tex:'bark',tint:B.twig,scale:1.6,nStr:2,key:'twig'})):pmat(B.twig,{roughness:.85,clearcoat:.1});const twig2=REAL?matc('twigR2',()=>tpMat({tex:'bark',tint:'#a07a50',scale:1.6,nStr:2,key:'twig'})):pmat('#a07a50',{roughness:.85,clearcoat:.1});
   const bowl=new T.Group();g.add(bowl);
   for(let i=0;i<9;i++){const t=new T.Mesh(geo('twigRing',()=>lpTor(1,.17,6,26)),i%2?twig:twig2);const y=.45+i*.11;const r=1.35+i*.09;t.scale.set(r,r,1+i*.05);t.position.y=y;t.rotation.set(Math.PI/2+(Math.random()-.5)*.3,(Math.random()-.5)*.3,Math.random()*TAU);t.castShadow=true;bowl.add(t);}
   for(let i=0;i<10;i++){const a=i/10*TAU+Math.random()*.4;const st=new T.Mesh(cylG(.05,.07,1.6,5),twig2);st.position.set(Math.cos(a)*2,1.2,Math.sin(a)*2);st.rotation.set(Math.sin(a)*.9,0,-Math.cos(a)*.9);bowl.add(st);}
   const eggMat=own(new T.MeshPhysicalMaterial({color:col(tc).lerp(new T.Color(1,1,1),.45),emissive:col(tc),emissiveIntensity:.9,roughness:.25,clearcoat:1,sheen:1,sheenColor:new T.Color(1,1,1)}));
   const eggs=[];for(let i=0;i<3;i++){const a=i/3*TAU;const e=new T.Mesh(sphereG(),eggMat);e.scale.set(.55,.75,.55);e.position.set(Math.cos(a)*.55,1.35,Math.sin(a)*.55);e.rotation.z=Math.cos(a)*.25;e.castShadow=true;bowl.add(e);eggs.push(e);}
   let crystal=null;
-  if(n.main){const bark=pmat('#4a3322',{roughness:.9,flatShading:true});const tr=new T.Mesh(geo('heartTrunk',()=>lpCyl(.22,.5,4.6,8)),bark);tr.position.y=2.6;tr.castShadow=true;g.add(tr);
-    for(const [x,y,z,r] of [[0,5.5,0,1.5],[.9,5,.4,1.05],[-.85,5.1,-.3,1.1],[.2,6.2,-.2,1]]){const c=new T.Mesh(geo('heartLeaf'+r,()=>new T.IcosahedronGeometry(r,1)),own(new T.MeshStandardMaterial({color:col(tc).lerp(col('#3f6a34'),.62),emissive:col(tc),emissiveIntensity:.18,roughness:.8,flatShading:true})));c.position.set(x,y,z);c.castShadow=true;g.add(c);}
+  if(n.main){const bark=REAL?matc('heartBark',()=>tpMat({tex:'bark',tint:'#6a4a32',moss:.6,mossLo:-.1,scale:1,nStr:2,key:'hbark'})):pmat('#4a3322',{roughness:.9,flatShading:true});const tr=new T.Mesh(geo('heartTrunk',()=>lpCyl(.22,.5,4.6,8)),bark);tr.position.y=2.6;tr.castShadow=true;g.add(tr);
+    if(REAL){const lc=matc('heartLeafR'+n.team,()=>{const m=nearFade(windify(cardMat(RTEX.leaf,{trans:.3}),.015,4),3,6);m.color=col(tc).lerp(col('#4f8a3a'),.55).multiplyScalar(1.3);m.emissive=col(tc).multiplyScalar(.12);return m;});
+      const cl=new T.Mesh(geo('heartCanopyR',()=>leafCloud([[0,5.5,0,1.7,.8,.75],[1,5,.4,1.2,.8,.7],[-.95,5.1,-.3,1.25,.8,.7],[.2,6.3,-.2,1.1,.85,.7]],200,51)),lc);cl.castShadow=true;cl.customDepthMaterial=cardDepth(RTEX.leaf);g.add(cl);}
+    else for(const [x,y,z,r] of [[0,5.5,0,1.5],[.9,5,.4,1.05],[-.85,5.1,-.3,1.1],[.2,6.2,-.2,1]]){const c=new T.Mesh(geo('heartLeaf'+r,()=>new T.IcosahedronGeometry(r,1)),own(new T.MeshStandardMaterial({color:col(tc).lerp(col('#3f6a34'),.62),emissive:col(tc),emissiveIntensity:.18,roughness:.8,flatShading:true})));c.position.set(x,y,z);c.castShadow=true;g.add(c);}
     crystal=new T.Mesh(geo('heartSeed',()=>new T.IcosahedronGeometry(.62,2)),own(new T.MeshStandardMaterial({color:col(tc),emissive:col(tc),emissiveIntensity:2.6,roughness:.25})));crystal.scale.set(1,1.3,1);crystal.position.y=3.6;g.add(crystal);
     const halo=new T.Mesh(geo('halo',()=>lpTor(1.4,.05,6,48)),ringMat);halo.position.y=3.6;halo.rotation.x=Math.PI/2.3;g.add(halo);n.halo=halo;}
   g.scale.setScalar(s);
@@ -324,10 +331,105 @@ function buildGarden(map,group,B){
   if(pl.length){const sc=col(B.stone||'#9a9c90');const im=makeInstanced(own(new T.DodecahedronGeometry(.32,0)),own(new T.MeshStandardMaterial(lpMatOpts({}))),pl,null,(it)=>sc.clone().multiplyScalar(.82+it.tint*.3));im.castShadow=false;group.add(im);}
 }
 
+/* =========================================================
+   Remaster dressing: flagstone paths, mossy boulders, bark + leaf-card trees, grass clumps, ferns and leafy bushes
+   ========================================================= */
+const REAL_GEO={};
+function flagGeo(k){return REAL_GEO['flag'+k]||(REAL_GEO['flag'+k]=(()=>{const g=rockGeo(k*3.7+.5,{w:28,h:16,bump:.55,cuts:7,sy:.16,flat:-.05,fine:.03});return g;})());}
+function buildFlagstones(map,group,B){
+  const R=mulberry32(map.seed^0xf1a6);const L=[[],[],[]];const hw=map.lw*.5;const stone=col(B.stone||'#9a9c90');
+  for(const lane of map.lanes){for(let x=-84;x<=84;x+=1.05){const z0=map.laneZ(lane.k,x);
+      for(let s=-hw+.6;s<=hw-.6;s+=1.15){if(R()<.18)continue;const xx=x+(R()-.5)*.45,zz=z0+s+(R()-.5)*.4;if(Math.hypot(Math.abs(xx)-86,zz)<12.8)continue;
+        if(map.nests.some(n=>dist2(n.x,n.z,xx,zz)<(n.main?22:9)))continue;const edge=Math.abs(s)/hw;if(R()<edge*.55)continue;
+        L[Math.floor(R()*3)].push({x:xx,y:map.heightAt(xx,zz)-.02,z:zz,s:.5+R()*.22,sy:1,rot:R()*TAU,tint:R()});}}}
+  for(const sx of [-1,1]){for(let r=1.2;r<12;r+=1.1){const n=Math.max(4,Math.floor(TAU*r/1.15));for(let i=0;i<n;i++){if(R()<.12)continue;const a=i/n*TAU+R()*.2+r;const xx=sx*86+Math.cos(a)*r,zz=Math.sin(a)*r;
+      L[Math.floor(R()*3)].push({x:xx,y:map.heightAt(xx,zz)-.02,z:zz,s:.5+R()*.2,sy:1,rot:R()*TAU,tint:R()});}}}
+  const m=own(tpMat({tex:'rock',moss:.7,mossLo:1.08,mossHi:1.45,mossCol:(B.grass||B.detail)[0],scale:.55,nStr:1.8,rough:.8,key:'flag'}));
+  L.forEach((list,k)=>{if(!list.length)return;const im=makeInstanced(flagGeo(k),m,list,null,(it)=>stone.clone().multiplyScalar(.8+it.tint*.35));im.castShadow=false;group.add(im);});
+}
+function buildBoulders(map,group,B){
+  const R=mulberry32(map.seed^0xb0b0);const hw=map.lw*.5;const L=[[],[],[]];
+  for(let i=0;i<500&&L[0].length+L[1].length+L[2].length<44;i++){const x=-(4+R()*86),z=(R()*2-1)*(map.Lz+10);const big=R()<.35;const s=big?1.1+R()*1.1:.35+R()*.45;
+    if(map.laneDistAt(x,z)<hw+(big?3:1.2))continue;if(Math.hypot(x+86,z)<16)continue;if(map.nests.some(n=>dist2(n.x,n.z,x,z)<64))continue;if(dist2(x,z,map.boss.x,map.boss.z)<120)continue;
+    if((map.trees||[]).some(t=>dist2(t.x,t.z,x,z)<9))continue;if(map.props.some(p=>dist2(p.x,p.z,x,z)<9))continue;if(map.geysers.some(g=>dist2(g.x,g.z,x,z)<20)||map.spawns.some(g=>dist2(g.x,g.z,x,z)<16))continue;
+    const k=Math.floor(R()*3);const it={x,y:map.heightAt(x,z)-s*.25,z,s,sy:.85,rot:R()*TAU,tint:R()};L[k].push(it,{x:-x,y:it.y,z,s,sy:.85,rot:-it.rot,tint:it.tint});
+    if(big){world.colliders.push({x,z,r:s*.9},{x:-x,z,r:s*.9});}}
+  const m=own(tpMat({tex:'rock',moss:B.id==='frost'?.95:.85,mossCol:B.id==='frost'?'#f4f8ff':(B.grass||B.detail)[0],mossLo:.2,scale:.38,nStr:2.2,key:'boulder'}));const sc=col(B.stone||'#9a9c90');
+  L.forEach((list,k)=>{if(!list.length)return;if(!REAL_GEO['bould'+k])REAL_GEO['bould'+k]=rockGeo(k*5.1+2,{w:56,h:40});group.add(makeInstanced(REAL_GEO['bould'+k],m,list,null,(it)=>sc.clone().multiplyScalar(.75+it.tint*.35)));});
+}
+function realTreeGeos(kind){const key='rtree'+kind;if(REAL_GEO[key])return REAL_GEO[key];
+  const pine=kind==='pine',tall=kind==='tall';const h=pine?2.6:tall?4.4:3.4;
+  // trunk with flared roots, gently leaning, lumpy bark
+  const t=new T.CylinderGeometry(pine?.2:.3,pine?.42:.58,h,18,10,true);t.translate(0,h/2,0);const p=t.attributes.position;
+  for(let i=0;i<p.count;i++){const y=p.getY(i),x=p.getX(i),z=p.getZ(i);const a=Math.atan2(z,x);const flare=1+Math.pow(Math.max(0,1-y/1.1),2)*(1.1+.5*Math.sin(a*4))+(fbm3(x*2,y*1.4,z*2,3,4)-.5)*.35;
+    p.setXYZ(i,x*flare+Math.sin(y*.6)*.12,y,z*flare);}
+  t.computeVertexNormals();const parts=[t];
+  if(!pine){for(const [rz,ry,l,y0] of [[-.85,0,1.9,h*.78],[.9,2.2,1.6,h*.68],[-.7,4.1,1.4,h*.86]]){const b=new T.CylinderGeometry(.07,.17,l,8,1,true);b.translate(0,l/2,0);b.rotateZ(rz);b.rotateY(ry);b.translate(0,y0,0);parts.push(b);}}
+  const trunk=mergeGeos(parts.map(g=>g.toNonIndexed()));
+  const blobs=pine?[[0,h+.6,0,2.1,.45,1.2],[0,h+1.8,0,1.65,.45,1.1],[0,h+2.9,0,1.2,.5,1],[0,h+3.9,0,.75,.6,.9]]
+    :tall?[[0,h+1.8,0,1.7,.9],[.6,h+.5,.4,1.5,.8],[-.2,h+3.1,-.1,1.25,.9],[1.1,h+1.3,-.6,1.2,.8],[-1,h+1.1,.5,1.25,.8]]
+    :[[0,h+1.2,0,2.2,.75],[1.4,h+.6,.6,1.55,.75],[-1.3,h+.7,-.5,1.6,.75],[.3,h+2.1,-.2,1.5,.8],[-.4,h+.3,1.3,1.35,.75],[.5,h+.4,-1.4,1.3,.75]];
+  const canopy=leafCloud(blobs,pine?260:tall?300:340,kind.length*7+3);
+  return REAL_GEO[key]={trunk,canopy};}
+function cardInstanced(geom,mat,depth,list,colors,shadow){const im=makeInstanced(geom,mat,list,null,colors);im.castShadow=!!shadow;if(depth)im.customDepthMaterial=depth;return im;}
+function buildTreesReal(map,group,B){
+  const list=map.trees||[];if(!list.length)return;
+  for(const t of list){t.y=map.heightAt(t.x,t.z)-.1;world.colliders.push({x:t.x,z:t.z,r:.75*t.s});}
+  const bark=own(nearFade(tpMat({tex:'bark',tint:B.trunk,moss:.7,mossLo:-.2,mossHi:.6,mossCol:(B.grass||B.detail)[0],scale:.7,nStr:2,key:'bark'}),3,6.5));
+  const leafM=own(nearFade(windify(cardMat(RTEX.leaf,{trans:.26}),.02,2.5),4,8.5));const leafD=cardDepth(RTEX.leaf);
+  const c1=col(B.canopy),c2=col(B.canopy2||B.canopy);const byKind={};for(const t of list)(byKind[t.kind]=byKind[t.kind]||[]).push(t);
+  for(const kind in byKind){const L=byKind[kind];const G=realTreeGeos(kind);
+    group.add(makeInstanced(G.trunk,bark,L,null,(it)=>new T.Color(1,1,1).multiplyScalar(.85+it.tint*.3)));
+    group.add(cardInstanced(G.canopy,leafM,leafD,L,(it)=>c1.clone().lerp(c2,it.tint>.72?.75:it.tint*.25).multiplyScalar(1.1+it.tint*.25),true));}
+  if(B.fruit){const fl=[];const R=mulberry32(map.seed^0xf00d);for(const t of list){if(t.kind==='pine')continue;const n=2+Math.floor(R()*3);for(let i=0;i<n;i++){const a=R()*TAU,r=(1+R()*1.1)*t.s;fl.push({x:t.x+Math.cos(a)*r,y:t.y+(t.kind==='tall'?4.6:3.6)*t.s+R()*.6,z:t.z+Math.sin(a)*r,s:.12+R()*.08,rot:0});}}
+    const glow=B.id==='glow'||B.id==='ruins';const fm=own(glow?new T.MeshBasicMaterial({color:col(B.fruit).multiplyScalar(3),toneMapped:false}):new T.MeshStandardMaterial({color:col(B.fruit),roughness:.5}));
+    const fi=makeInstanced(own(new T.SphereGeometry(1,12,8)),fm,fl);fi.castShadow=false;group.add(fi);}
+}
+function buildGardenReal(map,group,B){
+  buildTextures();const R=mulberry32(map.seed^0x5f3759df);const hw=map.lw*.5;const nearBase=(x,z,r)=>Math.hypot(Math.abs(x)-86,z)<r;
+  const treeNear=(x,z,r)=>(map.trees||[]).some(t=>dist2(t.x,t.z,x,z)<r*r);
+  // grass clumps: dense along the path edges and meadows
+  const gl=[];for(let i=0;i<40000&&gl.length<14000;i++){const x=(R()*2-1)*94,z=(R()*2-1)*(map.zWall+3);const d=map.laneDistAt(x,z);
+    if(d<hw-.3)continue;if(nearBase(x,z,13))continue;if(map.nests.some(n=>dist2(n.x,n.z,x,z)<(n.main?30:10)))continue;const edge=d<hw+2.5;if(!edge&&R()<.35)continue;
+    gl.push({x,y:map.heightAt(x,z)-.05,z,s:(edge?.45:.55)+R()*.4,sy:.75+R()*.45,rot:R()*TAU,tint:R()});}
+  const gp=(B.grass||B.detail).map(col);const gm=own(windify(cardMat(RTEX.grassCard,{alphaTest:.42,trans:.3,rough:.85}),.12,0));
+  group.add(cardInstanced(grassClumpGeo(1.1,.9),gm,null,gl,(it)=>gp[Math.floor(it.tint*gp.length)%gp.length].clone().multiplyScalar(1.15+it.tint*.3),false));
+  // ferns in the shade near trees and boulders
+  const fl=[];for(let i=0;i<4000&&fl.length<420;i++){const x=(R()*2-1)*92,z=(R()*2-1)*(map.zWall+1);const d=map.laneDistAt(x,z);if(d<hw+1.2||nearBase(x,z,15))continue;if(!treeNear(x,z,5)&&R()<.8)continue;
+    fl.push({x,y:map.heightAt(x,z)-.05,z,s:.7+R()*.6,rot:R()*TAU,tint:R()});}
+  if(fl.length){const fm=own(windify(cardMat(RTEX.fern,{alphaTest:.45,trans:.3}),.08,0));const fc=col(B.canopy).lerp(gp[0],.5);
+    group.add(cardInstanced(fernGeo(7),fm,null,fl,(it)=>fc.clone().multiplyScalar(1.2+it.tint*.3),false));}
+  // flowers (kept from the garden set, smooth)
+  const fw=[];for(let i=0;i<1400&&fw.length<380;i++){const x=(R()*2-1)*92,z=(R()*2-1)*(map.zWall+1);const d=map.laneDistAt(x,z);if(d<hw+.9||nearBase(x,z,14)||treeNear(x,z,1.5))continue;
+    const n=1+Math.floor(R()*3);const c=Math.floor(R()*99);for(let k=0;k<n;k++){const xx=x+(R()-.5)*1.1,zz=z+(R()-.5)*1.1;fw.push({x:xx,y:map.heightAt(xx,zz)-.02,z:zz,s:.7+R()*.5,rot:R()*TAU,tint:R(),c});}}
+  if(fw.length){const fc=(B.flowers||['#ffffff']).map(col);const stem=own(new T.CylinderGeometry(.015,.022,.5,5));stem.translate(0,.25,0);
+    const petals=[];for(let i=0;i<5;i++){const a=i/5*TAU;const pt=new T.SphereGeometry(.07,10,6);pt.scale(1.3,.3,.8);pt.translate(Math.cos(a)*.08,.51,Math.sin(a)*.08);petals.push(pt.toNonIndexed());}const head=own(mergeGeos(petals));head.computeVertexNormals();
+    const ctr=own(new T.SphereGeometry(.04,10,6));ctr.translate(0,.53,0);const wm=c=>own(windify(new T.MeshStandardMaterial({color:c?col(c):0xffffff,roughness:.6}),.1,0));
+    for(const [g,m,cf] of [[stem,wm('#4f7a34'),null],[head,wm(null),(it)=>fc[it.c%fc.length].clone()],[ctr,wm('#ffd24a'),null]]){const im=makeInstanced(g,m,fw,null,cf);im.castShadow=false;group.add(im);}}
+  // leafy bushes
+  const bl=[];for(let i=0;i<600&&bl.length<70;i++){const x=-(3+R()*88),z=(R()*2-1)*(map.Lz+10);const d=map.laneDistAt(x,z);if(d<hw+1.8||nearBase(x,z,16)||treeNear(x,z,3)||map.props.some(p=>dist2(p.x,p.z,x,z)<7)||map.geysers.some(g=>dist2(g.x,g.z,x,z)<16)||map.spawns.some(g=>dist2(g.x,g.z,x,z)<9))continue;
+    if(bl.some(b=>dist2(b.x,b.z,x,z)<9))continue;const it={x,y:map.heightAt(x,z)-.1,z,s:.7+R()*.6,rot:R()*TAU,tint:R()};bl.push(it,{x:-x,y:it.y,z,s:it.s,rot:-it.rot,tint:it.tint});}
+  if(bl.length){if(!REAL_GEO.bush)REAL_GEO.bush=leafCloud([[0,.6,0,.95,.7,.75],[.8,.45,.2,.7,.7,.7],[-.75,.42,-.15,.7,.7,.7],[.1,1,-.3,.6,.8,.65]],120,77);
+    const bm=own(nearFade(windify(cardMat(RTEX.leaf,{trans:.26}),.03,.3),2,4.5));const c1=col(B.canopy2||B.canopy),c2=col(B.canopy);
+    group.add(cardInstanced(REAL_GEO.bush,bm,cardDepth(RTEX.leaf),bl,(it)=>c1.clone().lerp(c2,it.tint*.6).multiplyScalar(1.15),true));}
+  // pebbles along the path edges
+  const pl=[];for(let i=0;i<3000&&pl.length<300;i++){const x=(R()*2-1)*92,z=(R()*2-1)*(map.zWall);const d=map.laneDistAt(x,z);if(d<hw-.2||d>hw+2.4||nearBase(x,z,13))continue;pl.push({x,y:map.heightAt(x,z)-.05,z,s:.18+R()*.3,sy:.7,rot:R()*TAU,tint:R()});}
+  if(pl.length){if(!REAL_GEO.peb)REAL_GEO.peb=rockGeo(9.9,{w:20,h:14});const sc=col(B.stone||'#9a9c90');const im=makeInstanced(REAL_GEO.peb,own(tpMat({tex:'rock',scale:1.2,nStr:1.6,key:'peb'})),pl,null,(it)=>sc.clone().multiplyScalar(.75+it.tint*.4));im.castShadow=false;group.add(im);}
+}
+function buildForestWallReal(map,group,B){
+  const R=mulberry32(map.seed^0x1234567);const list=[];const zE=map.zWall+6,xE=map.xWall+6;
+  for(let i=0;i<130;i++){let x,z;if(R()<.7){x=(R()*2-1)*(xE+16);z=(R()<.5?-1:1)*(zE+4+R()*26);}else{x=(R()<.5?-1:1)*(xE+4+R()*22);z=(R()*2-1)*(zE+20);}
+    list.push({x,z,y:map.heightAt(x,z)-1,s:3+R()*2.5,rot:R()*TAU,tint:R()});}
+  const kind=B.pines?'pine':'tall';const G=realTreeGeos(kind);
+  const bark=own(tpMat({tex:'bark',tint:B.trunk,moss:.5,mossCol:(B.grass||B.detail)[0],scale:.35,nStr:2,key:'barkW'}));const leafM=own(windify(cardMat(RTEX.leaf,{trans:.22}),.006,8));
+  group.add(makeInstanced(G.trunk,bark,list,null,(it)=>new T.Color(1,1,1).multiplyScalar(.7+it.tint*.3)));
+  const c=col(B.canopy);group.add(cardInstanced(G.canopy,leafM,cardDepth(RTEX.leaf),list,(it)=>c.clone().multiplyScalar(.85+it.tint*.35),true));
+}
+
 /* ---------- enchanted-forest dressing: soft halo, giant treeline, fireflies, light shafts ---------- */
 let _haloTex=null;function haloTex(){if(_haloTex)return _haloTex;const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');const g=x.createRadialGradient(64,64,0,64,64,64);
   g.addColorStop(0,'rgba(255,255,255,.9)');g.addColorStop(.2,'rgba(255,255,255,.35)');g.addColorStop(.5,'rgba(255,255,255,.08)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return _haloTex=new T.CanvasTexture(c);}
-function buildForestWall(map,group,B){
+function buildForestWall(map,group,B){if(REAL)return buildForestWallReal(map,group,B);
   const R=mulberry32(map.seed^0x1234567);const list=[];const zE=map.zWall+6,xE=map.xWall+6;
   for(let i=0;i<150;i++){let x,z;const side=R();
     if(side<.7){x=(R()*2-1)*(xE+16);z=(R()<.5?-1:1)*(zE+4+R()*26);}else{x=(R()<.5?-1:1)*(xE+4+R()*22);z=(R()*2-1)*(zE+20);}
