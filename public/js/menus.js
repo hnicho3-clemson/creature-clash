@@ -483,11 +483,11 @@ function showResults(){
 const optMap={optTimer:'timerIsHardLimit',optMain:'mainNestNeedsClearedLane',optFinish:'downedCanBeFinishedOff',optSpit:'nestsSpitGoo'};
 for(const id in optMap){const el=$('#'+id);el.checked=!!S[optMap[id]];el.addEventListener('change',()=>{S[optMap[id]]=el.checked;});}
 const savedSet=Sec.settings(store.get(SETTINGS_KEY,{}),Object.values(optMap));
-function saveSettings(){store.set(SETTINGS_KEY,{bloom:quality.bloom,shadows:quality.shadows,sound:AudioFX.on,music:Music.on,toggles:{timerIsHardLimit:S.timerIsHardLimit,mainNestNeedsClearedLane:S.mainNestNeedsClearedLane,downedCanBeFinishedOff:S.downedCanBeFinishedOff,nestsSpitGoo:S.nestsSpitGoo}});}
+function saveSettings(){store.set(SETTINGS_KEY,{bloom:quality.bloom,shadows:quality.shadows,ao:quality.ao,sound:AudioFX.on,music:Music.on,toggles:{timerIsHardLimit:S.timerIsHardLimit,mainNestNeedsClearedLane:S.mainNestNeedsClearedLane,downedCanBeFinishedOff:S.downedCanBeFinishedOff,nestsSpitGoo:S.nestsSpitGoo}});}
 if(savedSet.toggles)for(const k in savedSet.toggles)if(k in S)S[k]=!!savedSet.toggles[k];for(const id in optMap)$('#'+id).checked=!!S[optMap[id]];
 for(const id in optMap)$('#'+id).addEventListener('change',saveSettings);
-if(savedSet.bloom===false){quality.bloom=false;if(bloomPass)bloomPass.enabled=false;}if(savedSet.shadows===false){quality.shadows=false;sun.castShadow=false;}if(savedSet.sound===false)AudioFX.on=false;if(savedSet.music===false)Music.on=false;
-$('#optBloom').checked=quality.bloom;$('#optBloom').addEventListener('change',e=>{quality.bloom=e.target.checked;if(bloomPass)bloomPass.enabled=quality.bloom;saveSettings();});
+if(savedSet.bloom===false){quality.bloom=false;if(bloomPass)bloomPass.enabled=false;}if(savedSet.ao===false)quality.ao=false;if(savedSet.shadows===false){quality.shadows=false;sun.castShadow=false;}if(savedSet.sound===false)AudioFX.on=false;if(savedSet.music===false)Music.on=false;
+$('#optAO').checked=quality.ao;$('#optAO').addEventListener('change',e=>{quality.ao=e.target.checked;saveSettings();});$('#optBloom').checked=quality.bloom;$('#optBloom').addEventListener('change',e=>{quality.bloom=e.target.checked;if(bloomPass)bloomPass.enabled=quality.bloom;saveSettings();});
 if(!composer){$('#optBloom').disabled=true;$('#optBloom').closest('.opt').querySelector('span').textContent='Not available on this device.';}
 $('#optShadows').checked=quality.shadows;$('#optShadows').addEventListener('change',e=>{quality.shadows=e.target.checked;sun.castShadow=quality.shadows;saveSettings();});
 $('#optSound').checked=AudioFX.on;$('#optSound').addEventListener('change',e=>{AudioFX.on=e.target.checked;saveSettings();});

@@ -150,24 +150,65 @@ const camera=new T.PerspectiveCamera(55,innerWidth/innerHeight,.1,2200);
 const cameras=[camera];
 const hemi=new T.HemisphereLight(0xffffff,0x444444,.55);scene.add(hemi);
 const sun=new T.DirectionalLight(0xffffff,2.2);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-{const sc=sun.shadow.camera;sc.left=-42;sc.right=42;sc.top=42;sc.bottom=-42;sc.near=1;sc.far=240;}
-sun.shadow.bias=-.0004;sun.shadow.normalBias=.05;scene.add(sun);scene.add(sun.target);
-const SUN_DIR=new T.Vector3(-.5,1,.38).normalize();
-const quality={bloom:true,shadows:true};
+{const sc=sun.shadow.camera;sc.left=-34;sc.right=34;sc.top=34;sc.bottom=-34;sc.near=1;sc.far=240;}
+sun.shadow.bias=-.0003;sun.shadow.normalBias=.04;scene.add(sun);scene.add(sun.target);
+const SUN_DIR=new T.Vector3(-.62,.7,.46).normalize();// golden-hour sun: longer, more readable shadows
+const quality={bloom:true,shadows:true,ao:true};
 
-const FinalShader={uniforms:{tDiffuse:{value:null},exposure:{value:1.0},desat:{value:0},vig:{value:1.4},time:{value:0},sat:{value:1.12}},
+const FinalShader={uniforms:{tDiffuse:{value:null},exposure:{value:.97},desat:{value:0},vig:{value:1.5},time:{value:0},sat:{value:1.16}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
   fragmentShader:'uniform sampler2D tDiffuse;uniform float exposure,desat,vig,time,sat;varying vec2 vUv;'+
   'vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}'+
-  'void main(){vec3 c=texture2D(tDiffuse,vUv).rgb*exposure;c=aces(c);c=pow(c,vec3(1./2.2));float l=dot(c,vec3(.2126,.7152,.0722));c=mix(vec3(l),c,sat*(1.-desat));vec2 d=vUv-.5;c*=1.-dot(d,d)*vig;c+=(fract(sin(dot(vUv+fract(time),vec2(12.9898,78.233)))*43758.5453)-.5)/255.;gl_FragColor=vec4(c,1.);}'};
+  'void main(){vec3 c=texture2D(tDiffuse,vUv).rgb*exposure;c=aces(c);c=pow(c,vec3(1./2.2));float l=dot(c,vec3(.2126,.7152,.0722));c*=mix(vec3(.94,.98,1.07),vec3(1.05,1.0,.93),smoothstep(.15,.85,l));c=clamp(c,0.,1.);c=mix(c,c*c*(3.-2.*c),.22);l=dot(c,vec3(.2126,.7152,.0722));c=mix(vec3(l),c,sat*(1.-desat));vec2 d=vUv-.5;c*=1.-dot(d,d)*vig;c+=(fract(sin(dot(vUv+fract(time),vec2(12.9898,78.233)))*43758.5453)-.5)/255.;gl_FragColor=vec4(c,1.);}'};
 let composer=null,finalPass=null,bloomPass=null,renderPass=null;
+/* ---------- modern lighting pass ----------
+   1. the scene renders into a 4x MSAA target that keeps its depth
+   2. SSAO (12 samples, half resolution) is computed from that depth, with normals rebuilt from the faceted geometry
+   3. the composite blurs the AO along depth edges, darkens creases with a cool tint, and adds a soft sun glow into the haze */
+const AO_VS='varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}';
+const AO_COMMON='uniform sampler2D tDepth;uniform mat4 proj,invProj;varying vec2 vUv;vec3 vp(vec2 uv){float d=texture2D(tDepth,uv).x;vec4 v=invProj*vec4(vec3(uv,d)*2.-1.,1.);return v.xyz/v.w;}';
+const AO_FS=AO_COMMON+'uniform vec2 res;uniform float radius,power;'+
+ 'void main(){float d=texture2D(tDepth,vUv).x;if(d>.99999){gl_FragColor=vec4(1.);return;}vec2 t=1./res;vec3 p=vp(vUv);'+
+ 'vec3 r=vp(vUv+vec2(t.x,0.)),l=vp(vUv-vec2(t.x,0.)),u=vp(vUv+vec2(0.,t.y)),dn=vp(vUv-vec2(0.,t.y));'+
+ 'vec3 dx=abs(r.z-p.z)<abs(p.z-l.z)?r-p:p-l;vec3 dy=abs(u.z-p.z)<abs(p.z-dn.z)?u-p:p-dn;vec3 n=normalize(cross(dx,dy));'+
+ 'float ign=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))));float a0=ign*6.2831853;'+
+ 'vec3 tg=normalize(abs(n.y)<.9?cross(n,vec3(0.,1.,0.)):cross(n,vec3(1.,0.,0.)));vec3 bt=cross(n,tg);float rad=radius*clamp(-p.z/14.,1.,3.);float occ=0.;'+
+ 'for(int i=0;i<12;i++){float fi=float(i);float k=(fi+.5)/12.;float ang=a0+fi*2.39996;float sr=sqrt(1.-k);vec3 h=vec3(cos(ang)*sr,sin(ang)*sr,sqrt(k));float sc=mix(.12,1.,fract(fi/12.+ign));sc*=sc;'+
+ 'vec3 s=p+(tg*h.x+bt*h.y+n*h.z)*rad*sc;vec4 c=proj*vec4(s,1.);vec2 su=c.xy/c.w*.5+.5;if(su.x<0.||su.x>1.||su.y<0.||su.y>1.)continue;'+
+ 'float sz=vp(su).z;float rc=smoothstep(0.,1.,rad/max(abs(p.z-sz),1e-4));occ+=(sz>=s.z+.03*rad?1.:0.)*rc;}'+
+ 'float ao=clamp(1.-occ/12.*power,0.,1.);gl_FragColor=vec4(ao,ao,ao,1.);}';
+const COMP_FS=AO_COMMON+'uniform sampler2D tColor,tAO;uniform vec2 aoRes;uniform float aoK,fogNear,fogFar,glowK;uniform vec3 sunDirV,sunCol,aoTint;'+
+ 'void main(){vec4 c=texture2D(tColor,vUv);float d0=texture2D(tDepth,vUv).x;vec3 p0=vp(vUv);float ao=1.;'+
+ 'if(aoK>0.&&d0<.99999){float sum=0.,w=0.;for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 o=vec2(float(x),float(y))/aoRes;float dz=vp(vUv+o).z;float ww=exp(-abs(dz-p0.z)*2.5);sum+=texture2D(tAO,vUv+o).x*ww;w+=ww;}ao=sum/max(w,1e-4);}'+
+ 'c.rgb*=mix(vec3(1.),mix(aoTint,vec3(1.),ao),aoK);'+
+ 'float dist=d0>.99999?1e5:length(p0);vec3 vd=normalize(p0);float g=max(dot(vd,sunDirV),0.);float fogF=smoothstep(fogNear,fogFar,dist);'+
+ 'c.rgb+=sunCol*(pow(g,7.)*.85+pow(g,40.)*1.2)*fogF*glowK;gl_FragColor=c;}';
+let litPass=null;
+function makeLitPass(w,h){
+  const gl2=renderer.capabilities.isWebGL2;const dt=new T.DepthTexture(w,h);dt.type=T.UnsignedIntType;
+  const rt=new T.WebGLRenderTarget(w,h,{type:T.HalfFloatType,samples:gl2?4:0,depthTexture:dt});
+  const aoRT=new T.WebGLRenderTarget(Math.max(1,w>>1),Math.max(1,h>>1));
+  const shared={tDepth:{value:dt},proj:{value:new T.Matrix4()},invProj:{value:new T.Matrix4()}};
+  const aoMat=new T.ShaderMaterial({uniforms:Object.assign({res:{value:new T.Vector2(w,h)},radius:{value:1.15},power:{value:1.7}},shared),vertexShader:AO_VS,fragmentShader:AO_FS,depthTest:false,depthWrite:false});
+  const compMat=new T.ShaderMaterial({uniforms:Object.assign({tColor:{value:rt.texture},tAO:{value:aoRT.texture},aoRes:{value:new T.Vector2(w>>1,h>>1)},aoK:{value:.95},aoTint:{value:new T.Color(.16,.2,.32)},
+    fogNear:{value:60},fogFar:{value:300},glowK:{value:0},sunDirV:{value:new T.Vector3()},sunCol:{value:new T.Color()}},shared),vertexShader:AO_VS,fragmentShader:COMP_FS,depthTest:false,depthWrite:false});
+  const pass=new T.Pass();pass.needsSwap=true;pass.scene=scene;pass.camera=camera;
+  const aoQ=new T.FullScreenQuad(aoMat),compQ=new T.FullScreenQuad(compMat);const _sd=new T.Vector3();
+  pass.setSize=(W,H)=>{rt.setSize(W,H);dt.image.width=W;dt.image.height=H;aoRT.setSize(Math.max(1,W>>1),Math.max(1,H>>1));aoMat.uniforms.res.value.set(W,H);compMat.uniforms.aoRes.value.set(Math.max(1,W>>1),Math.max(1,H>>1));};
+  pass.render=(r,writeBuffer)=>{const sc=pass.scene,cm=pass.camera;r.setRenderTarget(rt);r.clear();r.render(sc,cm);
+    shared.proj.value.copy(cm.projectionMatrix);shared.invProj.value.copy(cm.projectionMatrixInverse);
+    const useAO=quality.ao;if(useAO){r.setRenderTarget(aoRT);aoQ.render(r);}compMat.uniforms.aoK.value=useAO?.95:0;
+    const f=sc.fog;const U=compMat.uniforms;if(f&&f.isFog&&sc===scene){U.fogNear.value=f.near*.35;U.fogFar.value=f.far;U.glowK.value=.55;
+      _sd.copy(sun.position).sub(sun.target.position).normalize().transformDirection(cm.matrixWorldInverse);U.sunDirV.value.copy(_sd);U.sunCol.value.copy(sun.color).multiplyScalar(.5);}else U.glowK.value=0;
+    r.setRenderTarget(pass.renderToScreen?null:writeBuffer);compQ.render(r);};
+  return pass;}
 let curScene=scene,curCam=camera;
 (function setupComposer(){
   try{
     if(!T.EffectComposer||!T.RenderPass||!T.UnrealBloomPass||!T.ShaderPass||!T.CopyShader||!T.LuminosityHighPassShader)throw new Error('no post');
     const rt=new T.WebGLRenderTarget(Math.floor(innerWidth*pixelRatio),Math.floor(innerHeight*pixelRatio),{type:T.HalfFloatType});
     composer=new T.EffectComposer(renderer,rt);
-    renderPass=new T.RenderPass(scene,camera);composer.addPass(renderPass);
+    if(!T.Pass||!T.FullScreenQuad)throw new Error('no pass');renderPass=litPass=makeLitPass(Math.floor(innerWidth*pixelRatio),Math.floor(innerHeight*pixelRatio));composer.addPass(renderPass);
     bloomPass=new T.UnrealBloomPass(new T.Vector2(innerWidth,innerHeight),.6,.55,.9);composer.addPass(bloomPass);
     finalPass=new T.ShaderPass(FinalShader);composer.addPass(finalPass);
     renderer.toneMapping=T.NoToneMapping;renderer.outputEncoding=T.LinearEncoding;

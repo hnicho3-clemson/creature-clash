@@ -59,7 +59,7 @@ function stylize(m,k){m.onBeforeCompile=sh=>{sh.uniforms.rimK={value:k==null?.42
   m.customProgramCacheKey=()=>'stylized'+(k==null?'':k);return m;}
 
 /* painted body: the face mask, hood and skirt edges are drawn per pixel so they stay crisp and clean up close */
-function paintBody(m,u){m.extensions={derivatives:true};m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,u,{rimK:{value:.22}});
+function paintBody(m,u){m.extensions={derivatives:true};m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,u,{rimK:{value:.34}});
   sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vObj;').replace('#include <begin_vertex>','#include <begin_vertex>\nvObj=position;');
   sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform float rimK,pat,ph,hasFace,faceTop;uniform vec3 faceC,accC,faceDir;uniform vec2 faceR;varying vec3 vObj;')
    .replace('#include <color_fragment>','#include <color_fragment>\n'+
@@ -78,12 +78,12 @@ function addOutlines(root,skip){const list=[];root.traverse(o=>{if(!o.isMesh||sk
 
 /* One art style for every creature: each part is matte, flat shaded and low-poly like the body, so a spirit reads as
    one carved-stone toy rather than a rock with shiny plastic bits stuck on. Eyes (userData.keep) stay glossy. */
-function lowpolyMat(m){if(!m||m.userData.lp||m.userData.keep||m.isMeshBasicMaterial||m.isShaderMaterial||m.isSpriteMaterial)return;m.userData.lp=true;
+function lowpolyMat(m,o){if(!m||m.userData.lp||m.userData.keep||m.isMeshBasicMaterial||m.isShaderMaterial||m.isSpriteMaterial)return;m.userData.lp=true;
   if(!(m.isMeshStandardMaterial||m.isMeshPhysicalMaterial))return;
-  m.flatShading=true;m.normalMap=null;m.roughnessMap=null;m.roughness=Math.max(m.roughness,m.transparent?.55:.78);m.metalness=Math.min(m.metalness,.1);
-  if(m.isMeshPhysicalMaterial){m.clearcoat=Math.min(m.clearcoat,.12);m.sheen=0;m.iridescence=0;m.transmission=0;}
-  if(!m.transparent&&!Object.prototype.hasOwnProperty.call(m,'onBeforeCompile'))stylize(m,.26);m.needsUpdate=true;}
-function lowpolyfy(root){root.traverse(o=>{if(!o.isMesh||o.userData.keep)return;if(Array.isArray(o.material))o.material.forEach(lowpolyMat);else lowpolyMat(o.material);});}
+  m.flatShading=true;m.normalMap=null;m.roughnessMap=null;m.roughness=o&&o.satin?clamp(m.roughness,.5,.68):Math.max(m.roughness,m.transparent?.55:.78);m.metalness=Math.min(m.metalness,.1);if(o&&o.satin)m.envMapIntensity=1.25;
+  if(m.isMeshPhysicalMaterial){m.clearcoat=o&&o.satin?Math.min(Math.max(m.clearcoat,.18),.3):Math.min(m.clearcoat,.12);m.clearcoatRoughness=.55;m.sheen=0;m.iridescence=0;m.transmission=0;}
+  if(!m.transparent&&!Object.prototype.hasOwnProperty.call(m,'onBeforeCompile'))stylize(m,o&&o.satin?.34:.22);m.needsUpdate=true;}
+function lowpolyfy(root,opt){root.traverse(o=>{if(!o.isMesh||o.userData.keep)return;if(Array.isArray(o.material))o.material.forEach(m=>lowpolyMat(m,opt));else lowpolyMat(o.material,opt);});}
 
 /* =========================================================
    Geometry helpers
@@ -389,7 +389,8 @@ function buildFaceBits(d,b,f,hasMouth){const g=new T.Group();if(!f)return g;
   // rosy cheeks just below and outside the eyes (one pair, even for a cyclops)
   {const cm=matc('blush',()=>{const m=new T.MeshBasicMaterial({color:col('#ff8f9a'),transparent:true,opacity:.55,depthWrite:false});m.userData.keep=true;return m;});const cg=geo('blushG',()=>lpCirc(1,10));
    const cx=Math.max(f.ax,.12)+f.er*.55,cy=f.ay-f.er*.85;for(const sd of [-1,1]){const m=new T.Mesh(cg,cm);m.userData.keep=true;m.scale.set(f.er*.42,f.er*.26,1);m.renderOrder=2;place([sd*cx,cy,f.az],m,.02);}}
-  if(!hasMouth&&f.n>0){const k=MOUTHS[(d.seed||1)%MOUTHS.length];const my=f.ay-f.er*1.15;
+  if(d.mouth===true&&!hasMouth&&f.n>0){// mouths are off: the spirits read cuter with just eyes and cheeks
+const k=MOUTHS[(d.seed||1)%MOUTHS.length];const my=f.ay-f.er*1.15;
     if(k==='smile'||k==='tiny'){const m=new T.Mesh(geo('smileArc'+k,()=>lpTor(k==='tiny'?.045:.065,.017,4,10,Math.PI)),ink);m.scale.setScalar(clamp(f.er/.16,.7,1.6));const h=new T.Group();h.add(m);m.rotation.z=Math.PI;place([0,my,f.az],h,.012);}
     else if(k==='o'){const m=new T.Mesh(sphereG(),ink);m.scale.set(.04,.048,.02).multiplyScalar(clamp(f.er/.16,.7,1.6));place([0,my-.02,f.az],m,.01);}
     else{for(const sd of [-1,1]){const m=new T.Mesh(geo('smileArcCat',()=>lpTor(.04,.015,4,8,Math.PI)),ink);m.scale.setScalar(clamp(f.er/.16,.7,1.6));const h=new T.Group();h.add(m);m.rotation.z=Math.PI;m.position.x=sd*.04;place([0,my,f.az],h,.012);}}}
@@ -410,9 +411,9 @@ function legBuild(def,s,side,skin,acc){
   const L=def.leg.len*s,th=Math.max(def.leg.thick*Math.sqrt(s)*1.3,def.leg.knee?0:L*.2)*(def.leg.knee?.85:1);const hip=new T.Group();hip.rotation.z=side*def.leg.splay;
   const rK=th*.9;
   const thigh=new T.Mesh(limbGeo(L*.5,th,rK),skin);hip.add(thigh);
-  const hipJ=new T.Mesh(jointG(),skin);hipJ.scale.setScalar(th*.97);hip.add(hipJ);
+  const hipJ=new T.Mesh(jointG(),skin);hipJ.scale.setScalar(th*.88);hip.add(hipJ);
   const knee=new T.Group();knee.position.y=-L*.5;if(def.leg.knee)knee.rotation.z=side*def.leg.knee;hip.add(knee);
-  const kj=new T.Mesh(jointG(),skin);kj.scale.setScalar(rK*.97);knee.add(kj);
+  const kj=new T.Mesh(jointG(),skin);kj.scale.setScalar(rK*.88);knee.add(kj);
   const shin=new T.Mesh(limbGeo(L*.5,rK,th*.82),skin);knee.add(shin);
   const foot=new T.Group();foot.position.y=-L*.5;knee.add(foot);let footH;
   if(def.leg.knee){const tip=new T.Mesh(geo('spiderTip',()=>taperTube([[0,0,0],[0,-.12,.02],[0,-.22,.06]],.06,.014,{segs:4,radial:5})),footMat(skin));tip.scale.setScalar(th/.1);foot.add(tip);
@@ -430,7 +431,7 @@ function buildCreatureView(d,opts){
   const kind=d.pattern==='stripes'?'scales':'pebble';const tx=skinTex(kind);
   const fiP=d.face===true?faceInfo(d):null;const patId=d.pattern==='hood'?1:d.pattern==='skirt'?2:0;const fdir=fiP?new T.Vector3(fiP.c[0],fiP.c[1],fiP.c[2]).normalize():new T.Vector3(0,.1,1);
   const bodyU={pat:{value:patId},ph:{value:((d.seed||1)%7)*.9},hasFace:{value:fiP?1:0},faceTop:{value:fdir.y-.1},faceC:{value:col(d.color).lerp(col('#fff6e6'),.62)},accC:{value:col(d.accent)},faceDir:{value:fdir},faceR:{value:new T.Vector2(fiP?fiP.rx:.4,fiP?fiP.ry:.34)}};
-  const bodyMat=vown(paintBody(new T.MeshPhysicalMaterial({vertexColors:true,roughness:.92,flatShading:true,emissive:new T.Color(0,0,0)}),bodyU));v.bodyMat=bodyMat;
+  const bodyMat=vown(paintBody(new T.MeshPhysicalMaterial({vertexColors:true,roughness:.66,clearcoat:.22,clearcoatRoughness:.5,envMapIntensity:1.25,flatShading:true,emissive:new T.Color(0,0,0)}),bodyU));v.bodyMat=bodyMat;
   const solid=skinMat(d.color,kind);const acc=skinMat(d.accent,'pebble',{clearcoat:.55,clearcoatRoughness:.2});
   const fi=d.face===true?faceInfo(d):null;const body=new T.Mesh(vown(bodyGeometry(d.color,d.accent,d.seed||1,d.pattern||'spots',fi,true)),bodyMat);body.scale.set(b.w,b.h,b.l);body.userData.body=true;pivot.add(body);v.body=body;
   const ctxBase={d,b,solid,acc,vown};
@@ -466,7 +467,7 @@ function buildCreatureView(d,opts){
     const ring=new T.Mesh(geo('teamRing',()=>new T.RingGeometry(1,1.18,64)),rm);ring.rotation.x=-Math.PI/2;ring.scale.set(radius*1.3,radius*1.3,1);root.add(ring);v.ring=ring;v.ringMat=rm;v.teamCol=tc;}
   pivot.position.y=baseY;root.updateMatrixWorld(true);
   const box=new T.Box3().setFromObject(pivot);v.height=Math.max(baseY+b.h,(box.max.y||0));
-  lowpolyfy(pivot);
+  lowpolyfy(pivot,{satin:true});
   root.traverse(o=>{if(o.isMesh){if(o.userData.ink){o.castShadow=false;return;}const m=o.material;o.castShadow=!(m&&m.transparent&&m.depthWrite===false)&&o!==cs;o.receiveShadow=o===body;}});if(v.ring)v.ring.castShadow=false;
   return v;
 }
@@ -568,5 +569,5 @@ const Portrait={pr:null,scene:null,cam:null,cache:{},silMat:null,
     else{const b=BUILDERS[def.build](Object.assign({def,s:1,d,b:d.body,solid:sk,acc:ac,vown:x=>x}));
       if(def.mount==='cover'){const bm=new T.Mesh(sphereG(),skinMat('#7a86a8','pebble'));bm.scale.set(.98,.98,.98);g.add(bm);}
       g.add(b.g);if(['eye','jaw','beak','nose','stache','bow'].includes(def.build))g.rotation.y=-.5;else g.rotation.y=-1.1;}
-    lowpolyfy(g);this.scene.add(g);g.updateMatrixWorld(true);this.frame(g,0,1);this.pr.render(this.scene,this.cam);const url=this.canvas.toDataURL('image/png');this.scene.remove(g);this.cache[key]=url;return url;},
+    lowpolyfy(g,{satin:true});this.scene.add(g);g.updateMatrixWorld(true);this.frame(g,0,1);this.pr.render(this.scene,this.cam);const url=this.canvas.toDataURL('image/png');this.scene.remove(g);this.cache[key]=url;return url;},
 };

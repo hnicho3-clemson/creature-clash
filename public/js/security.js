@@ -104,7 +104,7 @@
   }
   function settings(raw,toggleKeys){
     const out={};if(!isObj(raw))return out;
-    for(const k of ['bloom','shadows','sound','music'])if(typeof raw[k]==='boolean')out[k]=raw[k];
+    for(const k of ['bloom','shadows','ao','sound','music'])if(typeof raw[k]==='boolean')out[k]=raw[k];
     if(isObj(raw.toggles)){out.toggles={};for(const k of toggleKeys)if(typeof raw.toggles[k]==='boolean')out.toggles[k]=raw.toggles[k];}
     return out;
   }

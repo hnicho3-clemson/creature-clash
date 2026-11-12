@@ -20,6 +20,8 @@ python3 -m http.server 8080 --directory public   # then open http://localhost:80
 
 Creatures and the forest share one low-poly look, inspired by Animal Crossing and Pikmin: matte, flat-shaded, chunky shapes with soft two-tone lighting. Only the eyes stay glossy. The shared helpers live in `core.js` (`lpSph`, `lpCyl`, `windify`), `creature.js` (`lowpolyfy`) and `world.js` (`buildTrees`, `buildGarden`, `nearFade`). Trees, grass, flowers, bushes and pebbles are instanced and sway in the wind, and trees fade out when the camera gets close so they never hide your spirit.
 
+Lighting (`core.js`, `makeLitPass`): the scene renders with 4x anti-aliasing into a target that keeps its depth, then a half-resolution SSAO pass adds soft contact shading, a composite blurs it along depth edges, tints creases cool and adds a sun glow into the haze, and the final pass applies a filmic grade (cool shadows, warm highlights). A golden-hour sun gives long shadows. Ambient occlusion can be turned off in Settings.
+
 ## Deploy on Vercel (one-time setup)
 
 1. **Import the repo.** In Vercel, choose *Add New → Project*, pick this GitHub repo, and deploy with the default settings. The first deploy works as a guest-only game until the steps below are done.
