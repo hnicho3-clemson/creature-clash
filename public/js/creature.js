@@ -500,6 +500,15 @@ const _eul=new T.Euler(),_hp=new T.Vector3(),_tg=new T.Vector3();
 function sprStep(o,k,target,dt,w,z){let x=o[k]||0,vv=o[k+'V']||0;const n=Math.max(1,Math.ceil(dt*120)),h=dt/n;for(let i=0;i<n;i++){vv+=(w*w*(target-x)-2*z*w*vv)*h;x+=vv*h;}o[k]=x;o[k+'V']=vv;return x;}
 const dampTo=(a,b,k,dt)=>a+(b-a)*(1-Math.exp(-k*dt));
 const wrapA=x=>{x=(x+Math.PI)%TAU;if(x<0)x+=TAU;return x-Math.PI;};
+/* scripted hops for the cutscene and title screen: a real ballistic jump, so the rig plays the same
+   takeoff stretch, tuck into a plain rock, tumble, landing squash and dust as in a match */
+function startHop(e,vy,spin,count){if(e.grounded===false)return;e.vy=vy;e.grounded=false;e.hopSpin=spin||0;e.hopsLeft=(count||1)-1;e.hopVy=vy;e.realHop=true;
+  if(typeof AudioFX!=='undefined'&&AudioFX.ctx)AudioFX.play('jump',.22);}
+function hopStep(e,dt){if(e.hopWait>0){e.hopWait-=dt;if(e.hopWait<=0)startHop(e,e.hopVy*.82,e.hopSpin,e.hopsLeft+1);return;}
+  if(e.grounded!==false)return;const g=world.map.heightAt(e.x,e.z);e.vy-=26*dt;e.y+=e.vy*dt;
+  if(e.y<=g){const pv=e.vy;e.y=g;e.vy=0;e.grounded=true;if(e.view)e.view.jv-=clamp(-pv*.06,0,.9);
+    if(pv<-4)emit(e.x,e.y+.06,e.z,{n:clamp(Math.floor(-pv*.45),4,8),color:world.map.biome.lane,speed:2+Math.min(2,-pv*.08),flat:true,life:.42,size:.14,up:.4,grav:2});
+    if(e.hopsLeft>0){e.hopWait=.16;}else e.hopSpin=0;}}
 function animateCreatureView(c,dt,time){
   const v=c.view;if(!v)return;const r=v.root;dt=Math.min(dt,.05);
   r.position.set(c.x,c.y,c.z);
@@ -511,7 +520,7 @@ function animateCreatureView(c,dt,time){
   if(!grounded&&!v.wasAirFrame&&(c.vy||0)>3)v.jv+=1.1;v.wasAirFrame=!grounded;// takeoff stretch
   const gliding=!!(c.glideHeld&&c.st&&c.st.glide);const tuckOn=alive&&!grounded&&v.airT>.06&&!gliding;
   v.tuck=dampTo(v.tuck||0,tuckOn?1:0,tuckOn?16:8,dt);
-  if(tuckOn&&!c.flop){const hs=Math.hypot((c.vx||0)+(c.kx||0),(c.vz||0)+(c.kz||0));v.rollV=(hs>1.2?2.4+hs*1.25:.9)*v.tuck;v.roll=(v.roll||0)+v.rollV*dt;}
+  if(tuckOn&&!c.flop){const hs=Math.hypot((c.vx||0)+(c.kx||0),(c.vz||0)+(c.kz||0))+(c.hopSpin||0);v.rollV=(hs>1.2?2.4+hs*1.25:.9)*v.tuck;v.roll=(v.roll||0)+v.rollV*dt;}
   else if(v.roll){const tgt=v.roll>TAU*.22?Math.ceil(v.roll/TAU-.05)*TAU:0;v.rollV=v.rollV||0;
     const n=Math.max(1,Math.ceil(dt*120)),h=dt/n;for(let i=0;i<n;i++){v.rollV+=(196*(tgt-v.roll)-2*.75*14*v.rollV)*h;v.roll+=v.rollV*h;}
     if(Math.abs(tgt-v.roll)<.004&&Math.abs(v.rollV)<.05){v.roll=0;v.rollV=0;}}
@@ -519,7 +528,7 @@ function animateCreatureView(c,dt,time){
   // facing: an angular spring, so instant aim changes read as a quick, weighty turn
   if(v.yaw==null){v.yaw=c.yaw;v.yawV=0;}
   {const n=Math.max(1,Math.ceil(dt*120)),h=dt/n,w=c.faceT>0?24:15;for(let i=0;i<n;i++){v.yawV+=(w*w*angDiff(v.yaw,c.yaw)-2*.92*w*v.yawV)*h;v.yaw+=v.yawV*h;}}
-  const spinAdd=c.spinT>0?(1-c.spinT/.5)*TAU:0;const emoteAdd=c.emoteT>0&&alive?Math.sin(c.emoteT*5)*1.2:0;
+  const spinAdd=c.spinT>0?(1-c.spinT/.5)*TAU:0;const emoteAdd=c.emoteT>0&&alive&&!c.realHop?Math.sin(c.emoteT*5)*1.2:0;
   r.rotation.y=v.yaw+spinAdd+emoteAdd;v.turn=v.yawV;v.lastYaw=c.yaw;
   // local velocity (forward / right) and smoothed acceleration
   const wx=(c.vx||0)+(c.kx||0),wz=(c.vz||0)+(c.kz||0);const sy0=Math.sin(v.yaw),cy0=Math.cos(v.yaw);
@@ -553,7 +562,7 @@ function animateCreatureView(c,dt,time){
   if(c.state==='downed'){tz=1.35;py=v.R[0]*.72;tx=0;}
   else if(c.state==='dead'){tz=Math.PI;py=v.R[1]*.85+(v.legLen*.2)-Math.max(0,c.deadT-6)*.5;tx=0;}
   if(c.sleep)py=lerp(py,v.R[1]*(.88-.16*(1-(c.colorK==null?1:c.colorK))),clamp(c.sleep,0,1));// asleep: settled into the ground like any other stone
-  if(c.emoteT>0&&alive)py+=Math.abs(Math.sin(c.emoteT*9))*.8;
+  if(c.emoteT>0&&alive&&!c.realHop)py+=Math.abs(Math.sin(c.emoteT*9))*.8;
   if(c.slamT>0)py+=(.85-c.slamT)*2.2;
   if(c.burrowT>0)v.bur=lerp(v.bur||0,1,1-Math.exp(-dt*8));else v.bur=lerp(v.bur||0,0,1-Math.exp(-dt*10));
   py-=(v.bur||0)*(v.baseY+v.R[1]*2.2);

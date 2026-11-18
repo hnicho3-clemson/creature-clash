@@ -750,9 +750,9 @@ body,html{background:var(--void)}
 <div id="hud" hidden>
   <div id="hurtFlash"></div>
   <div id="topbar">
-    <div class="teamside blue"><span class="tname" id="tnBlue">Blue nests</span><div class="pips" id="pipsBlue"></div><span class="deaths" id="deathsBlue"></span></div>
+    <div class="teamside blue"><span class="tname" id="tnBlue">Blue trees</span><div class="pips" id="pipsBlue"></div><span class="deaths" id="deathsBlue"></span></div>
     <div id="clock" class="panel"><div id="timer">10:00</div><div id="biomeName"></div></div>
-    <div class="teamside red"><span class="tname" id="tnRed">Red nests</span><div class="pips" id="pipsRed"></div><span class="deaths" id="deathsRed"></span></div>
+    <div class="teamside red"><span class="tname" id="tnRed">Red trees</span><div class="pips" id="pipsRed"></div><span class="deaths" id="deathsRed"></span></div>
   </div>
   <div id="tdBar" class="panel"><b>Test Drive</b><span style="font-size:12px;color:var(--ink-dim)">No Sunlight or Growth here</span><button class="btn ghost small" id="tdBot">Add sparring bot</button><button class="btn primary small" id="tdBack">Back to Workshop</button></div>
   <div id="objective" class="panel"></div>
@@ -926,10 +926,10 @@ body,html{background:var(--void)}
     <h2>Match settings</h2>
     <div class="opts">
       <div class="sect">Open questions (owner to decide)</div>
-      <label class="opt"><input type="checkbox" id="optTimer"><div><b>Timer is a hard limit<span class="sg oq">open question</span></b><span>At 10:00, nests destroyed then fewer deaths decide the winner.</span></div></label>
-      <label class="opt"><input type="checkbox" id="optMain"><div><b>Main nest needs a cleared lane<span class="sg">suggestion</span></b><span>A main nest can only be hit after one of that team's lanes loses both nests.</span></div></label>
+      <label class="opt"><input type="checkbox" id="optTimer"><div><b>Timer is a hard limit<span class="sg oq">open question</span></b><span>At 10:00, trees withered then fewer deaths decide the winner.</span></div></label>
+      <label class="opt"><input type="checkbox" id="optMain"><div><b>Great Tree needs a cleared lane<span class="sg">suggestion</span></b><span>A Great Tree can only be hit after one of that team's lanes loses both Life Trees.</span></div></label>
       <label class="opt"><input type="checkbox" id="optFinish"><div><b>Downed creatures can be finished off<span class="sg">suggestion</span></b><span>Hitting a downed enemy kills it instead of waiting out the revive timer.</span></div></label>
-      <label class="opt"><input type="checkbox" id="optSpit"><div><b>Nests spit goo at enemies<span class="sg">suggestion</span></b><span>Makes nests defend themselves like towers.</span></div></label>
+      <label class="opt"><input type="checkbox" id="optSpit"><div><b>Life Trees fling sap at enemies<span class="sg">suggestion</span></b><span>Makes trees defend themselves like towers.</span></div></label>
       <div class="sect">Graphics and sound</div>
       <label class="opt"><input type="checkbox" id="optBloom"><div><b>Glow and bloom</b><span>Turn off if the game stutters.</span></div></label>
       <label class="opt"><input type="checkbox" id="optAO"><div><b>Ambient occlusion</b><span>Soft shading in creases and under trees. Turn off if the game stutters.</span></div></label>
@@ -973,7 +973,7 @@ body,html{background:var(--void)}
     <ol class="howsteps">
       <li><b>Build a creature.</b> Stick legs, jaws, horns and more onto it in the Workshop. Every part changes how it moves and fights.</li>
       <li><b>Pick it in the build phase.</b> You have 2 minutes, then the battle starts.</li>
-      <li><b>Crack the enemy nests.</b> Walk down a lane and attack the glowing egg nests. Break them all to win!</li>
+      <li><b>Wither the enemy Life Trees.</b> Walk down a lane and attack the glowing trees that give the other grove its life. Wither them all to win!</li>
       <li><b>Stay alive.</b> You only get one life per match. Teammates can revive you if you get knocked down.</li>
       <li><b>Gather Sunlight.</b> Beating enemy creatures releases Sunlight, which grows new parts.</li>
     </ol>

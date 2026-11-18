@@ -22,7 +22,7 @@ function buildMenuStage(){
   const pals=[pick(BOT_PRESETS),pick(BOT_PRESETS)];
   const spots=[[mine,0,0,null],[pals[0],-3.6,-3.8,pick(BOT_COLORS)],[pals[1],-3.2,3.9,pick(BOT_COLORS)]];
   for(const [d0,dx,dz,tint] of spots){const d=clone(d0);if(tint){d.color=tint[0];d.accent=tint[1];}const v=buildCreatureView(d,{team:'blue'});world.group.add(v.root);
-    const e={kind:'creature',x:x0+dx,z:z0+dz,y:0,yaw:0,vx:0,vy:0,vz:0,kx:0,kz:0,state:'alive',grounded:true,view:v,emoteT:0,next:2+Math.random()*4,voicePitch:clamp(1.75-d.body.w*d.body.h*d.body.l*.42,.55,1.7)};e.y=map.heightAt(e.x,e.z);e.hx=e.x;e.hz=e.z;menuStage.ents.push(e);}
+    const e={kind:'creature',realHop:true,x:x0+dx,z:z0+dz,y:0,yaw:0,vx:0,vy:0,vz:0,kx:0,kz:0,state:'alive',grounded:true,view:v,emoteT:0,next:2+Math.random()*4,voicePitch:clamp(1.75-d.body.w*d.body.h*d.body.l*.42,.55,1.7)};e.y=map.heightAt(e.x,e.z);e.hx=e.x;e.hz=e.z;menuStage.ents.push(e);}
   menuStage.c=new T.Vector3(x0-1.2,menuStage.ents[0].y,z0);menuStage.active=true;menuStage.t=0;
 }
 function menuCamPose(t){const st=menuStage;const narrow=innerWidth/innerHeight<1;const c=st.c;
@@ -33,9 +33,9 @@ function menuCamPose(t){const st=menuStage;const narrow=innerWidth/innerHeight<1
 function menuStageCreatures(rdt,now,P){
   for(const e of menuStage.ents){if(e.hidden)continue;
     if(!e.scripted){const want=Math.atan2(P.x-e.x,P.z-e.z)+Math.sin(menuStage.t*.5+e.x)*.25;e.yaw+=angDiff(e.yaw,want)*Math.min(1,rdt*3);
-      e.next-=rdt;if(e.next<=0&&!A11Y.reduceMotion){e.next=4+Math.random()*6;e.emoteT=1.4;if(Math.random()<.5)voice(e,'happy');}else if(e.emoteT>0)e.emoteT-=rdt;}
+      e.next-=rdt;if(e.next<=0&&!A11Y.reduceMotion){e.next=4+Math.random()*6;const r=Math.random();startHop(e,r<.4?9:7.2,r<.4?4.4:r<.7?0:1.6,r>.75?2:1);if(Math.random()<.5)voice(e,'happy');}}
     else if(e.emoteT>0)e.emoteT-=rdt;
-    animateCreatureView(e,rdt,now*.001);}}
+    hopStep(e,rdt);animateCreatureView(e,rdt,now*.001);}}
 function updateMenuStage(rdt,now){
   const st=menuStage;st.t+=rdt;const {P,L}=menuCamPose(st.t);const c=st.c;
   camera.position.copy(P);camera.lookAt(L);cam.fx=c.x;cam.fz=c.z;sunFollow(c.x,c.y,c.z);menuStageCreatures(rdt,now,P);
@@ -465,7 +465,7 @@ $('#tdBot').addEventListener('click',()=>{if(!match||match.mode!=='test')return;
 function showDeathScreen(k){
   cam.cine=null;const p=match.player;$('#dCaption').textContent=pick(CAPTIONS);
   $('#dKiller').innerHTML=k?'Eliminated by <b>'+esc(k.name)+'</b>, '+esc(k.st.role.toLowerCase())+', after '+fmtTime(match.time)+' of battle.':'Eliminated after '+fmtTime(match.time)+' of battle.';
-  $('#dStats').innerHTML=[[p.kills,'Kills'],[Math.round(p.dmgDealt),'Damage'],[p.nestsKilled,'Nests'],[fmtTime(match.time),'Survived']].map(([v,k])=>'<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>').join('');
+  $('#dStats').innerHTML=[[p.kills,'Kills'],[Math.round(p.dmgDealt),'Damage'],[p.nestsKilled,'Trees'],[fmtTime(match.time),'Survived']].map(([v,k])=>'<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>').join('');
   $('#dEarn').innerHTML=earnChips();$('#death').hidden=false;
 }
 function earnChips(){const e=match.earned;let h='<span class="chip xp">+'+e.xp+' Growth</span><span class="chip dna">+'+e.dna+' Sunlight</span>';if(match.rot){const r=match.rot;const nm=r.kind==='daily'?'Daily':'Weekly';h+=e.rot?'<span class="chip lv">'+nm+' challenge complete · +'+r.xp+' Growth</span>':(progress.daily[r.key]?'<span class="chip dim">'+nm+' challenge already claimed</span>':'<span class="chip bad">'+nm+' goal not met yet: '+esc(GOALS[r.goal].name)+'</span>');}for(const d of e.drops)h+='<span class="chip drop">Part drop: '+esc(d)+'</span>';for(const l of e.levels)h+='<span class="chip lv">Unlocked: '+esc(l)+'</span>';if(e.levels.length)h+='<span class="chip lv">Level '+progress.level+'</span>';return h;}
@@ -476,7 +476,7 @@ function showResults(){
   const me=match.player;const won=me&&match.winner===me.team;
   const t=$('#rTitle');t.textContent=match.winner?(won?'Victory':'Defeat'):'Draw';t.className='restitle '+(match.winner?(won?'win':'lose'):'draw');
   $('#rReason').textContent=match.reason;$('#rBiome').textContent=world.map.biome.name+' · seed '+world.seed;
-  let h='<tr><th>Creature</th><th>Role</th><th>Kills</th><th>Damage</th><th>Nests</th><th>Status</th></tr>';
+  let h='<tr><th>Creature</th><th>Role</th><th>Kills</th><th>Damage</th><th>Trees</th><th>Status</th></tr>';
   for(const c of world.creatures.slice().sort((a,b)=>a.team===b.team?b.kills-a.kills:a.team==='blue'?-1:1)){h+='<tr class="'+c.team+(c.isPlayer?' me':'')+'"><td>'+esc(c.isPlayer?'You ('+c.d.name+')':c.name)+'</td><td>'+c.st.role+'</td><td>'+c.kills+'</td><td>'+Math.round(c.dmgDealt)+'</td><td>'+c.nestsKilled+'</td><td class="'+(c.state==='dead'?'dead':'')+'">'+(c.state==='dead'?'Fossil':'Alive')+'</td></tr>';}
   $('#rBoard').innerHTML=h;$('#rEarn').innerHTML=earnChips();$('#rNew').textContent='Play again';$('#rMenu').textContent='Main menu';$('#results').hidden=false;
 }

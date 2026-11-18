@@ -21,9 +21,9 @@ const CAMPAIGN=[
     setup(m){placeAt(m.player,-10,mz(-10),Math.PI/2);m.cs={n:0};for(let i=0;i<3;i++){const s=spawnNeutral('critter',4+i*4,mz(4+i*4)+(i-1)*5,world.map.biome);s.noRespawn=true;}},
     objective:m=>'Defeat the Snorflets · '+m.cs.n+' of 3',
     on(m,t,d){if(t==='neutral'&&d.by===m.player&&d.n.type==='critter'){m.cs.n++;if(m.cs.n>=3)return 'win';}}},
-  {id:'egg',name:'Crack an Egg',xp:80,time:120,biome:'autumn',lesson:'Nests and dodging',desc:'Destroy the enemy nest before time runs out. Nests spit goo, so dodge it with Shift.',
+  {id:'egg',name:'Crack an Egg',xp:80,time:120,biome:'autumn',lesson:'Life Trees and dodging',desc:'Wither the enemy Life Tree before time runs out. Life Trees fling sap, so dodge it with Shift.',
     setup(m){placeAt(m.player,-12,mz(-12),Math.PI/2);m.cs={nest:addNest({team:'red',lane:0,x:14,z:mz(14),main:false,outer:true},700)};},
-    objective:()=>'Destroy the red nest',
+    objective:()=>'Wither the red Life Tree',
     on(m,t,d){if(t==='nest'&&d.nest===m.cs.nest)return 'win';}},
   {id:'legless',name:'Win With No Legs',xp:100,biome:'frost',forced:LEGLESS,lesson:'Form equals function',desc:'You get a legless creature that slides slowly. Let the enemy come to you and fight smart.',
     setup(m){placeAt(m.player,-8,mz(-8),Math.PI/2);m.cs={e:cBot(BOT_PRESETS[7],'red','Puffington',10,mz(10),b=>{b.slow=2.2;b.fixedTarget=m.player;b.brave=true;})};},
@@ -45,11 +45,11 @@ const CAMPAIGN=[
     setup(m){const b=spawnNeutral('boss',8,mz(8)+2,world.map.biome);b.noRespawn=true;b.hx=8;b.hz=mz(8)+2;placeAt(m.player,-10,mz(-10),Math.PI/2);m.cs={b};},
     objective:()=>'Defeat The Grand Gobbler',
     on(m,t,d){if(t==='neutral'&&d.n===m.cs.b)return 'win';}},
-  {id:'defend',name:'Hold the Nest',xp:200,time:90,timeWin:true,biome:'frost',lesson:'Defending',desc:'Bots are coming for your nest. Keep it alive for 90 seconds.',
+  {id:'defend',name:'Guard the Tree',xp:200,time:90,timeWin:true,biome:'frost',lesson:'Defending',desc:'Bots are coming for your Life Tree. Keep it alive for 90 seconds.',
     setup(m){const n=addNest({team:'blue',lane:0,x:-22,z:mz(-22),main:false},1200);placeAt(m.player,-16,mz(-16),Math.PI/2);m.cs={n,wave:0,next:3};},
     update(m,dt){m.cs.next-=dt;if(m.cs.next<=0&&m.cs.wave<6){m.cs.wave++;m.cs.next=13;cBot(pick(BOT_PRESETS),'red',pick(BOT_NAMES),36,mz(36)+(Math.random()-.5)*6,b=>{b.slow=1.8;b.brave=true;});banner('Wave '+m.cs.wave+' incoming','bad');}
-      if(!m.cs.n.alive)return 'fail:Your nest was destroyed.';},
-    objective:m=>'Protect your nest · wave '+m.cs.wave+' of 6'},
+      if(!m.cs.n.alive)return 'fail:Your Life Tree withered.';},
+    objective:m=>'Protect your tree · wave '+m.cs.wave+' of 6'},
   {id:'exam',name:'Final Exam',xp:250,lesson:'Everything at once',desc:'One of you, two of them. Bring your best Workshop creature.',
     setup(m){placeAt(m.player,-14,mz(-14),Math.PI/2);m.cs={n:0,es:[cBot(pick(BOT_PRESETS),'red',pick(BOT_NAMES),12,mz(12)-3,b=>{b.fixedTarget=m.player;b.slow=1.35;}),cBot(pick(BOT_PRESETS),'red',pick(BOT_NAMES),18,mz(18)+3,b=>{b.fixedTarget=m.player;b.slow=1.35;})]};},
     objective:m=>'Defeat both bots · '+m.cs.n+' of 2',
@@ -110,7 +110,7 @@ const CONSTRAINTS={
 const GOALS={
   win:{name:'Win the Lane Battle',check:(m,final)=>final&&m.winner===m.player.team},
   kills3:{name:'Get 3 kills in one battle',check:m=>m.player.kills>=3},
-  nests2:{name:'Destroy 2 nests yourself',check:m=>m.player.nestsKilled>=2},
+  nests2:{name:'Wither 2 Life Trees yourself',check:m=>m.player.nestsKilled>=2},
   survive:{name:'Still be alive when the battle ends',check:(m,final)=>final&&m.player.state!=='dead'},
 };
 function dayIndex(){const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000);}

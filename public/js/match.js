@@ -151,7 +151,7 @@ function bolt(ax,ay,az,bx,by,bz){const pts=[];const n=9;for(let i=0;i<=n;i++){co
   const g=new T.BufferGeometry().setFromPoints(pts);const l=new T.Line(g,glowMat('#9af0ff',4));world.group.add(l);world.bolts.push({l,t:.14});
   emit(bx,by,bz,{n:10,color:'#9af0ff',speed:6,life:.35,size:.1,glow:3});}
 function lobGoo(n,t){
-  const top=n.view.s*(n.main?3.6:1.6);const x0=n.x,y0=n.y+top,z0=n.z;const T0=clamp(Math.hypot(t.x-x0,t.z-z0)/14,.55,1.3);const g=20;
+  const top=n.view.canopy?n.view.canopy.low-.4:n.view.s*(n.main?3.6:1.6);n.view.pulse=.35;const x0=n.x,y0=n.y+top,z0=n.z;const T0=clamp(Math.hypot(t.x-x0,t.z-z0)/14,.55,1.3);const g=20;
   const tx=t.x+(t.vx+t.kx)*T0*.5,tz=t.z+(t.vz+t.kz)*T0*.5,ty=t.y+.8;
   const mesh=new T.Mesh(sphereG(),glowMat(TEAMS[n.team].hex,3));mesh.scale.setScalar(n.main?.5:.38);world.group.add(mesh);
   world.projectiles.push({kind:'goo',x:x0,y:y0,z:z0,vx:(tx-x0)/T0,vy:(ty-y0)/T0+.5*g*T0,vz:(tz-z0)/T0,g,life:3,team:n.team,src:n,dmg:n.main?11:6,type:'goo',kb:5,r:.5,splash:1.9,venom:false,mesh,color:TEAMS[n.team].hex});
@@ -221,8 +221,8 @@ function destroyNest(n,src){
   emit(n.x,n.y+2,n.z,{n:60,color:TEAMS[n.team].hex,speed:14,life:1.3,size:.3,glow:2.2,up:8});emit(n.x,n.y+1,n.z,{n:40,color:'#a07a50',speed:9,life:1.1,size:.25,up:6});
   sfx('nest',n);cam.shake=Math.max(cam.shake,Math.max(0,.9-Math.hypot(n.x-cam.fx,n.z-cam.fz)/60));
   const mine=match.player&&n.team===match.player.team;
-  banner((mine?'Our ':'Enemy ')+(n.main?'main nest':'nest')+' destroyed',mine?'bad':'gold');
-  killfeed(tname(src)+' cracked a <span class="'+(n.team==='blue'?'b':'r')+'">'+TEAMS[n.team].name+(n.main?' main nest':' nest')+'</span>');
+  banner((mine?'Our ':'Enemy ')+(n.main?'Great Tree':'Life Tree')+' withered',mine?'bad':'gold');
+  killfeed(tname(src)+' withered a <span class="'+(n.team==='blue'?'b':'r')+'">'+TEAMS[n.team].name+(n.main?' Great Tree':' Life Tree')+'</span>');
   for(const c of world.colliders)if(c.nest===n)c.r=n.radius*.55;
   if(typeof onChallengeEvent==='function')onChallengeEvent('nest',{nest:n,by:src});
   checkWin();
@@ -243,14 +243,14 @@ function hurtNeutral(n,amt,src,dx,dz,kb){
 }
 function checkWin(){
   if(match.over||match.mode!=='battle')return;
-  for(const t of ['blue','red'])if(!world.nests.some(n=>n.team===t&&n.alive))return endMatch(other(t),TEAMS[t].name+' lost every nest.');
+  for(const t of ['blue','red'])if(!world.nests.some(n=>n.team===t&&n.alive))return endMatch(other(t),TEAMS[t].name+' lost every Life Tree.');
   const mb=world.nests.find(n=>n.team==='blue'&&n.main).alive,mr=world.nests.find(n=>n.team==='red'&&n.main).alive;
-  if(!mb&&!mr){const w=tiebreak();return endMatch(w.team,'Both main nests fell. '+w.why);}
+  if(!mb&&!mr){const w=tiebreak();return endMatch(w.team,'Both Great Trees withered. '+w.why);}
 }
 function tiebreak(){const nd=match.nestsDestroyed,de=match.deaths;
-  if(nd.blue!==nd.red){const t=nd.blue>nd.red?'blue':'red';return {team:t,why:TEAMS[t].name+' destroyed more nests ('+nd[t]+' to '+nd[other(t)]+').'};}
-  if(de.blue!==de.red){const t=de.blue<de.red?'blue':'red';return {team:t,why:'Nests tied, so fewer deaths decided it ('+de[t]+' to '+de[other(t)]+').'};}
-  return {team:null,why:'Nests and deaths were tied.'};}
+  if(nd.blue!==nd.red){const t=nd.blue>nd.red?'blue':'red';return {team:t,why:TEAMS[t].name+' withered more trees ('+nd[t]+' to '+nd[other(t)]+').'};}
+  if(de.blue!==de.red){const t=de.blue<de.red?'blue':'red';return {team:t,why:'Trees tied, so fewer deaths decided it ('+de[t]+' to '+de[other(t)]+').'};}
+  return {team:null,why:'Trees and deaths were tied.'};}
 function grantMatchXP(won){
   if(match.xpGranted||!match.player||match.mode!=='battle')return;match.xpGranted=true;const p=match.player;
   const xp=RW.xpMatch+p.kills*RW.xpKill+p.nestsKilled*RW.xpNest+(won?RW.xpWin:0);match.earned.xp=xp;match.earned.levels=grantXP(xp);
@@ -624,11 +624,25 @@ function updateCamera(rdt){
 }
 function sunFollow(x,y,z){sun.position.set(x+SUN_DIR.x*90,y+SUN_DIR.y*90,z+SUN_DIR.z*90);sun.target.position.set(x,y,z);sun.target.updateMatrixWorld();}
 function animateNest(n,dt,time){const v=n.view;v.hitT=Math.max(0,v.hitT-dt);v.pulse=Math.max(0,v.pulse-dt);
-  v.group.rotation.z=Math.sin(time*60)*.03*v.hitT*4;
-  if(v.dead){v.deadT+=dt;for(const e of v.eggs)e.scale.multiplyScalar(Math.exp(-dt*3));v.bowl.rotation.x=lerp(v.bowl.rotation.x,.25,dt*2);v.bowl.position.y=lerp(v.bowl.position.y,-.3,dt*2);v.ringMat.color.setRGB(.06,.06,.08);if(v.crystal){v.crystal.position.y=lerp(v.crystal.position.y,.8,dt*2);v.crystal.material.emissiveIntensity=lerp(v.crystal.material.emissiveIntensity,0,dt*2);}if(n.halo)n.halo.visible=false;if(v.deadT<4&&Math.random()<dt*6)emit(n.x,n.y+1.5,n.z,{n:1,color:'#6a6070',speed:1,life:1.6,size:.4,up:3,grav:-1,drag:.5});return;}
-  const pulse=1+Math.sin(time*2+n.x)*.03+v.pulse*.25;for(const e of v.eggs)e.scale.set(.55*pulse,.75*pulse,.55*pulse);
-  v.eggMat.emissiveIntensity=.6+Math.sin(time*2.5+n.x)*.2+v.pulse*2;
-  if(v.crystal){v.crystal.rotation.y+=dt*.8;v.crystal.position.y=3.6+Math.sin(time*1.5)*.2;}if(n.halo)n.halo.rotation.z+=dt*.6;}
+  // a hit shudders through the trunk and shakes a few leaves loose
+  v.crown.rotation.z=Math.sin(time*38)*.022*v.hitT*4;v.crown.rotation.x=Math.cos(time*31)*.014*v.hitT*4;
+  const top=v.canopy,cx=n.x,cz=n.z;
+  if(v.dead){v.deadT+=dt;const k=Math.min(1,v.deadT/2.4);
+    // withering: the crown droops and greys, the light goes out, leaves rain down for a few seconds
+    v.crown.rotation.x=lerp(v.crown.rotation.x,.1,dt*2);v.crown.rotation.z=lerp(v.crown.rotation.z,.07,dt*1.2);
+    v.leafMat.color.copy(v.leafCol).lerp(col('#6b5a44'),k).multiplyScalar(1-k*.35);if(v.leafMat.emissive)v.leafMat.emissive.multiplyScalar(Math.exp(-dt*3));
+    for(const sd of v.seeds){sd.position.y=lerp(sd.position.y,sd.userData.p0.y-1.2,dt*1.5);sd.scale.multiplyScalar(Math.exp(-dt*1.6));}
+    v.seedMat.color.multiplyScalar(Math.exp(-dt*2.5));v.veinMat.color.multiplyScalar(Math.exp(-dt*2));v.ringMat.color.setRGB(.06,.06,.08);
+    if(REAL&&v.bark.color)v.bark.color.lerp(col('#6a6660'),dt*.8);
+    if(v.deadT<5&&Math.random()<dt*(n.main?14:7)){const a=Math.random()*TAU,r=Math.random()*top.r;emit(cx+Math.cos(a)*r,n.y+top.low+Math.random()*(top.top-top.low)*.6,cz+Math.sin(a)*r,{n:1,color:'#8a7a4a',speed:.6,life:2.6,size:.18,up:-.4,grav:1.1,drag:1.6});}
+    return;}
+  const hpK=clamp(n.hp/n.maxHp,0,1);
+  const pulse=.5+.5*Math.sin(time*2.2+n.x);const gk=(.35+hpK*.65)*(.85+pulse*.3)+v.pulse*1.5;v.seedMat.color.copy(v.glowBase).multiplyScalar(gk);v.veinMat.color.copy(v.veinBase).multiplyScalar((.3+hpK*.7)*(.8+.35*Math.sin(time*1.6+n.z))+v.pulse);
+  if(v.leafMat.emissive)v.leafMat.emissive.copy(col(TEAMS[n.team].hex)).multiplyScalar((.05+.13*hpK)*(1+v.pulse*2));
+  for(let i=0;i<v.seeds.length;i++){const sd=v.seeds[i],p=sd.userData.p0;sd.position.set(p.x+Math.sin(time*1.3+i)*.05,p.y+Math.sin(time*1.7+i*2)*.06,p.z+Math.cos(time*1.1+i)*.05);sd.scale.setScalar(.15*(1+Math.sin(time*2.2+i)*.1));}
+  // seeds of light drift up out of the crown (fewer as it is hurt)
+  if(!A11Y.reduceMotion&&Math.random()<dt*(n.main?3:1)*(.3+hpK*.7)){const a=Math.random()*TAU,r=Math.random()*top.r*.8;emit(cx+Math.cos(a)*r,n.y+top.low+Math.random()*1.5,cz+Math.sin(a)*r,{n:1,color:TEAMS[n.team].hex,glow:2.2,speed:.3,up:.9,life:3,size:.1,grav:-.25,drag:.6});}
+  if(v.hitT>.2&&Math.random()<.5){const a=Math.random()*TAU,r=Math.random()*top.r;emit(cx+Math.cos(a)*r,n.y+top.low+.5,cz+Math.sin(a)*r,{n:2,color:v.leafCol.getStyle?'#'+v.leafCol.getHexString():'#6a9a3a',speed:.8,life:2,size:.15,up:-.2,grav:1.2,drag:1.4});}}
 
 /* ---------- HUD ---------- */
 const H={timer:$('#timer'),dna:$('#dnaVal'),lv:$('#lvVal'),xp:$('#xpFill'),hp:$('#hpFill'),sh:$('#shFill'),hpt:$('#hpText'),st:$('#stFill'),muts:$('#muts'),name:$('#meName'),role:$('#meRole'),
@@ -695,7 +709,7 @@ function updateLabels(){
     t.style.display='flex';const s=clamp(1.25-d/70,.6,1.1);t.style.transform='translate('+(p.x|0)+'px,'+(p.y|0)+'px) translate(-50%,-100%) scale('+s.toFixed(2)+')';
     const w=(c.hp/c.maxHp*100).toFixed(0)+'%';if(t._w!==w){t._w=w;t.querySelector('.tb i').style.width=w;}
     const dn=c.state==='downed';const de=t.querySelector('.tdown');if(de.hidden===dn)de.hidden=!dn;if(dn){const txt='DOWNED '+Math.ceil(c.downedT)+(c.reviveP>0?' · '+Math.round(c.reviveP/S.reviveSec*100)+'%':'');if(de._t!==txt){de._t=txt;de.textContent=txt;}}}
-  for(const n of W.nests){const t=n.tag;const d=Math.hypot(n.x-camera.position.x,n.z-camera.position.z);const show=phase==='battle'&&n.alive&&d<70&&(n.hp<n.maxHp||d<35);const p=show?toScreen(n.x,n.y+n.height*n.view.s*.62+1,n.z):null;
+  for(const n of W.nests){const t=n.tag;const d=Math.hypot(n.x-camera.position.x,n.z-camera.position.z);const show=phase==='battle'&&n.alive&&d<70&&(n.hp<n.maxHp||d<35);const p=show?toScreen(n.x,n.y+(n.view.tagY||n.height*n.view.s*.62+1),n.z):null;
     if(!p){if(t.style.display!=='none')t.style.display='none';continue;}t.style.display='flex';t.style.transform='translate('+(p.x|0)+'px,'+(p.y|0)+'px) translate(-50%,-100%)';const w=(n.hp/n.maxHp*100).toFixed(1)+'%';if(t._w!==w){t._w=w;t.querySelector('.tb i').style.width=w;}}
   for(const n of W.neutrals){const t=n.tag;const d=Math.hypot(n.x-camera.position.x,n.z-camera.position.z);const show=phase==='battle'&&n.alive&&d<(n.type==='boss'?55:30)&&(n.hp<n.maxHp||n.type==='boss');const p=show?toScreen(n.x,n.y+n.view.height+.4,n.z):null;
     if(!p){if(t.style.display!=='none')t.style.display='none';continue;}t.style.display='flex';t.style.transform='translate('+(p.x|0)+'px,'+(p.y|0)+'px) translate(-50%,-100%)';const w=(n.hp/n.maxHp*100).toFixed(1)+'%';if(t._w!==w){t._w=w;t.querySelector('.tb i').style.width=w;}}

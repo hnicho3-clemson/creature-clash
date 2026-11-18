@@ -13,7 +13,7 @@ function applyA11y(){
   const b=document.body;b.classList.toggle('hc',!!A11Y.contrast);b.classList.toggle('rm',!!A11Y.reduceMotion);
   document.documentElement.style.setProperty('--ui',String(A11Y.uiScale));
   const p=PALETTES[A11Y.palette]||PALETTES.default;for(const t of ['blue','red']){TEAMS[t].hex=p[t][0];TEAMS[t].name=p[t][1];document.documentElement.style.setProperty('--'+t,p[t][0]);}
-  $('#tnBlue').textContent=TEAMS.blue.name+' nests';$('#tnRed').textContent=TEAMS.red.name+' nests';$('#bBlueTitle').textContent=TEAMS.blue.name+' team';$('#bRedTitle').textContent=TEAMS.red.name+' team';
+  $('#tnBlue').textContent=TEAMS.blue.name+' trees';$('#tnRed').textContent=TEAMS.red.name+' trees';$('#bBlueTitle').textContent=TEAMS.blue.name+' team';$('#bRedTitle').textContent=TEAMS.red.name+' team';
   if(bloomPass)bloomPass.strength=(typeof REAL!=='undefined'&&REAL)?(A11Y.flashes&&!A11Y.reduceMotion?.32:.22):(A11Y.flashes&&!A11Y.reduceMotion?.6:.38);
   renderControlsHelp();
 }
@@ -24,7 +24,7 @@ function renderControlsHelp(){const K=A11Y.keys,k=c=>'<kbd>'+esc(keyName(c))+'</
 let annQ=[],annT=0;const srLive=$('#srLive');
 function announce(text){if(!A11Y.announce||!text)return;const t=String(text).replace(/<[^>]+>/g,'').trim();if(!t||annQ.includes(t))return;annQ.push(t);if(annQ.length>4)annQ.shift();}
 setInterval(()=>{if(!annQ.length)return;srLive.textContent=annQ.shift();},900);
-const CAPTION_TEXT={squeak:'Squeaky bonk',flip:'Pancake flip',whoosh:'Bone whooshing',geyser:'Puffball rumbling',nest:'Nest cracked',flop:'Heavy thud',zap:'Firefly spark',spit:'Goo spit',ink:'Ink cloud',burrow:'Digging underground',popup:'Something burst out of the ground',death:'Creature defeated',downed:'Creature downed',revive:'Teammate revived',heal:'Healing chime',shield:'Shield bubble',charge:'Charging stomp',inflate:'Puffing up',camo:'Creature vanished',drop:'Part drop chime',win:'Victory fanfare',lose:'Defeat jingle'};
+const CAPTION_TEXT={squeak:'Squeaky bonk',flip:'Pancake flip',whoosh:'Bone whooshing',geyser:'Puffball rumbling',nest:'Life Tree withered',flop:'Heavy thud',zap:'Firefly spark',spit:'Goo spit',ink:'Ink cloud',burrow:'Digging underground',popup:'Something burst out of the ground',death:'Creature defeated',downed:'Creature downed',revive:'Teammate revived',heal:'Healing chime',shield:'Shield bubble',charge:'Charging stomp',inflate:'Puffing up',camo:'Creature vanished',drop:'Part drop chime',win:'Victory fanfare',lose:'Defeat jingle'};
 const capEl=$('#captions');const capSeen={};
 function addCaption(name,at,vol){if(phase!=='battle'||!CAPTION_TEXT[name]||vol<.12)return;const now=performance.now();if(capSeen[name]&&now-capSeen[name]<1200)return;capSeen[name]=now;
   let dir='';if(at&&match&&match.player){const dx=at.x-cam.fx,dz=at.z-cam.fz;if(Math.hypot(dx,dz)>3){const rel=angDiff(cam.yaw,Math.atan2(dx,dz));dir=Math.abs(rel)<.6?'Ahead':Math.abs(rel)>2.5?'Behind':rel>0?'Left':'Right';}}
@@ -60,7 +60,7 @@ function renderA11y(){
      sw('a_fl','Screen flashes and strong glow','Red damage flash and bright bloom. Turn off if flashes bother you.',A11Y.flashes)+
    '<div class="sect">Sound and reading</div>'+
      sw('a_cap','Sound captions','Shows important sounds on screen with their direction.',A11Y.captions)+
-     sw('a_ann','Screen reader announcements','Reads out kills, nests, objectives and countdowns.',A11Y.announce)+
+     sw('a_ann','Screen reader announcements','Reads out kills, Life Trees, objectives and countdowns.',A11Y.announce)+
    '<div class="sect">Gameplay</div>'+
      '<label class="fieldrow"><span><b>Game speed</b><small>Slows battles and challenges down. Does not change rewards.</small></span><select id="a_spd">'+speeds+'</select></label>'+
      sw('a_aim','Aim assist','Attacks turn toward the nearest enemy in front of you.',A11Y.aimAssist)+

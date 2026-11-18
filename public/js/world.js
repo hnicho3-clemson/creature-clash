@@ -202,26 +202,67 @@ function buildBases(map,group){
       const tip=new T.Mesh(sphereG(),glowMat(TEAMS[team].hex,2.6));tip.scale.setScalar(.26);tip.position.set(Math.cos(a)*9.8,st.position.y+st.scale.y+.75,Math.sin(a)*9.8);g.add(tip);}
     group.add(g);}
 }
+/* ---------- Life Trees (the objectives) ----------
+   Ancient magical trees: their roots drink sunlight and their glowing seeds wake the forest stones. Each grove has two
+   Life Trees per lane and one Great Tree at its base. A twisted trunk with flared roots grips a mossy stone pad;
+   branches hold a leafy crown in the team colour, with seeds of light hanging underneath. Beaten trees wither. */
+// a tapered tube along a smooth path: radius r(t), slight bark lumps and a gentle twist
+function barkTube(pts,rf,seg,rad,seed,lump){const cv=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(p[0],p[1],p[2])));const R=mulberry32(seed|0);const ph=R()*10;
+  const P=[],I=[];const fr=cv.computeFrenetFrames(seg,false);
+  for(let i=0;i<=seg;i++){const t=i/seg;const c=cv.getPointAt(t);const N=fr.normals[i],B=fr.binormals[i];const r=rf(t);
+    for(let j=0;j<=rad;j++){const a=j/rad*TAU+t*1.4;const l=1+(lump||0)*(Math.sin(a*3+t*9+ph)*.5+Math.sin(a*7-t*15+ph*2)*.3);
+      const ca=Math.cos(a)*r*l,sa=Math.sin(a)*r*l;P.push(c.x+N.x*ca+B.x*sa,c.y+N.y*ca+B.y*sa,c.z+N.z*ca+B.z*sa);}}
+  for(let i=0;i<seg;i++)for(let j=0;j<rad;j++){const a=i*(rad+1)+j,b=a+rad+1;I.push(a,b,a+1,b,b+1,a+1);}
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(P,3));g.setIndex(I);g.computeVertexNormals();return g;}
+function lifeTreeShape(variant){const R=mulberry32(0x7ee+variant*977);const rnd=(a,b)=>a+R()*(b-a);
+  const lean=rnd(-.25,.25),lz=rnd(-.2,.2);
+  const trunk=[[0,-.3,0],[lean*.4,1.2,lz*.3],[-lean*.3,2.5,lz*.6],[lean*.5,3.7,-lz*.2],[lean*.2,4.7,lz*.1]];
+  const big=variant===9;const nb=big?7:5,branches=[],blobs=[],seeds=[];const a0=R()*TAU;
+  for(let i=0;i<nb;i++){const a=a0+i/nb*TAU+rnd(-.3,.3);const h=rnd(3.1,4.3);const L=rnd(1.6,2.2)*(big?1.2:1);const s0=trunk[3];
+    const e=[Math.cos(a)*L+s0[0],h+rnd(.9,1.5),Math.sin(a)*L+s0[2]];
+    branches.push([[s0[0]*.5,h,s0[2]*.5],[Math.cos(a)*L*.5,h+.55,Math.sin(a)*L*.5],e]);
+    blobs.push([e[0]*1.05,e[1]+.35,e[2]*1.05,rnd(1.15,1.45),.72,.75]);
+    seeds.push([e[0]*.92,e[1]-.55,e[2]*.92]);}
+  blobs.push([lean*.2,5.9,0,1.7,.72,.75],[lean*.2+.4,6.5,-.3,1.1,.8,.7]);if(big)blobs.push([-.6,6.3,.6,1.3,.75,.72],[.5,5.4,.9,1.4,.7,.72]);
+  const roots=[];const nr=7;for(let i=0;i<nr;i++){const a=a0+.3+i/nr*TAU+rnd(-.2,.2);const L=rnd(2.2,2.7);
+    roots.push([[Math.cos(a)*.3,1.05,Math.sin(a)*.3],[Math.cos(a)*1.0,.55,Math.sin(a)*1.0],[Math.cos(a)*L*.72,.12,Math.sin(a)*L*.72],[Math.cos(a)*L,-.18,Math.sin(a)*L]]);}
+  return {trunk,branches,blobs,seeds,roots};}
+function lifeTreeGeos(variant){return geo('lifeTree'+variant,()=>{const S=lifeTreeShape(variant);const parts=[];
+  parts.push(barkTube(S.trunk,t=>.24+.5*Math.pow(1-t,.7)+.45*Math.exp(-t*9),26,18,variant*7+1,.07));
+  S.branches.forEach((b,i)=>parts.push(barkTube(b,t=>lerp(.25,.06,t),10,9,variant*31+i,.05)));
+  S.roots.forEach((r,i)=>parts.push(barkTube(r,t=>lerp(.36,.05,Math.pow(t,.8)),14,10,variant*53+i,.08)));
+  const wood=mergeGeos(parts);
+  // glowing veins of light spiralling up the trunk and along two roots
+  const rT=t=>.24+.5*Math.pow(1-t,.7)+.45*Math.exp(-t*9);const tc=new T.CatmullRomCurve3(S.trunk.map(p=>new T.Vector3(p[0],p[1],p[2])));const veins=[];
+  for(let k=0;k<3;k++){const pts=[];const ph=k/3*TAU+variant;for(let i=0;i<=24;i++){const t=.06+i/24*.84;const c=tc.getPointAt(t);const a=ph+t*TAU*.9+Math.sin(t*9+k)*.25;const r=rT(t)*1.02+.005;pts.push([c.x+Math.cos(a)*r,c.y,c.z+Math.sin(a)*r]);}
+    veins.push(barkTube(pts,t=>.035*(1-t*.6),40,5,variant+k,0));}
+  S.roots.slice(0,4).forEach((r,i)=>{const c=new T.CatmullRomCurve3(r.map(p=>new T.Vector3(p[0],p[1],p[2])));const pts=[];for(let j=0;j<=10;j++){const t=j/10*.85;const q=c.getPointAt(t);pts.push([q.x,q.y+lerp(.36,.05,Math.pow(t,.8))*.98,q.z]);}veins.push(barkTube(pts,t=>.03*(1-t*.7),14,5,i,0));});
+  return {S,wood,veins:mergeGeos(veins),canopy:REAL?leafCloud(S.blobs,variant===9?520:340,51+variant):null};});}
 function buildNestView(n,B){
-  const g=new T.Group();const s=n.main?1.85:1;const tc=TEAMS[n.team].hex;
-  const pad=new T.Mesh(geo(REAL?'nestPadR':'nestPad',()=>REAL?rockGeo(4.4,{w:64,h:24,sy:.12,bump:.18,cuts:0,flat:-.02,fine:.04}).scale(3.2,1,3.2):lpCyl(3,3.4,.35,40)),REAL?matc('nestStone',()=>tpMat({tex:'rock',tint:'#a49e90',moss:.7,mossLo:1.0,mossHi:1.4,mossCol:'#5f7f2e',scale:.5,nStr:2,key:'nest'})):pmat('#5a5c50',{roughness:.9}));const pmoss=new T.Mesh(geo('nestMoss',()=>lpCyl(2.7,2.9,.08,40)),pmat('#4f7a3a',{roughness:.95}));pmoss.position.y=.3;if(!REAL)g.add(pmoss);pad.position.y=.1;pad.receiveShadow=true;g.add(pad);
+  const g=new T.Group();const s=n.main?2:1;const tc=TEAMS[n.team].hex;
+  const variant=n.main?9:(({'-1':1,'0':2,'1':3})[String(n.lane)]||1)+(n.outer?3:0);
+  const pad=new T.Mesh(geo(REAL?'nestPadR':'nestPad',()=>REAL?rockGeo(4.4,{w:64,h:24,sy:.12,bump:.18,cuts:0,flat:-.02,fine:.04}).scale(3.2,1,3.2):lpCyl(3,3.4,.35,40)),REAL?matc('nestStone',()=>tpMat({tex:'rock',tint:'#a49e90',moss:.7,mossLo:1.0,mossHi:1.4,mossCol:'#5f7f2e',scale:.5,nStr:2,key:'nest'})):pmat('#5a5c50',{roughness:.9}));pad.position.y=.1;pad.receiveShadow=true;g.add(pad);
+  if(!REAL){const pmoss=new T.Mesh(geo('nestMoss',()=>lpCyl(2.7,2.9,.08,40)),pmat('#4f7a3a',{roughness:.95}));pmoss.position.y=.3;g.add(pmoss);}
   const ringMat=own(new T.MeshBasicMaterial({color:col(tc).multiplyScalar(4),toneMapped:false}));
   const ring=new T.Mesh(geo('nestRing',()=>lpTor(3.15,.09,8,64)),ringMat);ring.rotation.x=Math.PI/2;ring.position.y=.3;g.add(ring);
-  const twig=REAL?matc('twigR'+B.twig,()=>tpMat({tex:'bark',tint:B.twig,scale:1.6,nStr:2,key:'twig'})):pmat(B.twig,{roughness:.85,clearcoat:.1});const twig2=REAL?matc('twigR2',()=>tpMat({tex:'bark',tint:'#a07a50',scale:1.6,nStr:2,key:'twig'})):pmat('#a07a50',{roughness:.85,clearcoat:.1});
-  const bowl=new T.Group();g.add(bowl);
-  for(let i=0;i<9;i++){const t=new T.Mesh(geo('twigRing',()=>lpTor(1,.17,6,26)),i%2?twig:twig2);const y=.45+i*.11;const r=1.35+i*.09;t.scale.set(r,r,1+i*.05);t.position.y=y;t.rotation.set(Math.PI/2+(Math.random()-.5)*.3,(Math.random()-.5)*.3,Math.random()*TAU);t.castShadow=true;bowl.add(t);}
-  for(let i=0;i<10;i++){const a=i/10*TAU+Math.random()*.4;const st=new T.Mesh(cylG(.05,.07,1.6,5),twig2);st.position.set(Math.cos(a)*2,1.2,Math.sin(a)*2);st.rotation.set(Math.sin(a)*.9,0,-Math.cos(a)*.9);bowl.add(st);}
-  const eggMat=own(new T.MeshPhysicalMaterial({color:col(tc).lerp(new T.Color(1,1,1),.45),emissive:col(tc),emissiveIntensity:.9,roughness:.25,clearcoat:1,sheen:1,sheenColor:new T.Color(1,1,1)}));
-  const eggs=[];for(let i=0;i<3;i++){const a=i/3*TAU;const e=new T.Mesh(sphereG(),eggMat);e.scale.set(.55,.75,.55);e.position.set(Math.cos(a)*.55,1.35,Math.sin(a)*.55);e.rotation.z=Math.cos(a)*.25;e.castShadow=true;bowl.add(e);eggs.push(e);}
-  let crystal=null;
-  if(n.main){const bark=REAL?matc('heartBark',()=>tpMat({tex:'bark',tint:'#6a4a32',moss:.6,mossLo:-.1,scale:1,nStr:2,key:'hbark'})):pmat('#4a3322',{roughness:.9,flatShading:true});const tr=new T.Mesh(geo('heartTrunk',()=>lpCyl(.22,.5,4.6,8)),bark);tr.position.y=2.6;tr.castShadow=true;g.add(tr);
-    if(REAL){const lc=matc('heartLeafR'+n.team,()=>{const m=nearFade(windify(cardMat(RTEX.leaf,{trans:.3}),.015,4),3,6);m.color=col(tc).lerp(col('#4f8a3a'),.55).multiplyScalar(1.3);m.emissive=col(tc).multiplyScalar(.12);return m;});
-      const cl=new T.Mesh(geo('heartCanopyR',()=>leafCloud([[0,5.5,0,1.7,.8,.75],[1,5,.4,1.2,.8,.7],[-.95,5.1,-.3,1.25,.8,.7],[.2,6.3,-.2,1.1,.85,.7]],200,51)),lc);cl.castShadow=true;cl.customDepthMaterial=cardDepth(RTEX.leaf);g.add(cl);}
-    else for(const [x,y,z,r] of [[0,5.5,0,1.5],[.9,5,.4,1.05],[-.85,5.1,-.3,1.1],[.2,6.2,-.2,1]]){const c=new T.Mesh(geo('heartLeaf'+r,()=>new T.IcosahedronGeometry(r,1)),own(new T.MeshStandardMaterial({color:col(tc).lerp(col('#3f6a34'),.62),emissive:col(tc),emissiveIntensity:.18,roughness:.8,flatShading:true})));c.position.set(x,y,z);c.castShadow=true;g.add(c);}
-    crystal=new T.Mesh(geo('heartSeed',()=>new T.IcosahedronGeometry(.62,2)),own(new T.MeshStandardMaterial({color:col(tc),emissive:col(tc),emissiveIntensity:2.6,roughness:.25})));crystal.scale.set(1,1.3,1);crystal.position.y=3.6;g.add(crystal);
-    const halo=new T.Mesh(geo('halo',()=>lpTor(1.4,.05,6,48)),ringMat);halo.position.y=3.6;halo.rotation.x=Math.PI/2.3;g.add(halo);n.halo=halo;}
+  const G=lifeTreeGeos(variant);const S=G.S;
+  const crown=new T.Group();g.add(crown);
+  const bark=REAL?own(nearFade(tpMat({tex:'bark',tint:n.main?'#6e5440':'#7a5e46',moss:.3,mossLo:.55,mossHi:.95,mossCol:'#5f7f34',scale:.9,nStr:2.2,key:'lbark'}),2.5,5)):pmat('#5a3e2a',{roughness:.9,flatShading:true});
+  const wood=new T.Mesh(G.wood,bark);wood.castShadow=true;wood.receiveShadow=true;crown.add(wood);
+  const leafCol=col(tc).lerp(col('#ffffff'),.18).lerp(col('#7fc860'),.18).multiplyScalar(1.15);
+  let leafMat;
+  if(REAL){leafMat=own(nearFade(windify(cardMat(RTEX.leaf,{trans:.34}),.016,4),3,6.5));leafMat.color=leafCol.clone();leafMat.emissive=col(tc).multiplyScalar(.2);
+    const cl=new T.Mesh(G.canopy,leafMat);cl.castShadow=true;cl.customDepthMaterial=cardDepth(RTEX.leaf);crown.add(cl);}
+  else{leafMat=own(new T.MeshStandardMaterial({color:leafCol.clone(),emissive:col(tc),emissiveIntensity:.18,roughness:.8,flatShading:true}));
+    for(const b of S.blobs){const c=new T.Mesh(geo('lifeLeaf',()=>new T.IcosahedronGeometry(1,1)),leafMat);c.position.set(b[0],b[1],b[2]);c.scale.set(b[3],b[3]*b[4],b[3]);c.castShadow=true;crown.add(c);}}
+  // seeds of light hanging under the crown (they pulse, and dim as the tree is hurt)
+  const glowBase=col(tc).lerp(col('#fff4c0'),.3).multiplyScalar(2.6);const seedMat=own(new T.MeshBasicMaterial({color:glowBase.clone(),toneMapped:false}));
+  const seeds=[];for(const p of S.seeds){const sd=new T.Mesh(sphereG(),seedMat);sd.position.set(p[0],p[1],p[2]);sd.scale.setScalar(.15);sd.userData.p0=sd.position.clone();crown.add(sd);seeds.push(sd);}
+  const veinMat=own(new T.MeshBasicMaterial({color:col(tc).lerp(col('#ffffff'),.2).multiplyScalar(1.8),toneMapped:false}));const veins=new T.Mesh(G.veins,veinMat);crown.add(veins);
+  const heart=veins;
   g.scale.setScalar(s);
-  return {group:g,bowl,eggs,crystal,ringMat,eggMat,hitT:0,dead:false,deadT:0,pulse:0,s};
+  const canopy={low:3.9*s,top:7.3*s,r:(n.main?4.2:3.6)*s,trunk:1.05*s};
+  return {group:g,crown,wood,leafMat,leafCol,seedMat,seeds,heart,veinMat,glowBase,veinBase:veinMat.color.clone(),ringMat,hitT:0,dead:false,deadT:0,pulse:0,s,canopy,tagY:(n.main?3.9:4.3)*s,bark};
 }
 function buildBoulderView(B){const g=new T.Group();const k=B.boulder||B.id;let m;
   const spec={mossball:['#4f7a3a',{roughness:.95}],stone:['#5e5e58',{roughness:.9}],acorn:['#a0703a',{roughness:.4,clearcoat:.7}],snowball:['#f4f8ff',{roughness:.6}]}[k]||['#777777',{}];
