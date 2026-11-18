@@ -113,7 +113,14 @@
       "mirror": true
     },
     "fishSword": {
-      "name": "Fish Sword",
+      "name": "Branch Blade",
+      "fam": "Weapon",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": false
+    },
+    "acornSling": {
+      "name": "Acorn Slingshot",
       "fam": "Weapon",
       "tier": "Basic",
       "lv": 1,
@@ -122,19 +129,33 @@
     "rubberMallet": {
       "name": "Mushroom Mallet",
       "fam": "Weapon",
-      "tier": "Standard",
-      "lv": 2,
+      "tier": "Basic",
+      "lv": 1,
       "mirror": false
     },
     "poolNoodle": {
       "name": "Cattail Lance",
+      "fam": "Weapon",
+      "tier": "Basic",
+      "lv": 1,
+      "mirror": false
+    },
+    "pineFlail": {
+      "name": "Pinecone Flail",
+      "fam": "Weapon",
+      "tier": "Standard",
+      "lv": 2,
+      "mirror": false
+    },
+    "thornWhip": {
+      "name": "Bramble Whip",
       "fam": "Weapon",
       "tier": "Standard",
       "lv": 3,
       "mirror": false
     },
     "spatula": {
-      "name": "Flipping Spatula",
+      "name": "Lily Pad Flipper",
       "fam": "Weapon",
       "tier": "Advanced",
       "lv": 4,
@@ -148,7 +169,7 @@
       "mirror": false
     },
     "boomerangBone": {
-      "name": "Boomerang Bone",
+      "name": "Maple Boomerang",
       "fam": "Weapon",
       "tier": "Rare",
       "lv": 9,

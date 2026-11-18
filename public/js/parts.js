@@ -26,12 +26,15 @@ const PARTS={
   stinger:{name:'Stinger',fam:'Offense',tier:'Rare',lv:9,mount:'surface',build:'tail',tailEnd:'stinger',s:{damage:2,weight:1.5},atk:'sting',mut:'Venom',cx:2,def:[0,.1,-1],mirror:false,desc:'Venom that eats through armor.'},
   zapAntennae:{name:'Firefly Stalks',fam:'Offense',tier:'Rare',lv:10,mount:'surface',build:'antenna',s:{damage:1,weight:.5},atk:'zap',cx:2,def:[.25,.95,.1],desc:'Firefly sparks that leap between nearby foes.'},
   // Weapons: one weapon slot per creature, held out front. SUGGESTION: names, stats and unlock levels.
-  fishSword:{name:'Fish Sword',fam:'Weapon',tier:'Basic',lv:1,mount:'surface',build:'weapon',weapon:'fish',s:{damage:1.2,weight:1},atk:'fishSlap',max:1,cx:1.5,def:[.88,-.12,.42],mirror:false,desc:'A sword made of fish. Wide, slappy swings.'},
-  rubberMallet:{name:'Mushroom Mallet',fam:'Weapon',tier:'Standard',lv:2,mount:'surface',build:'weapon',weapon:'mallet',s:{damage:1.6,weight:1.8},atk:'bonk',max:1,cx:1.8,def:[.88,-.12,.42],mirror:false,desc:'Squishy bonks that send enemies flying.'},
-  poolNoodle:{name:'Cattail Lance',fam:'Weapon',tier:'Standard',lv:3,mount:'surface',build:'weapon',weapon:'noodle',s:{damage:.6,weight:.5},atk:'noodle',max:1,cx:1.2,def:[.88,-.12,.42],mirror:false,desc:'Huge reach and big pushback, tiny damage.'},
-  spatula:{name:'Flipping Spatula',fam:'Weapon',tier:'Advanced',lv:4,mount:'surface',build:'weapon',weapon:'spatula',s:{damage:1.3,weight:1.2},atk:'flip',max:1,cx:1.8,def:[.88,-.12,.42],mirror:false,desc:'Flips enemies into the air like pancakes.'},
-  bubbleBlaster:{name:'Dewdrop Popper',fam:'Weapon',tier:'Advanced',lv:6,mount:'surface',build:'weapon',weapon:'blaster',s:{damage:1,weight:1.6},atk:'bubble',max:1,cx:2,def:[.88,-.12,.42],mirror:false,desc:'Rapid-fire dewdrops from range.'},
-  boomerangBone:{name:'Boomerang Bone',fam:'Weapon',tier:'Rare',lv:9,mount:'surface',build:'weapon',weapon:'bone',s:{damage:1.8,weight:1.2},atk:'boomerang',max:1,cx:2.2,def:[.88,-.12,.42],mirror:false,desc:'Throw it out and it comes back. Hits both ways.'},
+  fishSword:{name:'Branch Blade',fam:'Weapon',tier:'Basic',lv:1,mount:'surface',build:'weapon',weapon:'branch',s:{damage:1.2,weight:1},atk:'fishSlap',max:1,cx:1.5,def:[.88,-.12,.42],mirror:false,desc:'A sturdy oak branch whittled to a point. Quick, wide swings.'},
+  acornSling:{name:'Acorn Slingshot',fam:'Weapon',tier:'Basic',lv:1,mount:'surface',build:'weapon',weapon:'sling',s:{damage:1,weight:.8},atk:'acornShot',max:1,cx:1.6,def:[.88,-.12,.42],mirror:false,desc:'A forked twig and a vine band. Lobs acorns in an arc, bonk!'},
+  rubberMallet:{name:'Mushroom Mallet',fam:'Weapon',tier:'Basic',lv:1,mount:'surface',build:'weapon',weapon:'mallet',s:{damage:1.6,weight:1.8},atk:'bonk',max:1,cx:1.8,def:[.88,-.12,.42],mirror:false,desc:'Squishy toadstool bonks that send enemies flying.'},
+  poolNoodle:{name:'Cattail Lance',fam:'Weapon',tier:'Basic',lv:1,mount:'surface',build:'weapon',weapon:'noodle',s:{damage:.6,weight:.5},atk:'noodle',max:1,cx:1.2,def:[.88,-.12,.42],mirror:false,desc:'Huge reach and big pushback, tiny damage.'},
+  pineFlail:{name:'Pinecone Flail',fam:'Weapon',tier:'Standard',lv:2,mount:'surface',build:'weapon',weapon:'flail',s:{damage:1.5,weight:1.6},atk:'pineSwing',max:1,cx:1.8,def:[.88,-.12,.42],mirror:false,desc:'A pinecone on a vine. Whirls wide and knocks everyone back.'},
+  thornWhip:{name:'Bramble Whip',fam:'Weapon',tier:'Standard',lv:3,mount:'surface',build:'weapon',weapon:'whip',s:{damage:1,weight:.7},atk:'vineLash',max:1,cx:1.6,def:[.88,-.12,.42],mirror:false,desc:'A thorny vine with long reach. Tangles and slows what it catches.'},
+  spatula:{name:'Lily Pad Flipper',fam:'Weapon',tier:'Advanced',lv:4,mount:'surface',build:'weapon',weapon:'spatula',s:{damage:1.3,weight:1.2},atk:'flip',max:1,cx:1.8,def:[.88,-.12,.42],mirror:false,desc:'A springy lily pad on a reed. Flips enemies into the air.'},
+  bubbleBlaster:{name:'Dewdrop Popper',fam:'Weapon',tier:'Advanced',lv:6,mount:'surface',build:'weapon',weapon:'blaster',s:{damage:1,weight:1.6},atk:'bubble',max:1,cx:2,def:[.88,-.12,.42],mirror:false,desc:'A pea pod that puffs rapid-fire dewdrops.'},
+  boomerangBone:{name:'Maple Boomerang',fam:'Weapon',tier:'Rare',lv:9,mount:'surface',build:'weapon',weapon:'bone',s:{damage:1.8,weight:1.2},atk:'boomerang',max:1,cx:2.2,def:[.88,-.12,.42],mirror:false,desc:'A giant maple seed. Throw it and it whirls back, hitting both ways.'},
   // Defense
   spikes:{name:'Spikes',fam:'Defense',tier:'Standard',lv:2,mount:'surface',build:'spike',s:{toughness:.6,weight:.5},thorns:2,cx:.7,def:[0,.98,0],mirror:false,desc:'Anyone who bites you gets poked back.'},
   quills:{name:'Quills',fam:'Defense',tier:'Advanced',lv:7,mount:'surface',build:'quills',s:{toughness:.8,weight:.8},thorns:3,cx:1,def:[0,.85,-.5],mirror:false,desc:'A pincushion of pain for attackers.'},
@@ -73,12 +76,15 @@ const ATTACKS={
   sting:{id:'sting',name:'Venom Sting',type:'venom',dmg:8,range:1.8,arc:.35,cd:.9,st:12,kb:2,venom:true,single:true,melee:true,sound:'sting'},
   zap:{id:'zap',name:'Firefly Spark',type:'shock',dmg:12,range:9,arc:.35,cd:1.3,st:12,kb:3,ranged:true,sound:'zap'},
   // weapon attacks (SUGGESTION values)
-  fishSlap:{id:'fishSlap',name:'Fish Slap',type:'slash',dmg:11,range:2.1,arc:.05,cd:.5,st:9,kb:4.5,melee:true,weapon:true,sound:'swish'},
+  fishSlap:{id:'fishSlap',name:'Branch Swipe',type:'slash',dmg:11,range:2.1,arc:.05,cd:.5,st:9,kb:4.5,melee:true,weapon:true,sound:'swish'},
   bonk:{id:'bonk',name:'Mushroom Bonk',type:'blunt',dmg:17,range:1.9,arc:.3,cd:1.1,st:15,kb:11,melee:true,weapon:true,sound:'squeak'},
   noodle:{id:'noodle',name:'Cattail Poke',type:'blunt',dmg:7,range:3.6,arc:.75,cd:.45,st:7,kb:8,single:true,melee:true,weapon:true,sound:'peck'},
-  flip:{id:'flip',name:'Pancake Flip',type:'blunt',dmg:12,range:1.8,arc:.35,cd:1.6,st:15,kb:3,single:true,melee:true,weapon:true,launch:10,sound:'flip'},
+  flip:{id:'flip',name:'Lily Flip',type:'blunt',dmg:12,range:1.8,arc:.35,cd:1.6,st:15,kb:3,single:true,melee:true,weapon:true,launch:10,sound:'flip'},
   bubble:{id:'bubble',name:'Dew Burst',type:'blunt',dmg:6,range:18,cd:.32,st:6,kb:1.5,ranged:true,weapon:true,sound:'bubble'},
-  boomerang:{id:'boomerang',name:'Bone Throw',type:'blunt',dmg:13,range:14,cd:2,st:14,kb:5,ranged:true,weapon:true,sound:'whoosh'},
+  boomerang:{id:'boomerang',name:'Maple Toss',type:'blunt',dmg:13,range:14,cd:2,st:14,kb:5,ranged:true,weapon:true,sound:'whoosh'},
+  acornShot:{id:'acornShot',name:'Acorn Shot',type:'blunt',dmg:12,range:22,cd:.62,st:8,kb:4,ranged:true,weapon:true,sound:'whoosh'},
+  pineSwing:{id:'pineSwing',name:'Pinecone Whirl',type:'blunt',dmg:15,range:2.4,arc:-.15,cd:.95,st:13,kb:9,melee:true,weapon:true,sound:'swish'},
+  vineLash:{id:'vineLash',name:'Vine Lash',type:'slash',dmg:9,range:3.3,arc:.55,cd:.55,st:8,kb:3,melee:true,weapon:true,slow:1.2,sound:'swish'},
   headbutt:{id:'headbutt',name:'Headbutt',type:'blunt',dmg:7,range:1.3,arc:.4,cd:.7,st:8,kb:4,single:true,melee:true,sound:'bite'},
 };
 const SPECIALS={
@@ -90,10 +96,10 @@ const SPECIALS={
    The player picks a style for each creature (or leaves it on Auto, which follows the parts, as the design intends).
    A style gives a small perk, suggested parts and a starter template. SUGGESTION: perks and values. */
 const STYLES={
-  tank:{name:'Tank',blurb:'Hold the lane and soak up hits.',perkText:'+10% health',perk:{hp:1.1},suggest:['shell','armorPlates','bellyPadding','rubberMallet','shortLegs','spikes']},
-  bruiser:{name:'Bruiser',blurb:'Dive in and hit hard up close.',perkText:'+8% damage with up-close attacks',perk:{melee:1.08},suggest:['bigClaws','basicJaw','fishSword','horns','longLegs','tailClub']},
-  spitter:{name:'Spitter',blurb:'Fight from a safe distance.',perkText:'+10% damage with ranged attacks',perk:{ranged:1.1},suggest:['spitGland','bubbleBlaster','zapAntennae','boomerangBone','wideEyes','fins']},
-  support:{name:'Support',blurb:'Heal, shield and revive your team.',perkText:'Revive 30% faster, heals and shields 25% stronger',perk:{revive:1.3,heal:1.25},suggest:['healingGland','shieldNode','inkSac','poolNoodle','bigEars','shortLegs']},
+  tank:{name:'Tank',blurb:'Hold the lane and soak up hits.',perkText:'+10% health',perk:{hp:1.1},suggest:['shell','armorPlates','bellyPadding','rubberMallet','pineFlail','shortLegs','spikes']},
+  bruiser:{name:'Bruiser',blurb:'Dive in and hit hard up close.',perkText:'+8% damage with up-close attacks',perk:{melee:1.08},suggest:['bigClaws','basicJaw','fishSword','pineFlail','horns','longLegs','tailClub']},
+  spitter:{name:'Spitter',blurb:'Fight from a safe distance.',perkText:'+10% damage with ranged attacks',perk:{ranged:1.1},suggest:['spitGland','acornSling','bubbleBlaster','zapAntennae','boomerangBone','wideEyes','fins']},
+  support:{name:'Support',blurb:'Heal, shield and revive your team.',perkText:'Revive 30% faster, heals and shields 25% stronger',perk:{revive:1.3,heal:1.25},suggest:['healingGland','shieldNode','inkSac','poolNoodle','thornWhip','bigEars','shortLegs']},
   scout:{name:'Scout',blurb:'Fast, sneaky, first to spot enemies.',perkText:'+8% speed and +6 m detection',perk:{speed:1.08,detect:6},suggest:['wings','camoCrest','longLegs','snoot','bigEars','smallClaws']},
   allrounder:{name:'All-rounder',blurb:'A bit of everything.',perkText:'+15% stamina recovery',perk:{stamina:1.15},suggest:['basicJaw','smallClaws','spatula','longLegs','spikes','wideEyes']},
 };
@@ -119,7 +125,10 @@ const BOT_PRESETS=PRESETS.concat([
   D('Puffington','#d8909a','#ffc8d8','plain',[1.05,1.25,1],[P('shortLegs',.45,-.86,.3,{s:.8}),P('shortLegs',.45,-.86,-.3,{s:.8}),P('inflateSac',0,-.42,.88,{s:.7}),P('quills',0,.4,-.9,{s:.7}),P('beadEye',0.22,0.04,0.97,{s:0.9})],{blurb:'A rose-quartz puffball. Spiky when squeezed. Do not hug.',sprout:'crystals'}),
   D('Sir Bonksalot','#d8c070','#8a7a4a','stripes',[1.2,1.15,1.1],[P('shortLegs',.45,-.86,.3,{s:.8}),P('shortLegs',.45,-.86,-.3,{s:.8}),P('armorPlates',.85,.15,-.35,{s:.8}),P('rubberMallet',.88,-.12,.42),P('beadEye',0.22,0.03,0.97,{s:0.9})],{blurb:'A layered sandstone knight with a squishy mushroom mallet.',sprout:'clover'}),
   D('Flipjack','#c8a878','#8a6a48','stripes',[1.35,.85,1.5],[P('shortLegs',.45,-.86,.3,{s:.8}),P('shortLegs',.45,-.86,-.3,{s:.8}),P('spatula',.88,-.12,.42),P('beadEye',0.25,0.05,0.96,{s:0.9})],{blurb:'A little driftwood log on stubby legs. Flips you like a pancake.',sprout:'leaf'}),
-  D('Boomer','#6a88a0','#3f6a5a','stripes',[1.05,1.25,1],[P('frogLegs',.5,-.8,-.1,{s:.8}),P('boomerangBone',.88,-.12,.42),P('beadEye',0.22,0.04,0.97,{s:0.9})],{blurb:'A blue banded stone. Throws a bone from far away, then hops off.',sprout:'none'}),
+  D('Boomer','#6a88a0','#3f6a5a','stripes',[1.05,1.25,1],[P('frogLegs',.5,-.8,-.1,{s:.8}),P('boomerangBone',.88,-.12,.42),P('beadEye',0.22,0.04,0.97,{s:0.9})],{blurb:'A blue banded stone. Whirls a maple seed from far away, then hops off.',sprout:'none'}),
+  D('Nutsy','#b08a5a','#6a4a2a','spots',[1,1.15,.95],[P('shortLegs',.45,-.86,.3,{s:.8}),P('shortLegs',.45,-.86,-.3,{s:.8}),P('acornSling',.88,-.12,.42),P('wideEyes',0.3,0.24,0.92,{s:.8})],{blurb:'A speckled hazel stone with a pocket full of acorns.',sprout:'leaf'}),
+  D('Swingby','#6a6a64','#4f7a3a','hood',[1.15,1.1,1.05],[P('shortLegs',.45,-.86,.3,{s:.8}),P('shortLegs',.45,-.86,-.3,{s:.8}),P('pineFlail',.88,-.12,.42),P('spikes',0,.98,0,{s:.8}),P('beadEye',0.22,0.04,0.97,{s:0.9})],{blurb:'A slate boulder that whirls a pinecone on a vine.',sprout:'fern'}),
+  D('Brambles','#7a6a8a','#5f9a3c','stripes',[.95,1.25,.9],[P('longLegs',.42,-.86,.05,{s:.8}),P('thornWhip',.88,-.12,.42),P('beadEye',0.2,0.06,0.98,{s:0.9})],{blurb:'A lanky shard wrapped in a thorny vine. Long reach, sticky lash.',sprout:'stem'}),
   D('Chompsworth','#9a9a90','#5f9a3c','skirt',[1,1.35,.9],[P('longLegs',.42,-.86,.05,{s:.8}),P('basicJaw',0,-.2,.98,{s:.6}),P('horns',.3,.9,.2,{s:.8}),P('beadEye',0.2,0.08,0.97,{s:0.9}),P('fishSword',.88,-.12,.42)],{blurb:'A tall grey stone with a mossy base. Fast and bitey, but tips over easily.',sprout:'none'}),
 ]);
 function newDesign(){return D('New Spirit',pick(SWATCHES),pick(SWATCHES),pick(['plain','hood','spots','stripes']),[1.1,1.1,1],[P('shortLegs',.45,-.86,.3,{s:.8}),P('shortLegs',.45,-.86,-.3,{s:.8}),P('beadEye',.22,.05,.97,{s:.9})],{seed:Math.floor(Math.random()*99991)});}
@@ -127,11 +136,11 @@ function newDesign(){return D('New Spirit',pick(SWATCHES),pick(SWATCHES),pick(['
 /* Starter template for a play style, built from the best parts the player owns. Each row is one "slot":
    the first owned option is used. Legs come in mirrored pairs. SUGGESTION: the layouts. */
 const STYLE_TEMPLATES={
-  tank:{body:[1.25,1.3,1.1],color:'#7f98a0',accent:'#5f8a3c',pattern:'spots',rows:[['shell','bellyPadding'],['rubberMallet','fishSword'],['basicJaw','beak'],['armorPlates','spikes'],['shieldNode'],['beadEye']],legs:[['shortLegs'],2]},
-  bruiser:{body:[1.05,1.25,.95],color:'#c8704a',accent:'#8a4a32',pattern:'stripes',rows:[['fishSword','spatula','rubberMallet'],['bigClaws','smallClaws'],['basicJaw','beak'],['horns'],['bellyPadding'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
-  spitter:{body:[1,1.35,.95],color:'#7a6a8a',accent:'#b49ae0',pattern:'plain',rows:[['bubbleBlaster','boomerangBone','fishSword'],['spitGland','zapAntennae','basicJaw'],['wideEyes'],['shieldNode','bellyPadding'],['fins'],['beadEye']],legs:[['shortLegs'],2]},
-  support:{body:[.95,1.3,.9],color:'#e8d8b8',accent:'#6fae4a',pattern:'hood',rows:[['poolNoodle','fishSword'],['healingGland','shieldNode','bellyPadding'],['basicJaw','beak'],['bigEars','snoot'],['beadEye']],legs:[['shortLegs'],2]},
-  scout:{body:[.9,1.2,.9],color:'#8fc8a0',accent:'#4f7a3a',pattern:'plain',rows:[['fishSword','poolNoodle'],['wings','fins'],['camoCrest','snoot'],['smallClaws','basicJaw'],['bigEars','wideEyes'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
+  tank:{body:[1.25,1.3,1.1],color:'#7f98a0',accent:'#5f8a3c',pattern:'spots',rows:[['shell','bellyPadding'],['rubberMallet','pineFlail','fishSword'],['basicJaw','beak'],['armorPlates','spikes'],['shieldNode'],['beadEye']],legs:[['shortLegs'],2]},
+  bruiser:{body:[1.05,1.25,.95],color:'#c8704a',accent:'#8a4a32',pattern:'stripes',rows:[['pineFlail','fishSword','spatula','rubberMallet'],['bigClaws','smallClaws'],['basicJaw','beak'],['horns'],['bellyPadding'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
+  spitter:{body:[1,1.35,.95],color:'#7a6a8a',accent:'#b49ae0',pattern:'plain',rows:[['bubbleBlaster','boomerangBone','acornSling','fishSword'],['spitGland','zapAntennae','basicJaw'],['wideEyes'],['shieldNode','bellyPadding'],['fins'],['beadEye']],legs:[['shortLegs'],2]},
+  support:{body:[.95,1.3,.9],color:'#e8d8b8',accent:'#6fae4a',pattern:'hood',rows:[['thornWhip','poolNoodle','fishSword'],['healingGland','shieldNode','bellyPadding'],['basicJaw','beak'],['bigEars','snoot'],['beadEye']],legs:[['shortLegs'],2]},
+  scout:{body:[.9,1.2,.9],color:'#8fc8a0',accent:'#4f7a3a',pattern:'plain',rows:[['acornSling','fishSword','poolNoodle'],['wings','fins'],['camoCrest','snoot'],['smallClaws','basicJaw'],['bigEars','wideEyes'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
   allrounder:{body:[1,1.3,.95],color:'#8a8a80',accent:'#6fae4a',pattern:'hood',rows:[['spatula','fishSword'],['basicJaw'],['smallClaws'],['spikes','bellyPadding'],['wideEyes'],['beadEye']],legs:[['longLegs','shortLegs'],2]},
 };
 function styleTemplate(style,owned){

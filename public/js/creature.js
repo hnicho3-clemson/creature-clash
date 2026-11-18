@@ -315,34 +315,75 @@ const BUILDERS={
     for(let i=0;i<4;i++){const s=new T.Mesh(geo('bellyStripe',()=>lpTor(1,.035,8,48)),skinMat('#e8c890','pebble'));s.rotation.x=Math.PI/2;const z=(i-1.5)*.26*b.l;const k=Math.sqrt(Math.max(.1,1-Math.pow(z/(b.l*.85),2)));s.scale.set(b.w*.78*k,b.l*.1,1);s.position.set(0,-b.h*.72,z);g.add(s);}return {g};},
 };
 
+/* forest ammo: an acorn (nut + scaly cap + stem) and a pinecone (overlapping scales around a core) */
+function buildAcornMesh(){const g=new T.Group();
+  const nut=new T.Mesh(geo('acNut',()=>{const q=new T.SphereGeometry(1,16,12);const p=q.attributes.position;for(let i=0;i<p.count;i++){const y=p.getY(i);if(y<0){p.setX(i,p.getX(i)*(1+y*.25));p.setZ(i,p.getZ(i)*(1+y*.25));p.setY(i,y*1.25);}}q.computeVertexNormals();return q;}),pmat('#b07a3a',{roughness:.35,clearcoat:.8,clearcoatRoughness:.3}));nut.scale.setScalar(.12);g.add(nut);
+  const cap=new T.Mesh(geo('acCap',()=>lpSph(1,16,8,0,TAU,0,Math.PI*.52)),skinMat('#6a4424','scales',{normalScale:new T.Vector2(1.6,1.6),roughness:.9}));cap.scale.set(.135,.085,.135);cap.position.y=.025;g.add(cap);
+  const st=new T.Mesh(cylG(.012,.016,.06,6),pmat('#5a3a20'));st.position.y=.13;g.add(st);return g;}
+function buildPineconeMesh(){const g=new T.Group();const m=pmat('#8a5a32',{roughness:.75});
+  const core=new T.Mesh(sphereG(),pmat('#6a4424',{roughness:.9}));core.scale.set(.1,.17,.1);g.add(core);
+  const sg=geo('pcScale',()=>{const c=lpCone(.05,.08,4);c.rotateX(Math.PI*.62);c.scale(1,.5,1);return c;});
+  for(let r=0;r<6;r++){const y=-.14+r*.055;const rad=.1*Math.sin(Math.PI*(r+.6)/6.6)+.02;const n=7;for(let i=0;i<n;i++){const a=i/n*TAU+r*.45;const sc=new T.Mesh(sg,m);sc.position.set(Math.cos(a)*rad,y,Math.sin(a)*rad);sc.rotation.y=-a+Math.PI/2;sc.scale.setScalar(.9+r*.05);g.add(sc);}}
+  return g;}
 /* Weapon meshes (shared by the held part and thrown projectiles). Grip at the origin, weapon along +Z. */
 function buildWeaponMesh(k){const g=new T.Group();
   const grip=(c,len)=>{const h=new T.Mesh(cylG(.045,.05,len,10),pmat(c,{roughness:.6}));h.rotation.x=Math.PI/2;h.position.z=len*.5-.12;g.add(h);return h;};
-  if(k==='fish'){grip('#6a4022',.36);const guard=new T.Mesh(cylG(.16,.16,.05,16),pmat('#ffd166',{metalness:.8,roughness:.25}));guard.rotation.x=Math.PI/2;guard.position.z=.1;g.add(guard);
-    const fm=pmat('#8fb8d8',{metalness:.35,roughness:.25,clearcoat:1,sheen:1,sheenColor:col('#e0f4ff')});
-    const body=new T.Mesh(sphereG(),fm);body.scale.set(.09,.17,.5);body.position.z=.58;g.add(body);
-    const belly=new T.Mesh(sphereG(),pmat('#e8f0f4',{roughness:.3}));belly.scale.set(.085,.1,.42);belly.position.set(0,-.06,.6);g.add(belly);
-    const tail=new T.Mesh(coneG(.16,.22,4),fm);tail.rotation.x=-Math.PI/2;tail.scale.set(.25,1,1);tail.position.z=.15;g.add(tail);
-    for(const s of [-1,1]){const e=new T.Mesh(sphereG(),pmat('#ffffff',{roughness:.1}));e.scale.setScalar(.04);e.position.set(s*.075,.05,.95);g.add(e);const pu=new T.Mesh(sphereG(),pmat('#0b0b14'));pu.scale.setScalar(.02);pu.position.set(s*.105,.05,.96);g.add(pu);}
-    const fin=new T.Mesh(coneG(.12,.25,3),fm);fin.scale.set(.15,1,1.6);fin.position.set(0,.17,.6);g.add(fin);}
-  else if(k==='mallet'){grip('#efe2c4',.75);const head=new T.Mesh(geo('shroomHead',()=>{const c=lpSph(.3,28,14,0,TAU,0,Math.PI/2);return c;}),pmat('#d9473b',{roughness:.4,clearcoat:.7}));head.rotation.x=Math.PI/2;head.scale.set(1,.9,1);head.position.z=.66;g.add(head);
+  const bark=(hex)=>REAL?matc('wbark'+hex,()=>tpMat({tex:'bark',space:'object',tint:hex,scale:3.2,nStr:1.6,key:'wbark'})):pmat(hex,{roughness:.85});
+  const leafM=(hex)=>pmat(hex,{roughness:.55,sheen:1,sheenColor:col('#e8ffc0'),side:T.DoubleSide});
+  const leaf=(x,y,z,rx,ry,sc,hex)=>{const l=new T.Mesh(geo('wLeaf',()=>{const q=new T.SphereGeometry(1,10,6);q.scale(.5,.06,1);q.translate(0,0,.9);return q;}),leafM(hex||'#6fae4a'));l.position.set(x,y,z);l.rotation.set(rx,ry,0);l.scale.setScalar(sc);g.add(l);return l;};
+  if(k==='branch'){// a whittled oak branch: bark shaft, pale carved point, a side twig with two leaves
+    const sh=new T.Mesh(geo('brShaft',()=>taperTube([[0,0,-.14],[.01,.02,.3],[-.02,.03,.62],[0,.01,.9]],.06,.04,{segs:16,radial:9})),bark('#7a5636'));g.add(sh);
+    const tip=new T.Mesh(geo('brTip',()=>{const c=lpCone(.042,.26,9);c.rotateX(Math.PI/2);c.translate(0,0,.13);return c;}),pmat('#e2c99a',{roughness:.7}));tip.position.set(0,.01,.9);g.add(tip);
+    const kn=new T.Mesh(sphereG(),bark('#6a4a2e'));kn.scale.set(.07,.06,.07);kn.position.set(-.02,.03,.55);g.add(kn);
+    const tw=new T.Mesh(geo('brTwig',()=>taperTube([[0,0,0],[.08,.06,.1],[.16,.1,.14]],.022,.012,{segs:6,radial:6})),bark('#7a5636'));tw.position.set(.02,.03,.42);g.add(tw);
+    leaf(.18,.12,.56,-.3,.9,.11);leaf(.17,.11,.56,.2,1.9,.09,'#8fc860');
+    for(const z of [.02,.08])
+      {const w=new T.Mesh(geo('brWrap',()=>lpTor(.062,.014,6,16)),pmat('#5f8a3c',{roughness:.8}));w.position.z=z;g.add(w);}}
+  else if(k==='sling'){// a forked twig slingshot with a vine band and an acorn in the pouch
+    const sh=new T.Mesh(geo('slHandle',()=>taperTube([[0,0,-.12],[0,.01,.12],[0,.02,.3]],.05,.045,{segs:8,radial:9})),bark('#7a5636'));g.add(sh);
+    for(const sd of [-1,1]){const pr=new T.Mesh(geo('slProng'+sd,()=>taperTube([[0,.02,.28],[sd*.08,.08,.4],[sd*.14,.17,.5]],.04,.026,{segs:8,radial:8})),bark('#7a5636'));g.add(pr);}
+    const band=new T.Mesh(geo('slBand',()=>taperTube([[-.14,.17,.5],[-.05,.15,.36],[0,.14,.3],[.05,.15,.36],[.14,.17,.5]],.014,.014,{segs:16,radial:5})),pmat('#5f9a3c',{roughness:.6}));g.add(band);
+    const ac=buildAcornMesh();ac.scale.setScalar(.75);ac.position.set(0,.15,.32);ac.rotation.x=-1.2;g.add(ac);g.userData.ammo=ac;}
+  else if(k==='mallet'){const st=new T.Mesh(geo('mlStalk',()=>taperTube([[0,0,-.12],[0,.01,.3],[0,0,.62]],.05,.065,{segs:8,radial:10})),pmat('#efe2c4',{roughness:.7}));g.add(st);
+    const head=new T.Mesh(geo('shroomHead',()=>{const c=lpSph(.3,28,14,0,TAU,0,Math.PI/2);return c;}),pmat('#d9473b',{roughness:.4,clearcoat:.7}));head.rotation.x=Math.PI/2;head.scale.set(1,.9,1);head.position.z=.66;g.add(head);
     const und=new T.Mesh(geo('shroomUnder',()=>lpCirc(.3,24)),pmat('#f1e2c4',{roughness:.8,side:T.DoubleSide}));und.position.z=.66;g.add(und);
     for(let i=0;i<6;i++){const a=i/6*TAU;const d=new T.Mesh(sphereG(),pmat('#fff6e6'));d.scale.set(.045,.045,.02);d.position.set(Math.cos(a)*.16,Math.sin(a)*.16,.86);g.add(d);}}
   else if(k==='noodle'){const n=new T.Mesh(geo('noodleG',()=>taperTube([[0,0,-.1],[0,.05,.5],[0,.02,1.1],[0,-.08,1.7]],.05,.035,{segs:24,radial:10})),pmat('#6aa84f',{roughness:.7,sheen:1,sheenColor:col('#d8ffd0')}));g.add(n);
-    const tip=new T.Mesh(capsuleG(.1,.42),skinMat('#6b4226','pebble',{normalScale:new T.Vector2(1.4,1.4)}));tip.rotation.x=Math.PI/2;tip.position.set(0,-.06,1.5);g.add(tip);const sp=new T.Mesh(cylG(.012,.006,.2,5),pmat('#8a6a40'));sp.rotation.x=Math.PI/2;sp.position.set(0,-.08,1.85);g.add(sp);}
-  else if(k==='spatula'){grip('#5a3a20',.5);const neck=new T.Mesh(cylG(.03,.03,.22,8),pmat('#b08050',{roughness:.7}));neck.rotation.x=Math.PI/2;neck.position.z=.48;g.add(neck);
-    const blade=new T.Mesh(geo('spatBlade',()=>new T.BoxGeometry(.34,.025,.38)),skinMat('#c49a64','scales',{normalScale:new T.Vector2(.6,.6),clearcoat:.2}));blade.position.z=.76;blade.rotation.x=-.15;g.add(blade);
-    for(let i=0;i<3;i++){const sl=new T.Mesh(geo('spatSlot',()=>new T.BoxGeometry(.04,.03,.22)),pmat('#5a3a20'));sl.position.set((i-1)*.09,.005,.78);sl.rotation.x=-.15;g.add(sl);}}
-  else if(k==='blaster'){const bm=pmat('#7fbf5a',{roughness:.45,clearcoat:.5,sheen:1,sheenColor:col('#d8ffb0')}),cm=pmat('#7a5636',{roughness:.7});
-    const body=new T.Mesh(geo('blBody',()=>new T.BoxGeometry(.2,.22,.5)),bm);body.position.set(0,.06,.3);g.add(body);
-    const handle=new T.Mesh(geo('blGrip',()=>new T.BoxGeometry(.12,.26,.12)),cm);handle.position.set(0,-.08,.06);handle.rotation.x=.3;g.add(handle);
-    const barrel=new T.Mesh(cylG(.06,.08,.34,14),cm);barrel.rotation.x=Math.PI/2;barrel.position.set(0,.08,.68);g.add(barrel);
-    const ring=new T.Mesh(geo('blRing',()=>lpTor(.1,.03,8,20)),pmat('#5f9a3c',{roughness:.6}));ring.position.set(0,.08,.86);g.add(ring);
-    const tank=new T.Mesh(sphereG(),matc('blTank',()=>new T.MeshPhysicalMaterial({color:col('#c8fff0'),emissive:col('#3fd6a0'),emissiveIntensity:.6,transparent:true,opacity:.7,roughness:.05,clearcoat:1,iridescence:1})));tank.scale.setScalar(.13);tank.position.set(0,.26,.28);g.add(tank);}
-  else if(k==='bone'){const bm=pmat('#f4ead2',{roughness:.55,sheen:.6,sheenColor:col('#ffffff')});
-    for(const s of [-1,1]){const arm=new T.Mesh(capsuleG(.05,.42),bm);arm.rotation.set(Math.PI/2,0,0);arm.rotation.y=s*.55;arm.position.set(s*.13,0,.38);g.add(arm);
-      for(const t of [-1,1]){const kn=new T.Mesh(sphereG(),bm);kn.scale.setScalar(.065);kn.position.set(s*.27+t*.04,0,.62+t*.03);g.add(kn);}}
-    const mid=new T.Mesh(sphereG(),bm);mid.scale.set(.1,.07,.09);mid.position.z=.16;g.add(mid);}
+    const tip=new T.Mesh(capsuleG(.1,.42),skinMat('#6b4226','pebble',{normalScale:new T.Vector2(1.4,1.4)}));tip.rotation.x=Math.PI/2;tip.position.set(0,-.06,1.5);g.add(tip);const sp=new T.Mesh(cylG(.012,.006,.2,5),pmat('#8a6a40'));sp.rotation.x=Math.PI/2;sp.position.set(0,-.08,1.85);g.add(sp);
+    leaf(.02,.02,.25,-.1,.5,.16,'#7fbf5a');}
+  else if(k==='flail'){// a stick handle, a sagging vine and a pinecone on the end
+    const sh=new T.Mesh(geo('flHandle',()=>taperTube([[0,0,-.12],[0,.01,.18],[0,.02,.4]],.05,.045,{segs:8,radial:9})),bark('#6a4a2e'));g.add(sh);
+    const vine=new T.Mesh(geo('flVine',()=>taperTube([[0,.02,.38],[0,-.06,.55],[0,-.12,.7],[0,-.1,.82]],.018,.016,{segs:12,radial:6})),pmat('#4f7a3a',{roughness:.7}));g.add(vine);
+    const pc=buildPineconeMesh();pc.position.set(0,-.1,1);pc.rotation.x=Math.PI/2;g.add(pc);g.userData.head=pc;}
+  else if(k==='whip'){// a bark grip and a long thorny vine with a couple of leaves
+    const sh=new T.Mesh(geo('whGrip',()=>taperTube([[0,0,-.12],[0,.01,.14]],.05,.046,{segs:4,radial:9})),bark('#6a4a2e'));g.add(sh);
+    const pts=[[0,.01,.12],[.04,.06,.4],[-.05,.1,.7],[.05,.07,1.0],[-.03,.0,1.28],[.02,-.08,1.5]];
+    const vine=new T.Mesh(geo('whVine',()=>taperTube(pts,.03,.01,{segs:30,radial:6})),pmat('#5f8a34',{roughness:.65,sheen:.6,sheenColor:col('#d8ffb0')}));g.add(vine);
+    const cv=new T.CatmullRomCurve3(pts.map(q=>new T.Vector3(q[0],q[1],q[2])));
+    for(let i=0;i<9;i++){const t=.12+i*.095;const q=cv.getPointAt(t);const a=i*2.4;const th=new T.Mesh(coneG(.016,.07,5),pmat('#d8c8a0',{roughness:.5}));th.position.copy(q);th.position.x+=Math.cos(a)*.025;th.position.y+=Math.sin(a)*.025;th.rotation.set(Math.sin(a)*1.4,0,-Math.cos(a)*1.4);g.add(th);}
+    const q1=cv.getPointAt(.35),q2=cv.getPointAt(.7);leaf(q1.x,q1.y,q1.z,-.4,1.2,.1);leaf(q2.x,q2.y,q2.z,.3,-1.3,.09,'#8fc860');}
+  else if(k==='spatula'){// a reed stem with a springy lily pad and a little bud
+    const st=new T.Mesh(geo('lpStem',()=>taperTube([[0,0,-.12],[0,.02,.3],[0,.03,.58]],.04,.032,{segs:10,radial:8})),pmat('#5f9a3c',{roughness:.6}));g.add(st);
+    const pad=new T.Mesh(geo('lpPad',()=>{const c=new T.CylinderGeometry(.27,.27,.025,28,1,false,.35,TAU-.7);c.translate(0,0,0);return c;}),pmat('#4f9a4a',{roughness:.45,clearcoat:.6,sheen:.8,sheenColor:col('#c8ffb0')}));pad.position.set(0,.03,.82);pad.rotation.x=-.15;pad.rotation.y=Math.PI;g.add(pad);
+    const rim=new T.Mesh(geo('lpRim',()=>lpTor(.27,.012,6,40)),pmat('#3f7a3a',{roughness:.6}));rim.rotation.x=Math.PI/2-.15;rim.position.set(0,.035,.82);g.add(rim);
+    const bud=new T.Mesh(sphereG(),pmat('#ff9ec4',{roughness:.4,sheen:1,sheenColor:col('#ffffff')}));bud.scale.set(.06,.08,.06);bud.position.set(.12,.09,.9);g.add(bud);}
+  else if(k==='blaster'){// a pea pod popper: a twig grip, a split pod with peas, a reed barrel and a dewdrop tank
+    const pm=pmat('#7fbf5a',{roughness:.45,clearcoat:.5,sheen:1,sheenColor:col('#d8ffb0')});
+    const handle=new T.Mesh(geo('ppGrip',()=>taperTube([[0,-.16,.02],[0,-.06,.08],[0,.02,.14]],.05,.045,{segs:6,radial:8})),bark('#7a5636'));g.add(handle);
+    const pod=new T.Mesh(sphereG(),pm);pod.scale.set(.13,.12,.36);pod.position.set(0,.07,.36);g.add(pod);
+    const seam=new T.Mesh(geo('ppSeam',()=>taperTube([[0,.19,.06],[0,.2,.36],[0,.19,.66]],.012,.012,{segs:10,radial:5})),pmat('#5f9a3c'));g.add(seam);
+    for(let i=0;i<3;i++){const pe=new T.Mesh(sphereG(),pmat('#a8e070',{roughness:.35,clearcoat:.8}));pe.scale.setScalar(.06);pe.position.set(0,.17,.24+i*.12);g.add(pe);}
+    const barrel=new T.Mesh(cylG(.045,.055,.3,12),pmat('#6aa84f',{roughness:.6}));barrel.rotation.x=Math.PI/2;barrel.position.set(0,.07,.8);g.add(barrel);
+    const tank=new T.Mesh(sphereG(),matc('blTank',()=>new T.MeshPhysicalMaterial({color:col('#c8fff0'),emissive:col('#3fd6a0'),emissiveIntensity:.6,transparent:true,opacity:.7,roughness:.05,clearcoat:1,iridescence:1})));tank.scale.set(.1,.13,.1);tank.position.set(0,.27,.2);g.add(tank);
+    leaf(0,.12,.68,-.6,0,.08);}
+  else if(k==='bone'){// a giant maple seed: two veined wings from a round seed
+    const wm=pmat('#c8643a',{roughness:.5,sheen:1,sheenColor:col('#ffd8a0'),side:T.DoubleSide});
+    for(const s of [-1,1]){const w=new T.Mesh(geo('mpWing',()=>{const q=new T.SphereGeometry(1,16,8);q.scale(.11,.018,.34);q.translate(0,0,.34);const p=q.attributes.position;for(let i=0;i<p.count;i++){const z=p.getZ(i);p.setX(i,p.getX(i)+Math.pow(z/.68,2)*.09);}q.computeVertexNormals();return q;}),wm);
+      w.rotation.y=s*.62+(s<0?Math.PI:0);w.position.set(0,0,.3);if(s<0)w.scale.x=-1;g.add(w);
+      const vein=new T.Mesh(geo('mpVein',()=>taperTube([[0,.02,.02],[.04,.02,.3],[.07,.02,.62]],.012,.004,{segs:8,radial:5})),pmat('#8a3a22'));vein.rotation.copy(w.rotation);vein.position.copy(w.position);if(s<0)vein.scale.x=-1;g.add(vein);}
+    const sd=new T.Mesh(sphereG(),pmat('#7a5030',{roughness:.6}));sd.scale.set(.1,.08,.11);sd.position.z=.3;g.add(sd);}
+  // older saves may still name the retired weapon meshes
+  else if(k==='fish')return buildWeaponMesh('branch');
   return g;}
 
 /* =========================================================
@@ -617,7 +658,8 @@ function animateCreatureView(c,dt,time){
   for(const a of v.arms){const sw=-a.side*Math.sin(TAU*(gp-.12)+(a.side>0?Math.PI:0))*(.28+.18*rb)*gw-v.af*.03+Math.sin(time*1.6+a.side)*.04*(1-gw);
     const tgt=c.slashT>0?a.side*Math.sin((.3-c.slashT)/.3*Math.PI)*1.0:sw;a.g.rotation.y=c.slashT>0?tgt:sprStep(a,'sw',tgt,dt,11,.42);}
   for(const w of v.weapons){const t=c.swingT>0?1-c.swingT/.35:-1;let rx=w.base+Math.sin(time*2.2)*.05*(1-gw)+Math.sin(TAU*(gp-.15))*.1*gw-v.af*.02,ry=0,pz=0;
-    if(t>=0){const e=Math.sin(t*Math.PI);if(w.k==='noodle'||w.k==='blaster'){pz=e*(w.k==='noodle'?.45:.12);rx=w.base-e*.2;}else if(w.k==='spatula'){rx=w.base+e*1.3-Math.sin(t*TAU)*.4;}else if(w.k==='bone'){ry=-e*1.6;rx=w.base-e*.6;}else if(w.k==='fish'){ry=-Math.sin(t*TAU*.75)*1.3;}else{rx=w.base-Math.sin(t*Math.PI*.5)*1.6+(t>.5?(t-.5)*3.2:0);}}
+    if(t>=0){const e=Math.sin(t*Math.PI);if(w.k==='noodle'||w.k==='blaster'){pz=e*(w.k==='noodle'?.45:.12);rx=w.base-e*.2;}else if(w.k==='sling'){pz=-Math.sin(clamp(t*2,0,1)*Math.PI*.5)*.18*(t<.5?1:1-(t-.5)*2);rx=w.base-.25;}else if(w.k==='flail'){ry=-Math.sin(t*TAU)*1.9;rx=w.base-e*.4;}else if(w.k==='whip'){ry=-Math.sin(t*TAU*.75)*1.1;rx=w.base-Math.sin(t*TAU)*.9;pz=e*.2;}else if(w.k==='spatula'){rx=w.base+e*1.3-Math.sin(t*TAU)*.4;}else if(w.k==='bone'){ry=-e*1.6;rx=w.base-e*.6;}else if(w.k==='fish'){ry=-Math.sin(t*TAU*.75)*1.3;}else{rx=w.base-Math.sin(t*Math.PI*.5)*1.6+(t>.5?(t-.5)*3.2:0);}}
+    if(w.k==='sling'){const wm=w.g.children[w.g.children.length-1];const am=wm&&wm.userData.ammo;if(am)am.visible=!(c.swingT>0&&t>.3);}
     if(c.boneOut&&w.k==='bone')w.g.children[w.g.children.length-1].visible=false;else if(w.k==='bone')w.g.children[w.g.children.length-1].visible=true;
     w.g.rotation.x=lerp(w.g.rotation.x,rx,1-Math.exp(-dt*22));w.g.rotation.y=lerp(w.g.rotation.y,ry,1-Math.exp(-dt*22));w.g.position.z=pz;}
   for(const pc of v.pincers){const open=c.slashT>0?Math.sin((.3-c.slashT)/.3*Math.PI)*.6:.18+Math.sin(time*3)*.05;for(const h of pc)h.h.rotation.y=-h.s*(.1+open);}

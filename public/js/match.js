@@ -80,6 +80,7 @@ function tryAttack(c,i,aimYaw){
     case 'spit':fireSpit(c,a,mul);break;
     case 'zap':fireZap(c,a,mul);break;
     case 'bubble':fireBubble(c,a,mul);break;
+    case 'acornShot':fireAcorn(c,a,mul);break;
     case 'boomerang':if(c.boneOut){c.stamina+=a.st;c.cds[i]=0;return false;}fireBoomerang(c,a,mul);break;
   }
   if(match&&c.isPlayer)match.stats.attacks=(match.stats.attacks||0)+1;
@@ -107,6 +108,15 @@ function fireSpit(c,a,mul){
   const mesh=new T.Mesh(sphereG(),glowMat('#b8ff4f',2.6));mesh.scale.setScalar(.3);world.group.add(mesh);
   world.projectiles.push({kind:'spit',x:sx,y:sy,z:sz,vx:fx*sp,vy,vz:fz*sp,g,life:1.1,team:c.team,src:c,dmg:a.dmg*mul,type:'spit',kb:a.kb,r:.35,splash:0,venom:!!c.muts.Venom,mesh,color:'#b8ff4f'});
   c.spitT=.25;sfx('spit',c);
+}
+function fireAcorn(c,a,mul){
+  const fx=Math.sin(c.yaw),fz=Math.cos(c.yaw);const sx=c.x+fx*(c.radius+.5),sz=c.z+fz*(c.radius+.5),sy=c.y+c.view.baseY+.35;
+  const sp=21,g=14;let vy=3.2;const t=c.spitTarget;
+  if(t&&(t.alive||t.state==='downed')){const d=Math.hypot(t.x-sx,t.z-sz);const tt=d/sp;vy=((t.y||0)+(t.height||2)*.5-sy)/tt+.5*g*tt;vy=clamp(vy,-6,13);}
+  else if(c.isPlayer){vy=clamp(-(cam.pitch-.34)*14+3.5,-3,10);}
+  const mesh=buildAcornMesh();mesh.scale.setScalar(1.7);world.group.add(mesh);
+  world.projectiles.push({kind:'acorn',hitsAll:true,noTrail:true,spin:16,x:sx,y:sy,z:sz,vx:fx*sp,vy,vz:fz*sp,g,life:1.6,team:c.team,src:c,dmg:a.dmg*mul,type:a.type,kb:a.kb,r:.32,splash:0,venom:!!c.muts.Venom,mesh,color:'#b07a3a'});
+  sfx('whoosh',c);
 }
 function fireBubble(c,a,mul){
   const yaw=c.yaw+(Math.random()-.5)*.06;const fx=Math.sin(yaw),fz=Math.cos(yaw);const sx=c.x+fx*(c.radius+.5),sz=c.z+fz*(c.radius+.5),sy=c.y+c.view.baseY+.1;
@@ -417,7 +427,7 @@ function updateInks(dt){let w=0;for(const k of world.inks){k.t-=dt;if(k.t<=0)con
 function updateProjectiles(dt){
   const PR=world.projectiles;let w=0;
   for(let i=0;i<PR.length;i++){const p=PR[i];if(p.kind==='boomerang'){if(updateBoomerang(p,dt))PR[w++]=p;continue;}p.life-=dt;p.vy-=p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;let boom=false,hitT=null;
-    if(Math.random()<.7)emit(p.x,p.y,p.z,{n:1,color:p.color,speed:.5,life:.3,size:p.r*.6,glow:2,grav:0});
+    if(p.spin)p.mesh.rotation.x+=dt*p.spin;if(!p.noTrail&&Math.random()<.7)emit(p.x,p.y,p.z,{n:1,color:p.color,speed:.5,life:.3,size:p.r*.6,glow:2,grav:0});
     for(const c of world.creatures){if(c.team===p.team||c.state!=='alive'||c.burrowT>0)continue;if(Math.hypot(c.x-p.x,c.z-p.z)<c.radius+p.r&&p.y>c.y-.3&&p.y<c.y+c.height+.3){boom=true;hitT=c;break;}}
     if(!boom&&(p.kind==='spit'||p.hitsAll)){for(const n of world.nests){if(n.team===p.team||!n.alive)continue;if(Math.hypot(n.x-p.x,n.z-p.z)<n.radius+p.r&&p.y<n.y+n.height){boom=true;hitT=n;break;}}
       if(!boom)for(const n of world.neutrals){if(!n.alive)continue;if(Math.hypot(n.x-p.x,n.z-p.z)<n.radius+p.r&&p.y<n.y+n.view.height+.3){boom=true;hitT=n;break;}}}
@@ -425,7 +435,8 @@ function updateProjectiles(dt){
     if(boom){
       if(p.splash>0){for(const c of world.creatures){if(c.team===p.team||c.state!=='alive'||c.burrowT>0)continue;const d=Math.hypot(c.x-p.x,c.z-p.z);if(d<p.splash+c.radius){const n=d||1;hurt(c,p.dmg,p.type,p.src,(c.x-p.x)/n,(c.z-p.z)/n,p.kb,false);}}}
       else if(hitT)hurt(hitT,p.dmg,p.type,p.src,p.vx/27,p.vz/27,p.kb,p.venom);
-      emit(p.x,p.y,p.z,{n:p.splash?18:10,color:p.color,speed:p.splash?7:5,life:.5,size:.16,glow:2});sfx('splat',p);
+      if(p.kind==='acorn'){emit(p.x,p.y,p.z,{n:9,color:p.color,speed:5,life:.55,size:.12,up:3,grav:12});emit(p.x,p.y,p.z,{n:4,color:'#6a4424',speed:4,life:.5,size:.1,up:2,grav:12});sfx(hitT?'squeak':'land',p);}
+      else{emit(p.x,p.y,p.z,{n:p.splash?18:10,color:p.color,speed:p.splash?7:5,life:.5,size:.16,glow:2});sfx('splat',p);}
       world.group.remove(p.mesh);continue;}
     p.mesh.position.set(p.x,p.y,p.z);PR[w++]=p;}
   PR.length=w;
@@ -529,7 +540,7 @@ function botAct(c,dt){
 }
 function botFight(c,t,dt){
   const b=c.brain;const dx=t.x-c.x,dz=t.z-c.z,d=Math.hypot(dx,dz)||.001;const yawTo=Math.atan2(dx,dz);
-  const reachBase=c.radius+t.radius*.6;const ri=c.attacks.findIndex(a=>a.id==='spit'||a.id==='bubble'||a.id==='boomerang');const zi=c.attacks.findIndex(a=>a.id==='zap');
+  const reachBase=c.radius+t.radius*.6;const ri=c.attacks.findIndex(a=>a.id==='spit'||a.id==='bubble'||a.id==='boomerang'||a.id==='acornShot');const zi=c.attacks.findIndex(a=>a.id==='zap');
   let want=ri>=0?(t.kind==='nest'?t.radius+7:10):zi>=0?7:reachBase+1.1;
   if(t.kind==='creature'&&t.state==='downed')want=reachBase+1;
   if(d>want+.8)steerTo(c,t.x,t.z,1);
@@ -539,7 +550,7 @@ function botFight(c,t,dt){
   const facing=Math.abs(angDiff(c.yaw,yawTo))<.5;
   if(b.atkT<=0&&!(b.passive)){
     for(let i=0;i<c.attacks.length;i++){const a=c.attacks[i];if(c.cds[i]>0||c.stamina<a.st)continue;let go=false;
-      if(a.id==='spit')go=d<22;else if(a.id==='bubble')go=facing&&d<a.range;else if(a.id==='boomerang')go=facing&&!c.boneOut&&d<a.range+t.radius;else if(a.id==='zap')go=facing&&d<a.range+t.radius;
+      if(a.id==='spit')go=d<22;else if(a.id==='acornShot')go=facing&&d<a.range;else if(a.id==='bubble')go=facing&&d<a.range;else if(a.id==='boomerang')go=facing&&!c.boneOut&&d<a.range+t.radius;else if(a.id==='zap')go=facing&&d<a.range+t.radius;
       else if(a.id==='charge')go=facing&&d>3.5&&d<11&&t.kind!=='nest'&&Math.random()<.25;
       else if(a.id==='spin')go=d<a.range+c.radius+t.radius*.6;
       else go=facing&&d<a.range+reachBase;
