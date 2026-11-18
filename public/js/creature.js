@@ -103,8 +103,8 @@ function mergeGeos(list){const gs=list.map(g=>g.index?g.toNonIndexed():g);const 
   for(const g of gs){const c=g.attributes.position.count;P.set(g.attributes.position.array,o*3);N.set(g.attributes.normal.array,o*3);if(g.attributes.uv)U.set(g.attributes.uv.array,o*2);if(C)C.set(g.attributes.color.array,o*3);o+=c;}
   const m=new T.BufferGeometry();m.setAttribute('position',new T.BufferAttribute(P,3));m.setAttribute('normal',new T.BufferAttribute(N,3));m.setAttribute('uv',new T.BufferAttribute(U,2));if(C)m.setAttribute('color',new T.BufferAttribute(C,3));return m;}
 // muscle-shaped limb segment hanging down -Y from the joint
-function limbGeo(len,rTop,rBot){const key='limb'+len.toFixed(2)+'_'+rTop.toFixed(3)+'_'+rBot.toFixed(3);return geo(key,()=>{const pts=[];const n=2;
-  for(let i=0;i<=n;i++){const t=i/n;const r=lerp(rTop,rBot,t);pts.push(new T.Vector2(r,-t*len));}
+function limbGeo(len,rTop,rBot){const key='limb'+len.toFixed(2)+'_'+rTop.toFixed(3)+'_'+rBot.toFixed(3);return geo(key,()=>{const pts=[];const n=REAL?7:2;
+  for(let i=0;i<=n;i++){const t=i/n;const r=lerp(rTop,rBot,t)*(REAL?1+.07*Math.sin(Math.PI*Math.pow(t,.8)):1);pts.push(new T.Vector2(r,-t*len));}
   pts.reverse();const g=new T.LatheGeometry(pts,REAL?22:7);g.computeVertexNormals();return g;});}
 // gentle organic body shape: fuller chest, tapered rump, slightly flattened belly (radial, so part placement stays exact)
 // soft gumdrop: rounder and fuller toward the bottom, a little narrower at the crown, slightly fuller in front for the face
@@ -423,22 +423,22 @@ function legBuild(def,s,side,skin,acc){
   const L=def.leg.len*s,th=Math.max(def.leg.thick*Math.sqrt(s)*1.3,def.leg.knee?0:L*.2)*(def.leg.knee?.85:1);const hip=new T.Group();hip.rotation.z=side*def.leg.splay;
   const rK=th*.9;
   const thigh=new T.Mesh(limbGeo(L*.5,th,rK),skin);hip.add(thigh);
-  const hipJ=new T.Mesh(jointG(),skin);hipJ.scale.setScalar(th*.88);hip.add(hipJ);
+  const hipJ=new T.Mesh(jointG(),skin);hipJ.scale.setScalar(th*(REAL?1.06:.88));hipJ.position.y=th*.12;hip.add(hipJ);
   const knee=new T.Group();knee.position.y=-L*.5;if(def.leg.knee)knee.rotation.z=side*def.leg.knee;hip.add(knee);
   const kj=new T.Mesh(jointG(),skin);kj.scale.setScalar(rK*.88);knee.add(kj);
   const shin=new T.Mesh(limbGeo(L*.5,rK,th*.82),skin);knee.add(shin);
   const foot=new T.Group();foot.position.y=-L*.5;knee.add(foot);let footH;
   if(def.leg.knee){const tip=new T.Mesh(geo('spiderTip',()=>taperTube([[0,0,0],[0,-.12,.02],[0,-.22,.06]],.06,.014,{segs:4,radial:5})),footMat(skin));tip.scale.setScalar(th/.1);foot.add(tip);
     const fj=new T.Mesh(sphereG(),skin);fj.scale.setScalar(th*.8);foot.add(fj);footH=th*.55;}
-  else{const fw=def.leg.frog?1.5:1.22,fl=def.leg.frog?1.8:1.5;const ft=new T.Mesh(pebbleGeo(),footMat(skin));ft.scale.set(th*fw,th*.78,th*fl);ft.position.set(0,-th*.12,th*.32);ft.rotation.y=side*.08;foot.add(ft);footH=th*.12+th*.78*.36+th*.06;
+  else{const fw=def.leg.frog?1.5:1.22,fl=def.leg.frog?1.8:1.5;const ft=new T.Mesh(pebbleGeo(),footMat(skin));ft.scale.set(th*fw,th*.78,th*fl);ft.position.set(0,-th*.12,th*.32);ft.rotation.y=side*.08;foot.add(ft);{const pg=ft.geometry;if(!pg.boundingBox)pg.computeBoundingBox();footH=-(ft.position.y+pg.boundingBox.min.y*ft.scale.y);}
     if(def.leg.frog){for(const t of [-1,0,1]){const toe=new T.Mesh(sphereG(),footMat(skin));toe.scale.set(th*.36,th*.3,th*.42);toe.position.set(t*th*.62,-th*.22,th*(1.55-Math.abs(t)*.2));foot.add(toe);}}}
   const a1=def.leg.splay,a2=a1+(def.leg.knee||0);const reach=L*.5*Math.cos(a1)+L*.5*Math.cos(a2)+footH;
-  return {hip,knee,reach,len:L};
+  return {hip,knee,foot,reach,len:L,th,footH,splay:def.leg.splay,spider:!!def.leg.knee};
 }
 function buildCreatureView(d,opts){
   opts=opts||{};const b=d.body;const R=[b.w,b.h,b.l];
-  const root=new T.Group();const pivot=new T.Group();root.add(pivot);
-  const v={root,pivot,R,b,legs:[],eyes:[],jaws:[],arms:[],weapons:[],pincers:[],tails:[],wings:[],fins:[],glands:[],props:[],zaps:[],crests:[],phase:Math.random()*TAU,j:0,jv:0,tilt:0,flash:0,legLen:.6,turn:0,lastYaw:0,disp:[],partGroups:[],blinkT:1+Math.random()*4,blink:0};
+  const root=new T.Group();const pivot=new T.Group();root.add(pivot);const legRoot=new T.Group();root.add(legRoot);
+  const v={root,pivot,legRoot,R,b,legs:[],eyes:[],jaws:[],arms:[],weapons:[],pincers:[],tails:[],wings:[],fins:[],glands:[],props:[],zaps:[],crests:[],phase:Math.random()*TAU,j:0,jv:0,tilt:0,flash:0,legLen:.6,turn:0,lastYaw:0,disp:[],partGroups:[],blinkT:1+Math.random()*4,blink:0};
   const vown=x=>{v.disp.push(x);return x;};_viewOwn=v.disp;
   const kind=d.pattern==='stripes'?'scales':'pebble';const tx=skinTex(kind);
   const fiP=d.face===true?faceInfo(d):null;const patId=d.pattern==='hood'?1:d.pattern==='skirt'?2:0;const fdir=fiP?new T.Vector3(fiP.c[0],fiP.c[1],fiP.c[2]).normalize():new T.Vector3(0,.1,1);
@@ -454,7 +454,7 @@ function buildCreatureView(d,opts){
   const fi=d.face===true?faceInfo(d):null;const body=new T.Mesh(vown(bodyGeometry(d.color,d.accent,d.seed||1,d.pattern||'spots',fi,true)),bodyMat);body.scale.set(b.w,b.h,b.l);body.userData.body=true;pivot.add(body);v.body=body;
   const ctxBase={d,b,solid,acc,vown};
   for(const it of expandParts(d)){const def=it.def;
-    if(def.mount==='leg'){const fr=surfaceFrame(it.p,b);const side=Math.sign(fr.pos.x)||1;const L=legBuild(def,it.s,side,solid,acc);L.hip.position.copy(fr.pos);L.hip.userData.inst=it.idx;pivot.add(L.hip);v.legs.push({hip:L.hip,knee:L.knee,side,reach:L.reach-fr.pos.y,len:L.len,z:fr.pos.z});v.partGroups.push(L.hip);continue;}
+    if(def.mount==='leg'){const fr=surfaceFrame(it.p,b);const side=Math.sign(fr.pos.x)||1;const L=legBuild(def,it.s,side,solid,acc);L.hip.position.copy(fr.pos);L.hip.userData.inst=it.idx;legRoot.add(L.hip);v.legs.push({hip:L.hip,knee:L.knee,foot:L.foot,side,reach:L.reach-fr.pos.y,len:L.len,z:fr.pos.z,rest:fr.pos.clone(),splay:L.splay,spider:L.spider,th:L.th,footH:L.footH,k0:L.knee.rotation.z,hx:0,kx:0,fx:0});v.partGroups.push(L.hip);continue;}
     const ctx=Object.assign({def,s:it.s},ctxBase);const built=BUILDERS[def.build](ctx);const g=built.g;
     const holder=new T.Group();holder.add(g);holder.userData.inst=it.idx;holder.userData.mir=it.mir;
     const cr=COLLAR[def.build];if(cr&&def.mount!=='cover'){const c=new T.Mesh(sphereG(),solid);c.scale.set(cr,cr,cr*.38);c.position.z=-cr*.12;holder.add(c);}
@@ -471,7 +471,7 @@ function buildCreatureView(d,opts){
   {const fiB=faceInfo(d);if(fiB)pivot.add(buildFaceBits(d,b,fiB,expandParts(d).some(it=>it.def.build==='jaw'||it.def.build==='beak')));}
   _viewOwn=null;
   const bySide={'-1':[],'1':[]};for(const L of v.legs)bySide[L.side].push(L);
-  for(const k in bySide){bySide[k].sort((a,b)=>b.z-a.z);bySide[k].forEach((L,i)=>{L.phase=(i%2)*Math.PI+(L.side>0?Math.PI:0);});}
+  for(const k in bySide){bySide[k].sort((a,b)=>b.z-a.z);bySide[k].forEach((L,i)=>{L.phase=(i%2)*Math.PI+(L.side>0?Math.PI:0);L.ph=L.phase/TAU;});}
   let baseY=b.h*.85;for(const L of v.legs)baseY=Math.max(baseY,L.reach);v.baseY=baseY;
   if(v.legs.length)v.legLen=v.legs.reduce((a,L)=>a+L.len,0)/v.legs.length;
   const sb=new T.Mesh(sphereG(),vown(new T.MeshPhysicalMaterial({color:col('#b8ffe4'),emissive:col('#3fd6a0'),emissiveIntensity:.6,transparent:true,opacity:.22,roughness:.05,clearcoat:1,depthWrite:false,side:T.DoubleSide,iridescence:1})));
@@ -483,46 +483,101 @@ function buildCreatureView(d,opts){
   const cs=new T.Mesh(geo('csPlane',()=>{const p=new T.PlaneGeometry(1,1);p.rotateX(-Math.PI/2);return p;}),csm);cs.scale.set(radius*2.7,1,Math.max(b.l,b.w)*2.9);cs.renderOrder=1;root.add(cs);v.cshadow=cs;v.csMat=csm;
   if(opts.team){const tc=col(TEAMS[opts.team].hex).multiplyScalar(3);const rm=vown(new T.MeshBasicMaterial({color:tc.clone(),transparent:true,opacity:.75,toneMapped:false,depthWrite:false}));
     const ring=new T.Mesh(geo('teamRing',()=>new T.RingGeometry(1,1.18,64)),rm);ring.rotation.x=-Math.PI/2;ring.scale.set(radius*1.3,radius*1.3,1);root.add(ring);v.ring=ring;v.ringMat=rm;v.teamCol=tc;}
-  pivot.position.y=baseY;root.updateMatrixWorld(true);
+  pivot.position.y=baseY;legRoot.position.y=baseY;for(const L of v.legs){L.foot0=new T.Vector3(L.rest.x+L.side*Math.sin(L.splay)*L.len*.85,0,L.rest.z);}root.updateMatrixWorld(true);
   const box=new T.Box3().setFromObject(pivot);v.height=Math.max(baseY+b.h,(box.max.y||0));
-  lowpolyfy(pivot,{satin:true});
+  lowpolyfy(pivot,{satin:true});lowpolyfy(legRoot,{satin:true});
   root.traverse(o=>{if(o.isMesh){if(o.userData.ink){o.castShadow=false;return;}const m=o.material;o.castShadow=!(m&&m.transparent&&m.depthWrite===false)&&o!==cs;o.receiveShadow=o===body;}});if(v.ring)v.ring.castShadow=false;
   return v;
 }
 function disposeView(v){if(!v)return;if(v.root.parent)v.root.parent.remove(v.root);for(const x of v.disp){try{x.dispose();}catch(e){}}v.disp.length=0;}
 
+/* ---------- procedural locomotion ----------
+   One gait clock drives the whole body. Feet are planted with two-bone IK and lifted in smooth arcs; the body bobs,
+   shifts weight onto the planted leg, leans into acceleration and banks into turns through damped springs, so it
+   carries momentum and settles with a little follow-through. Every state pose is blended, never snapped. */
+const _eul=new T.Euler(),_hp=new T.Vector3(),_tg=new T.Vector3();
+function sprStep(o,k,target,dt,w,z){let x=o[k]||0,vv=o[k+'V']||0;const n=Math.max(1,Math.ceil(dt*120)),h=dt/n;for(let i=0;i<n;i++){vv+=(w*w*(target-x)-2*z*w*vv)*h;x+=vv*h;}o[k]=x;o[k+'V']=vv;return x;}
+const dampTo=(a,b,k,dt)=>a+(b-a)*(1-Math.exp(-k*dt));
+const wrapA=x=>{x=(x+Math.PI)%TAU;if(x<0)x+=TAU;return x-Math.PI;};
 function animateCreatureView(c,dt,time){
-  const v=c.view;if(!v)return;const r=v.root;
+  const v=c.view;if(!v)return;const r=v.root;dt=Math.min(dt,.05);
   r.position.set(c.x,c.y,c.z);
   if(c.state==='dead'&&c.deadT>9){r.visible=false;return;}
   const hidden=(c.camoT>0&&!c.showCamo);r.visible=!hidden;
-  const spinAdd=c.spinT>0?(1-c.spinT/.5)*TAU:0;const emoteAdd=c.emoteT>0&&c.state==='alive'?Math.sin(c.emoteT*5)*1.2:0;
-  r.rotation.y=c.yaw+spinAdd+emoteAdd;
-  const turn=angDiff(v.lastYaw,c.yaw)/Math.max(dt,1e-3);v.lastYaw=c.yaw;v.turn=lerp(v.turn,turn,.2);
-  const sp=Math.hypot((c.vx||0)+(c.kx||0),(c.vz||0)+(c.kz||0));const grounded=c.grounded!==false;
-  const walk=(c.state==='alive')&&grounded?clamp(sp/4,0,1):0;
-  v.phase+=dt*(sp*2.4/Math.max(.45,v.legLen)+(walk>0?0:1));
-  for(const L of v.legs){const p=v.phase+L.phase;
-    if(c.state==='dead'){L.hip.rotation.x=lerp(L.hip.rotation.x,0,.1);L.knee.rotation.x=.1+(c.deadT<3?Math.sin(time*25+L.phase)*.25:0);}
-    else if(c.state==='downed'){L.hip.rotation.x=Math.sin(time*3+L.phase)*.2;L.knee.rotation.x=.4;}
-    else if(!grounded){L.hip.rotation.x=lerp(L.hip.rotation.x,-.55,.2);L.knee.rotation.x=lerp(L.knee.rotation.x,1,.2);}
-    else{L.hip.rotation.x=Math.sin(p)*.8*walk;L.knee.rotation.x=Math.max(0,Math.cos(p))*1.05*walk+.06;}}
+  const alive=c.state==='alive';const grounded=c.grounded!==false;
+  // facing: an angular spring, so instant aim changes read as a quick, weighty turn
+  if(v.yaw==null){v.yaw=c.yaw;v.yawV=0;}
+  {const n=Math.max(1,Math.ceil(dt*120)),h=dt/n,w=c.faceT>0?24:15;for(let i=0;i<n;i++){v.yawV+=(w*w*angDiff(v.yaw,c.yaw)-2*.92*w*v.yawV)*h;v.yaw+=v.yawV*h;}}
+  const spinAdd=c.spinT>0?(1-c.spinT/.5)*TAU:0;const emoteAdd=c.emoteT>0&&alive?Math.sin(c.emoteT*5)*1.2:0;
+  r.rotation.y=v.yaw+spinAdd+emoteAdd;v.turn=v.yawV;v.lastYaw=c.yaw;
+  // local velocity (forward / right) and smoothed acceleration
+  const wx=(c.vx||0)+(c.kx||0),wz=(c.vz||0)+(c.kz||0);const sy0=Math.sin(v.yaw),cy0=Math.cos(v.yaw);
+  const lf=wx*sy0+wz*cy0,lr=wx*cy0-wz*sy0;
+  const pf=v.lvf||0,pr=v.lvr||0;v.lvf=dampTo(pf,lf,12,dt);v.lvr=dampTo(pr,lr,12,dt);
+  v.af=dampTo(v.af||0,(v.lvf-pf)/Math.max(dt,1e-3),7,dt);v.ar=dampTo(v.ar||0,(v.lvr-pr)/Math.max(dt,1e-3),7,dt);
+  const sp=Math.hypot(v.lvf,v.lvr);const L0=Math.max(.3,v.legLen);
+  // gait: continuous blend idle -> walk -> run; stride and cadence follow speed so stance feet do not slide
+  const turnStep=alive&&grounded?Math.min(1.6,Math.abs(v.yawV)*v.radius*.45):0;const spE=sp+turnStep;
+  v.gw=dampTo(v.gw||0,alive&&grounded?clamp(spE/1.1,0,1):0,6,dt);const gw=v.gw;
+  v.rb=dampTo(v.rb||0,clamp((sp-2.8)/3.2,0,1),4,dt);const rb=v.rb;
+  const D=lerp(.62,.44,rb);const S=L0*clamp(.38+spE*.11,.38,.92);/* stride stays within reach, cadence rises instead */const f=spE>.05?Math.max(spE*D/S,1.1*gw):0;
+  if(v.gp==null)v.gp=Math.random();v.gp+=f*dt;const gp=v.gp;
+  const walk=gw;v.phase=gp*TAU;
+  // stride direction follows the real movement (strafing and backing up step the right way)
+  let dzN=1,dxN=0;if(sp>.15){dzN=v.lvf/sp;dxN=v.lvr/sp;}v.sdz=dampTo(v.sdz==null?1:v.sdz,dzN,8,dt);v.sdx=dampTo(v.sdx||0,dxN,8,dt);
+  // body: smooth double-frequency bob, weight shift, lean and bank (springs give momentum and follow-through)
+  const bobA=L0*(.022+.035*rb)*gw;const bob=-bobA*Math.cos(gp*TAU*2-.7);
+  const crouch=L0*(.05+.07*rb*gw);
+  const leanT=alive?clamp(sp*.022+v.af*.028+(c.dashT>0?.3:0),-.32,.42):0;const lean=sprStep(v,'lean',leanT,dt,9,.5);
+  const bankT=alive?clamp(-v.yawV*sp*.022-v.ar*.02,-.32,.32):0;const bank=sprStep(v,'bank',bankT,dt,8,.55);
+  const shift=alive?Math.sin(gp*TAU)*(.045+.03*rb)*gw:0;const twist=alive?Math.sin(gp*TAU)*.07*gw:0;
+  // squash: landing spring and a light stretch at the top of each step (legs are not squashed)
   v.jv+=(-v.j*170-v.jv*8)*dt;v.j+=v.jv*dt;v.j=clamp(v.j,-.5,.5);
-  const breathe=c.state==='alive'?Math.sin(time*2.3+v.phase*.1)*.014:0;
-  const sy=1+clamp((c.vy||0)*.016,-.18,.22)+v.j+Math.sin(v.phase*2)*.055*walk+(c.spitT>0?.08:0)+breathe;const sx=1/Math.sqrt(Math.max(.45,sy))+breathe*.6;
+  if(v.breathPh==null)v.breathPh=Math.random()*6;
+  const breathe=alive?Math.sin(time*2.3+v.breathPh)*.014:0;
+  const sy=1+clamp((c.vy||0)*.016,-.18,.22)+v.j-(alive?bob*.35/L0:0)+(c.spitT>0?.08:0)+breathe;const sx=1/Math.sqrt(Math.max(.45,sy))+breathe*.6;
   const inf=c.inflateT>0?1.45:1;v.inf=lerp(v.inf||1,inf,1-Math.exp(-dt*10));
   v.pivot.scale.set(sx*v.inf,sy*v.inf,sx*v.inf);
-  let py=v.baseY*(v.inf>1.01?1+(v.inf-1)*.6:1)+Math.abs(Math.sin(v.phase))*.17*walk;let tz=0,tx=clamp(sp*.012,0,.15)+(c.dashT>0?.35:0);
+  let py=v.baseY*(v.inf>1.01?1+(v.inf-1)*.6:1)-crouch+bob-Math.max(0,-v.j)*L0*.25;let tz=0,tx=lean;
   if(c.state==='downed'){tz=1.35;py=v.R[0]*.72;tx=0;}
   else if(c.state==='dead'){tz=Math.PI;py=v.R[1]*.85+(v.legLen*.2)-Math.max(0,c.deadT-6)*.5;tx=0;}
-  if(c.sleep)py=lerp(py,v.R[1]*.88,clamp(c.sleep,0,1));// asleep: settled on the ground like a plain stone, legs tucked under
-  if(c.emoteT>0&&c.state==='alive')py+=Math.abs(Math.sin(c.emoteT*9))*.8;
+  if(c.sleep)py=lerp(py,v.R[1]*.88,clamp(c.sleep,0,1));
+  if(c.emoteT>0&&alive)py+=Math.abs(Math.sin(c.emoteT*9))*.8;
   if(c.slamT>0)py+=(.85-c.slamT)*2.2;
   if(c.burrowT>0)v.bur=lerp(v.bur||0,1,1-Math.exp(-dt*8));else v.bur=lerp(v.bur||0,0,1-Math.exp(-dt*10));
   py-=(v.bur||0)*(v.baseY+v.R[1]*2.2);
   v.tilt=lerp(v.tilt,tz,1-Math.exp(-dt*7));
-  v.pivot.rotation.z=v.tilt+(c.state==='alive'?Math.sin(v.phase)*.12*walk+Math.sin(time*1.3+v.phase*.05)*.025*(1-walk)-clamp(v.turn*.05,-.25,.25):0);v.pivot.rotation.y=c.state==='alive'?Math.sin(v.phase)*.07*walk:0;
-  v.pivot.rotation.x=lerp(v.pivot.rotation.x,tx,.15);v.pivot.position.y=py;
+  v.pyS=v.pyS==null?py:dampTo(v.pyS,py,alive?30:9,dt);py=v.pyS;
+  const idleSway=alive?Math.sin(time*1.1+v.breathPh)*.02*(1-gw):0;
+  v.pivot.rotation.set(dampTo(v.pivot.rotation.x,tx,alive?20:6,dt),alive?twist:0,v.tilt+(alive?bank+shift+idleSway:0));v.pivot.position.y=py;
+  // legs: hips ride on the body surface; feet are planted / swung with two-bone IK
+  v.legRoot.position.y=py;_eul.set(v.pivot.rotation.x,v.pivot.rotation.y,v.pivot.rotation.z,'XYZ');
+  const ikOn=alive&&grounded&&!c.sleep;v.ikW=dampTo(v.ikW||0,ikOn?1:0,ikOn?14:9,dt);
+  for(const L of v.legs){
+    _hp.set(L.rest.x*v.pivot.scale.x,L.rest.y*v.pivot.scale.y,L.rest.z*v.pivot.scale.z).applyEuler(_eul);L.hip.position.copy(_hp);
+    // state pose (in the air, downed, dead or asleep)
+    let shx,skx,sfx=0;
+    if(c.state==='dead'){shx=0;skx=.1+(c.deadT<3?Math.sin(time*25+L.phase)*.25:0);}
+    else if(c.state==='downed'){shx=Math.sin(time*3+L.phase)*.2;skx=.4;}
+    else if(c.sleep){shx=-1.1;skx=2.1;sfx=-.9;}
+    else{const up=clamp((c.vy||0)/6,-1,1);shx=lerp(-.25,-.7,clamp(up,0,1))+Math.sin(time*9+L.phase)*.08*(up<0?1:0);skx=lerp(.45,1.3,clamp(up,0,1));sfx=-.2;}
+    let hx=shx,kx=skx,fx=sfx,hz=L.side*L.splay;
+    if(v.ikW>.001){
+      // each foot is planted against the ground's motion under it (forward, sideways and turning), then swung ahead
+      const u=((gp+L.ph)%1+1)%1;let ox,oz,lift=0,pitch=0;const Tst=f>1e-3?D/f:0,Tsw=f>1e-3?(1-D)/f:0;
+      let vbx=v.lvr+v.yawV*L.foot0.z,vbz=v.lvf-v.yawV*L.foot0.x;const vm=Math.hypot(vbx,vbz),vcap=S/Math.max(Tst,1e-3);if(vm>vcap){vbx*=vcap/vm;vbz*=vcap/vm;}
+      if(u<D){const ts=u/D*Tst;ox=vbx*(Tst*.5-ts);oz=vbz*(Tst*.5-ts);pitch=-.12*Math.sin(Math.PI*u/D)*gw;}
+      else{const t=(u-D)/(1-D);const e=t*t*(3-2*t);ox=-vbx*Tst*.5+vbx*(Tst+Tsw)*e-vbx*Tsw*t;oz=-vbz*Tst*.5+vbz*(Tst+Tsw)*e-vbz*Tsw*t;
+        const h=clamp(S*.26,.05,L.len*.32)*(.7+.5*rb);lift=h*Math.pow(Math.sin(Math.PI*t),.85);pitch=Math.sin(TAU*t)*.45;}
+      const gs=Math.min(1,gw*1.8);ox*=gs;oz*=gs;lift*=gw;
+      _tg.set(L.foot0.x+ox,-py+lift+L.footH,L.foot0.z+oz).sub(_hp);
+      if(L.spider){const ih=-Math.atan2(_tg.z,-_tg.y)*1.1,ik=lift/L.len*2.2+.06;hx=lerp(hx,ih,v.ikW);kx=lerp(kx,ik,v.ikW);}
+      else{/* exact two-bone solve for a hip that swings (x) and abducts (z) */const Le=L.len,sg=Le*.5;const dd=clamp(_tg.length(),Le*.3,Le*.998);const ik=2*Math.acos(dd/Le);const P=sg*(1+Math.cos(ik)),Q=-sg*Math.sin(ik);
+        const iz=Math.asin(clamp(_tg.x/P,-.95,.95));const ih=wrapA(Math.atan2(_tg.z,_tg.y)-Math.atan2(Q,-P*Math.cos(iz))),ifx=-(ih+ik)+pitch;hx=lerp(hx,ih,v.ikW);kx=lerp(kx,ik,v.ikW);fx=lerp(fx,ifx,v.ikW);hz=lerp(hz,iz,v.ikW);}
+    }
+    if(L.hz==null)L.hz=hz;if(ikOn&&v.ikW>.97){L.hx=hx;L.kx=kx;L.fx=fx;L.hz=hz;}else{const kk=ikOn?30:12;L.hx=dampTo(L.hx,hx,kk,dt);L.kx=dampTo(L.kx,kx,kk,dt);L.fx=dampTo(L.fx,fx,kk,dt);L.hz=dampTo(L.hz,hz,kk,dt);}/* IK poses are already smooth; filtering them would make planted feet lag and skid */
+    L.hip.rotation.set(L.hx,0,L.spider?L.side*L.splay:L.hz);L.knee.rotation.x=L.kx;
+    if(L.foot&&!L.spider){L.foot.rotation.x=L.fx;L.foot.rotation.z=-L.hz*.9;}}
   const gh=typeof world!=='undefined'&&world&&c.kind?world.map.heightAt(c.x,c.z):0;const above=Math.max(0,c.y-gh);
   if(v.cshadow){v.cshadow.position.y=gh-c.y+.04;v.cshadow.visible=c.state!=='dead'&&!hidden&&(v.bur||0)<.5;const k=1/(1+above*.25);v.csMat.opacity=.62*k;const s=1+above*.08;v.cshadow.scale.set(v.radius*2.7*s,1,Math.max(v.R[2],v.R[0])*2.9*s);}
   if(v.ring){v.ring.position.y=gh-c.y+.07;v.ring.visible=c.state!=='dead';if(c.blessT>0)v.ringMat.color.setRGB(2.4,1.6,.3);else v.ringMat.color.copy(v.teamCol);
@@ -539,13 +594,14 @@ function animateCreatureView(c,dt,time){
     else if(e.kind==='iris'){e.pupil.rotation.set(-e.y/e.er*1.1,e.x/e.er*1.1,0);e.top.rotation.x=lerp(-1.2,1.5,bl)+(c.biteT>0?.45:0);e.bot.rotation.x=lerp(1.25,.15,bl);}
     else{const r0=e.er*.62;e.pupil.position.set(e.x,e.y,Math.sqrt(Math.max(0,r0*r0-e.x*e.x-e.y*e.y)));}}
   for(const j of v.jaws)j.rotation.x=c.biteT>0?Math.sin((.3-c.biteT)/.3*Math.PI)*.75:(c.state==='dead'?.5:.06+Math.sin(time*2+v.phase)*.04+breathe*2);
-  for(const a of v.arms)a.g.rotation.y=c.slashT>0?a.side*Math.sin((.3-c.slashT)/.3*Math.PI)*1.0:Math.sin(v.phase+a.side)*.32*walk+Math.sin(time*1.6+a.side)*.05;
-  for(const w of v.weapons){const t=c.swingT>0?1-c.swingT/.35:-1;let rx=w.base+Math.sin(time*2.2+v.phase*.3)*.06+Math.sin(v.phase)*.12*walk,ry=0,pz=0;
+  for(const a of v.arms){const sw=-a.side*Math.sin(TAU*(gp-.12)+(a.side>0?Math.PI:0))*(.28+.18*rb)*gw-v.af*.03+Math.sin(time*1.6+a.side)*.04*(1-gw);
+    const tgt=c.slashT>0?a.side*Math.sin((.3-c.slashT)/.3*Math.PI)*1.0:sw;a.g.rotation.y=c.slashT>0?tgt:sprStep(a,'sw',tgt,dt,11,.42);}
+  for(const w of v.weapons){const t=c.swingT>0?1-c.swingT/.35:-1;let rx=w.base+Math.sin(time*2.2)*.05*(1-gw)+Math.sin(TAU*(gp-.15))*.1*gw-v.af*.02,ry=0,pz=0;
     if(t>=0){const e=Math.sin(t*Math.PI);if(w.k==='noodle'||w.k==='blaster'){pz=e*(w.k==='noodle'?.45:.12);rx=w.base-e*.2;}else if(w.k==='spatula'){rx=w.base+e*1.3-Math.sin(t*TAU)*.4;}else if(w.k==='bone'){ry=-e*1.6;rx=w.base-e*.6;}else if(w.k==='fish'){ry=-Math.sin(t*TAU*.75)*1.3;}else{rx=w.base-Math.sin(t*Math.PI*.5)*1.6+(t>.5?(t-.5)*3.2:0);}}
     if(c.boneOut&&w.k==='bone')w.g.children[w.g.children.length-1].visible=false;else if(w.k==='bone')w.g.children[w.g.children.length-1].visible=true;
     w.g.rotation.x=lerp(w.g.rotation.x,rx,1-Math.exp(-dt*22));w.g.rotation.y=lerp(w.g.rotation.y,ry,1-Math.exp(-dt*22));w.g.position.z=pz;}
   for(const pc of v.pincers){const open=c.slashT>0?Math.sin((.3-c.slashT)/.3*Math.PI)*.6:.18+Math.sin(time*3)*.05;for(const h of pc)h.h.rotation.y=-h.s*(.1+open);}
-  for(const t of v.tails)t.forEach((s,i)=>{s.rotation.y=Math.sin(time*3-i*.7)*(.14+walk*.14)*(1+i*.15);s.rotation.x=Math.sin(time*2-i)*.05+(c.state==='dead'?0:-.03*i);});
+  for(const t of v.tails)t.forEach((s,i)=>{s.rotation.y=Math.sin(time*3-i*.7)*(.1+walk*.12)*(1+i*.15)+clamp(v.yawV*.06,-.4,.4)*(1+i*.3);s.rotation.x=Math.sin(time*2-i)*.05+(c.state==='dead'?0:-.03*i);});
   for(const w of v.wings)w.rotation.x=.25+Math.sin(time*(grounded?5:24))*(grounded?.22:.7);
   for(const f of v.fins)f.rotation.x=Math.sin(time*6+f.id)*.35;
   for(const g of v.glands){const pulse=1+Math.sin(time*(g.k==='heal'?3:5))*.08+(g.k==='spit'&&c.spitT>0?.35:0);if(g.m.material.emissiveIntensity!=null&&g.k!=='ink'&&g.k!=='inflate')g.m.material.emissiveIntensity=(g.k==='heal'?1.2+Math.sin(time*3)*.5:g.k==='shield'?1.4+Math.sin(time*2)*.6:1.2+(c.spitT>0?2:0));
@@ -554,7 +610,7 @@ function animateCreatureView(c,dt,time){
   for(const m of v.crests){m.emissiveIntensity=c.camoT>0?1.5+Math.sin(time*12):.2+Math.sin(time*2)*.1;}
   for(const p of v.props)p.rotation.z+=dt*(8+sp*3);
   if(v.sprout&&c.sproutK!=null)v.sprout.g.scale.setScalar(v.sprout.base*Math.max(.001,c.sproutK));
-  if(v.sprout){const w=v.sprout.sway;w.rotation.x=Math.sin(time*2.1+v.phase*.2)*.1-clamp((c.vy||0)*.02,-.3,.3)-walk*.18;w.rotation.y=Math.sin(time*1.7+1)*.08-clamp(v.turn*.04,-.3,.3);if(v.sprout.k==='wisp')w.position.z=Math.sin(time*2.6)*.05;}
+  if(v.sprout){const w=v.sprout.sway;w.rotation.x=sprStep(v,'spx',Math.sin(time*1.9)*.05-v.af*.05-sp*.04-clamp((c.vy||0)*.03,-.35,.35)+bob*1.5,dt,9,.22);w.rotation.y=Math.sin(time*1.7+1)*.05-clamp(v.yawV*.05,-.35,.35);w.rotation.z=sprStep(v,'spz',v.ar*.04-bank*.6,dt,9,.25);if(v.sprout.k==='wisp')w.position.z=Math.sin(time*2.6)*.05;}
   v.shield.visible=(c.shield||0)>0;if(v.shield.visible){const s=Math.max(v.R[0],v.R[1],v.R[2])*1.75*(1+Math.sin(time*6)*.03);v.shield.scale.setScalar(s);}
   v.stars.visible=c.state==='downed';if(v.stars.visible)v.stars.rotation.y+=dt*4;
   v.flash=Math.max(0,(v.flash||0)-dt*5);const vn=c.venomT>0?.25+.15*Math.sin(time*10):0;const bls=c.blessT>0?.12+.08*Math.sin(time*4):0;const cm=c.camoT>0?.35+.25*Math.sin(time*15):0;
