@@ -135,9 +135,88 @@ function ringTex(){const c=document.createElement('canvas');c.width=c.height=512
   for(let r=250;r>6;r-=6+R()*9){x.strokeStyle='rgba(90,56,30,'+(.25+R()*.35)+')';x.lineWidth=1+R()*2.2;x.beginPath();for(let k=0;k<=64;k++){const a=k/64*TAU;const rr=r*(1+(Math.sin(a*3+r)*.012));const px=256+Math.cos(a)*rr,py=256+Math.sin(a)*rr;if(k)x.lineTo(px,py);else x.moveTo(px,py);}x.stroke();}
   const g=x.createRadialGradient(256,256,200,256,256,256);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(40,24,10,.75)');x.fillStyle=g;x.fillRect(0,0,512,512);
   const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;return t;}
-/* Workshop set: a moonlit glade with a tree-stump stage, glowing flower lanterns and drifting pollen */
+/* Workshop set (remaster): a sunlit forest clearing. The creature stands on a mossy tree-stump stage among grass,
+   ferns, wildflowers and toadstools; a ring of real forest trees, mossy boulders and your grove's glowing Great Tree
+   stand behind it, with a warm sunbeam through the canopy, drifting pollen and a few butterflies. Everything is kept
+   either low near the stage or far outside the camera's orbit, so nothing blocks the view while you build. */
+function initStudioForest(){const sc=studio.scene;buildTextures();const B=BIOMES.find(b=>b.id==='grove')||BIOMES[0];
+  sc.background=col('#86a48c');sc.fog=new T.FogExp2(col('#7d9c84'),.011);
+  sc.environment=makeEnvMap({skyTop:'#3c5f80',skyMid:'#607e78',skyHorizon:'#8a8a64',wall:'#24361e',sun:'#fff2d0'}).texture;
+  const sky=new T.Mesh(new T.SphereGeometry(300,24,12),skyMaterial({skyTop:'#5d8cbc',skyMid:'#a9cbd6',skyHorizon:'#f3e6c0',wall:'#3a5a3c'},0));sky.material.fog=false;sky.renderOrder=-1;sc.add(sky);studio.sky=sky;
+  // light: warm sunbeam through the canopy (the spotlight), soft sky fill, low green bounce, a gentle backlight
+  const hemiS=new T.HemisphereLight(0xcfe6ff,0x3a4a22,.38);sc.add(hemiS);studio.hemi=hemiS;
+  const key=new T.SpotLight(0xffdca8,1.7,0,.52,.7,1);key.position.set(-5,15,7);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.bias=-.0004;key.shadow.normalBias=.03;key.shadow.camera.near=4;key.shadow.camera.far=40;sc.add(key);sc.add(key.target);key.target.position.set(0,1,0);studio.key=key;
+  const sunD=new T.DirectionalLight(0xfff0d0,.35);sunD.position.set(-30,40,20);sc.add(sunD);
+  const back=new T.SpotLight(0xd8ffc0,1.3,0,.55,.8,1);back.position.set(6,6,-8);sc.add(back);sc.add(back.target);back.target.position.set(0,1.2,0);
+  const inst=(geom,mat,list,colors,shadow)=>{const im=new T.InstancedMesh(geom,mat,list.length);const m=new T.Matrix4(),q=new T.Quaternion(),sv=new T.Vector3(),pv=new T.Vector3();
+    list.forEach((it,i)=>{pv.set(it.x,it.y,it.z);q.setFromEuler(new T.Euler(it.rx||0,it.rot||0,it.rz||0));sv.set(it.s,it.s*(it.sy||1),it.s);m.compose(pv,q,sv);im.setMatrixAt(i,m);if(colors)im.setColorAt(i,colors(it,i));});
+    im.castShadow=!!shadow;im.receiveShadow=true;sc.add(im);return im;};
+  const R=mulberry32(91);const G=-.9;
+  // the stump stage: real bark, growth rings on top, a mossy rim and roots running into the moss
+  const bark=tpMat({tex:'bark',tint:'#7a5a40',moss:.55,mossLo:.2,mossHi:.7,mossCol:'#5f8f3a',scale:.8,nStr:2,key:'sbark'});
+  const stump=new T.Mesh(lpCyl(4.1,4.6,1.4,64,6),bark);stump.position.y=-.7;stump.receiveShadow=true;stump.castShadow=true;sc.add(stump);
+  const top=new T.Mesh(lpCirc(4.1,64),new T.MeshStandardMaterial({map:ringTex(),roughness:.85}));top.rotation.x=-Math.PI/2;top.position.y=.005;top.receiveShadow=true;sc.add(top);
+  const mossM=tpMat({tex:'moss',tint:'#6f9a3c',scale:.5,nStr:2,key:'smoss'});
+  const mossRim=new T.Mesh(lpTor(4.12,.26,10,72),mossM);mossRim.rotation.x=Math.PI/2;mossRim.scale.z=.55;mossRim.position.y=.02;mossRim.receiveShadow=true;sc.add(mossRim);
+  for(let k=0;k<8;k++){const a=k/8*TAU+.3+R()*.2;const x0=Math.cos(a)*4.1,z0=Math.sin(a)*4.1,x1=Math.cos(a+.18)*7.6,z1=Math.sin(a+.18)*7.6;
+    const rt=new T.Mesh(taperTube([[x0*.95,-.15,z0*.95],[x0*1.28,-.55,z0*1.28],[x1,-.98,z1]],.6,.1,{segs:18,radial:12}),bark);rt.castShadow=true;rt.receiveShadow=true;sc.add(rt);}
+  const segs=new T.Group();for(let k=0;k<6;k++){const a=new T.Mesh(new T.RingGeometry(2.25,2.36,24,1,k/6*TAU,TAU/6*.6),new T.MeshBasicMaterial({color:col('#ffe4a0').multiplyScalar(1.1),toneMapped:false,transparent:true,opacity:.28,side:T.DoubleSide,depthWrite:false}));segs.add(a);}segs.rotation.x=-Math.PI/2;segs.position.y=.012;sc.add(segs);studio.segs=segs;
+  // forest floor: grass and moss, with a darker dirt ring around the stump
+  const floor=new T.Mesh(lpCirc(120,96),tpMat({tex:'grass',tint:'#86b05a',scale:.35,nStr:1.4,key:'sgrass'}));floor.rotation.x=-Math.PI/2;floor.position.y=G;floor.receiveShadow=true;sc.add(floor);
+  const dirt=new T.Mesh(new T.RingGeometry(4.3,6.4,64),tpMat({tex:'dirt',tint:'#8a7458',scale:.45,nStr:1.4,key:'sdirt'}));dirt.rotation.x=-Math.PI/2;dirt.position.y=G+.01;dirt.receiveShadow=true;sc.add(dirt);
+  const ring=(r0,r1)=>{const a=R()*TAU,r=Math.sqrt(r0*r0+R()*(r1*r1-r0*r0));return [Math.cos(a)*r,Math.sin(a)*r];};
+  // grass clumps
+  const gl=[];for(let i=0;i<1400;i++){const [x,z]=ring(5.2,30);gl.push({x,y:G,z,s:.55+R()*.6,rot:R()*TAU,tint:R()});}
+  const gm=windify(cardMat(RTEX.grassCard,{trans:.3}),.06,0);const gc=B.grass.map(c=>col(c));
+  inst(grassClumpGeo(.9,.62),gm,gl,(it)=>gc[Math.floor(it.tint*gc.length)].clone().multiplyScalar(.95+it.tint*.2));
+  // ferns
+  const fl=[];for(let i=0;i<70;i++){const [x,z]=ring(6.2,26);fl.push({x,y:G,z,s:.55+R()*.6,rot:R()*TAU,tint:R()});}
+  inst(fernGeo(9),windify(cardMat(RTEX.fern,{trans:.3}),.04,0),fl,(it)=>col('#4f8f3a').lerp(col('#7fbf5a'),it.tint),true);
+  // wildflowers: a stem and a bloom
+  const fw=[];for(let i=0;i<170;i++){const [x,z]=ring(5.4,20);fw.push({x,y:G,z,s:.8+R()*.6,rot:R()*TAU,c:B.flowers[Math.floor(R()*B.flowers.length)]});}
+  inst(lpCyl(.012,.016,.42,5).translate(0,.21,0),new T.MeshStandardMaterial({color:col('#5f9a3c'),roughness:.8}),fw);
+  inst(new T.IcosahedronGeometry(.075,1).translate(0,.45,0),new T.MeshStandardMaterial({color:0xffffff,roughness:.5}),fw,(it)=>col(it.c));
+  // toadstool clusters close to the stage (low, so they never block the camera)
+  const capM=new T.MeshPhysicalMaterial({color:col('#d9473b'),roughness:.4,clearcoat:.7}),stemM=new T.MeshStandardMaterial({color:col('#efe2c4'),roughness:.8}),dotM=new T.MeshStandardMaterial({color:col('#fff6e6'),roughness:.6});
+  for(let k=0;k<7;k++){const a=k/7*TAU+R()*.5,r=5.2+R()*2.2;for(let j=0;j<2+Math.floor(R()*3);j++){const s=.35+R()*.45;const x=Math.cos(a)*r+(R()-.5)*1.1,z=Math.sin(a)*r+(R()-.5)*1.1;
+    const st=new T.Mesh(lpCyl(.1*s,.15*s,.9*s,10),stemM);st.position.set(x,G+.45*s,z);st.castShadow=true;sc.add(st);
+    const cp=new T.Mesh(lpSph(.48*s,20,10,0,TAU,0,Math.PI/2),capM);cp.scale.y=.7;cp.position.set(x,G+.88*s,z);cp.castShadow=true;sc.add(cp);
+    for(let d=0;d<4;d++){const da=d/4*TAU+R();const dt=new T.Mesh(sphereG(),dotM);dt.scale.set(.07*s,.03*s,.07*s);dt.position.set(x+Math.cos(da)*.26*s,G+.88*s+.26*s,z+Math.sin(da)*.26*s);sc.add(dt);}}}
+  // mossy boulders and a fallen log out past the camera's orbit
+  const rockM=tpMat({tex:'rock',tint:'#a49e90',moss:.8,mossLo:.25,mossHi:.8,mossCol:'#5f8f3a',scale:.5,nStr:2,key:'srock'});
+  for(let k=0;k<9;k++){const a=k/9*TAU+R()*.4,r=15+R()*6;const s=.8+R()*1.5;const rk=new T.Mesh(rockGeo(k*3.7+1,{w:48,h:32}),rockM);rk.scale.set(s*1.2,s*.8,s);rk.position.set(Math.cos(a)*r,G+s*.3,Math.sin(a)*r);rk.rotation.y=R()*TAU;rk.castShadow=true;rk.receiveShadow=true;sc.add(rk);}
+  {const lg=new T.Mesh(lpCyl(.75,.85,9,20,4),bark);lg.rotation.set(0,.6,Math.PI/2);lg.position.set(-12,G+.6,10);lg.castShadow=true;sc.add(lg);}
+  // a ring of real forest trees (same models as the battle maps), denser and taller further out
+  const tl=[];for(let k=0;k<34;k++){const a=k/34*TAU+R()*.15,r=(k%2?18:24)+R()*7;tl.push({x:Math.cos(a)*r,y:G-.1,z:Math.sin(a)*r,s:1.5+R()*1.1,rot:R()*TAU,tint:R(),kind:B.trees[k%B.trees.length]});}
+  const tb=tpMat({tex:'bark',tint:B.trunk,moss:.7,mossLo:-.2,mossHi:.6,mossCol:B.grass[0],scale:.7,nStr:2,key:'bark'});
+  const lm=windify(cardMat(RTEX.leaf,{trans:.26}),.02,2.5);const c1=col(B.canopy),c2=col(B.canopy2||B.canopy);const byK={};for(const t of tl)(byK[t.kind]=byK[t.kind]||[]).push(t);
+  for(const kd in byK){const TG=realTreeGeos(kd);inst(TG.trunk,tb,byK[kd],(it)=>new T.Color(1,1,1).multiplyScalar(.85+it.tint*.3),true);const ci=inst(TG.canopy,lm,byK[kd],(it)=>c1.clone().lerp(c2,it.tint*.8).multiplyScalar(1.05+it.tint*.25),true);ci.customDepthMaterial=cardDepth(RTEX.leaf);}
+  // giant old trunks far back, for depth
+  for(let k=0;k<12;k++){const a=k/12*TAU+R()*.25;const r=38+R()*8;const tr=new T.Mesh(lpCyl(1.6+R()*.8,2.6+R()*1,60,14),tb);tr.position.set(Math.cos(a)*r,28,Math.sin(a)*r);sc.add(tr);}
+  // your grove's Great Tree glows behind the stage
+  try{const gt=buildNestView({team:'blue',lane:'main',main:true,outer:false},B);gt.group.position.set(-17,G,-25);gt.group.scale.setScalar(1.35);sc.add(gt.group);studio.great=gt;}catch(e){}
+  // the sunbeam through the canopy
+  const cone=new T.Mesh(lpCone(3.6,16,48,1,true),new T.MeshBasicMaterial({color:col('#fff0c8'),transparent:true,opacity:.02,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}));cone.position.set(-1.6,7.2,2.2);cone.rotation.set(-.32,0,.26);sc.add(cone);studio.cone=cone;
+  // spirit scan ring (shows the creature being "read" as you build)
+  const scan=new T.Mesh(lpTor(1,.012,6,96),new T.MeshBasicMaterial({color:col('#fff2a0').multiplyScalar(2),toneMapped:false,transparent:true,opacity:.8}));scan.rotation.x=Math.PI/2;sc.add(scan);studio.scan=scan;
+  // drifting pollen in the sunbeam
+  const N=360,dp=new Float32Array(N*3);for(let i=0;i<N;i++){const a=Math.random()*TAU,r=Math.sqrt(Math.random())*10;dp[i*3]=Math.cos(a)*r;dp[i*3+1]=Math.random()*9;dp[i*3+2]=Math.sin(a)*r;}
+  const dg=new T.BufferGeometry();dg.setAttribute('position',new T.BufferAttribute(dp,3));
+  const dust=new T.Points(dg,new T.PointsMaterial({color:col('#fff2c0').multiplyScalar(1.4),size:.05,transparent:true,opacity:.55,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false}));sc.add(dust);studio.dust=dust;
+  // butterflies flitting around the clearing
+  studio.flies=[];const wsh=new T.Shape();wsh.moveTo(0,0);wsh.bezierCurveTo(.06,.16,.24,.2,.26,.08);wsh.bezierCurveTo(.27,.0,.16,-.01,.12,-.02);wsh.bezierCurveTo(.2,-.06,.2,-.17,.11,-.16);wsh.bezierCurveTo(.05,-.15,.01,-.06,0,0);
+  const wg=new T.ShapeGeometry(wsh,10);wg.rotateX(-Math.PI/2);
+  for(let k=0;k<6;k++){const c=['#ffd84a','#ff9ec4','#8fd0ff','#ffffff','#ffb36b','#b8a0ff'][k];const wmat=new T.MeshStandardMaterial({color:col(c),emissive:col(c),emissiveIntensity:.15,side:T.DoubleSide,roughness:.6});
+    const g=new T.Group();const L=new T.Mesh(wg,wmat),Rw=new T.Mesh(wg,wmat);Rw.scale.x=-1;g.add(L,Rw);const body=new T.Mesh(capsuleG(.015,.1),new T.MeshStandardMaterial({color:col('#3a2a1a')}));body.rotation.x=Math.PI/2;g.add(body);
+    g.scale.setScalar(1.3);sc.add(g);studio.flies.push({g,L,R:Rw,r:5+Math.random()*2.5,h:.9+Math.random()*2.4,sp:.35+Math.random()*.35,ph:Math.random()*TAU,w:.8+Math.random()*.6});}
+  studio.helix=new T.Group();studio.tubes=[];
+}
+/* Workshop set (storybook look): a moonlit glade with a tree-stump stage, glowing flower lanterns and drifting pollen */
 function initStudio(){
   if(studio.ready)return;studio.ready=true;const sc=studio.scene;
+  if(typeof REAL!=='undefined'&&REAL){initStudioForest();
+    const mk=(c,s)=>{const m=new T.Mesh(lpTor(.32,.035,8,40),new T.MeshBasicMaterial({color:col(c).multiplyScalar(3),toneMapped:false,depthTest:false,transparent:true}));m.renderOrder=10;m.visible=false;m.scale.setScalar(s||1);sc.add(m);return m;};
+    studio.hover=mk('#ffa8cc');studio.sel=[mk('#8fffd0'),mk('#8fffd0')];studio.ray=new T.Raycaster();studio.ptr=new T.Vector2();return;}
   sc.background=col('#050c0a');sc.fog=new T.FogExp2(col('#08140f'),.036);
   const B={skyTop:'#020806',skyMid:'#0a1e1a',skyHorizon:'#24463a',wall:'#020604',sun:'#fff1d8'};
   sc.environment=makeEnvMap(B).texture;
@@ -205,7 +284,7 @@ function openWorkshop(mode,design,slot){
   if(design)ws.design=clone(design);else if(ws.slot>=0&&slots[ws.slot])ws.design=clone(slots[ws.slot]);else if(!ws.design){const i=slots.findIndex(Boolean);ws.slot=i;ws.design=i>=0?clone(slots[i]):newDesign();}
   if(mode==='build'&&ws.slot<0)ws.design.name=ws.design.name.replace(/^(?!My )/,'My ');
   ws.sel=-1;ws.placing=null;ws.undo=[];ws.redo=[];ws.dirty=false;ws.confirm=null;
-  phase='workshop';showScreen('workshop');setRenderView(studio.scene,studio.cam,.82);
+  phase='workshop';showScreen('workshop');setRenderView(studio.scene,studio.cam,(typeof REAL!=='undefined'&&REAL)?1.35:.82);
   $('#wsMode').textContent=mode==='build'?'Build phase edit':'Workshop';$('#wsTimer').hidden=mode!=='build';$('#wsTest').hidden=mode==='build';
   $('#wsDone').textContent=mode==='build'?'Use this creature':'Main menu';
   {const li=store.get(SaveKey('studioLight'),0);setStudioLight(Number.isInteger(li)&&li>=0&&li<LIGHT_MODES.length?li:0);}rebuildStudio(true);renderTabs();renderPalette();renderSlots();renderStats();renderSel();hint();setDirty(false);
@@ -421,6 +500,8 @@ function updateStudio(rdt,now){
   if(!still){const p=studio.dust.geometry.attributes.position;for(let i=0;i<p.count;i++){let y=p.getY(i)+rdt*.12;if(y>9)y=0;p.setY(i,y);p.setX(i,p.getX(i)+Math.sin(t*.3+i)*rdt*.04);}p.needsUpdate=true;}
   if(studio.mons)for(const m of studio.mons){const f=1.25+Math.sin(t*3+m.id)*.08+(Math.random()<.004?.6:0);m.material.color.setRGB(f,f,f);}
   studio.key.target.position.y=h*.45;
+  if(studio.flies&&!still)for(const f of studio.flies){/* they flutter behind the stage, on the far side from the camera, so they never block the view */const a=Math.atan2(-Math.cos(studio.yaw),-Math.sin(studio.yaw))+Math.sin(t*f.sp+f.ph)*f.w;const y=f.h+Math.sin(t*1.7+f.ph)*.35;const nx=Math.cos(a)*f.r,nz=Math.sin(a)*f.r;const dx=nx-f.g.position.x,dz=nz-f.g.position.z;f.g.position.set(nx,y,nz);if(Math.hypot(dx,dz)>1e-4)f.g.rotation.y=Math.atan2(dx,dz)-Math.PI/2;const fl=Math.sin(t*22+f.ph)*1.1;f.L.rotation.z=fl;f.R.rotation.z=-fl;}
+  if(studio.great){const v=studio.great;const pu=.5+.5*Math.sin(t*2.2);v.seedMat.color.copy(v.glowBase).multiplyScalar(.85+pu*.3);v.veinMat.color.copy(v.veinBase).multiplyScalar(.8+.35*Math.sin(t*1.6));}
 }
 $('#wsName').addEventListener('focus',()=>{ws.nameUndo=true;});
 $('#wsName').addEventListener('input',e=>{if(ws.nameUndo){pushUndo();ws.nameUndo=false;}ws.design.name=Sec.cleanName(e.target.value);setDirty(true);});
@@ -437,7 +518,7 @@ $('#wsSave').addEventListener('click',()=>{let i=ws.slot;if(i<0||i>=slotCount())
   slots[i]=clone(ws.design);ws.slot=i;saveSlots();setDirty(false);sfx('buy');banner('Saved to slot '+(i+1),'good');renderSlots();
   if(build){build.custom=null;selectBuildChoice('slot'+i,ws.design);}});
 $('#wsTest').addEventListener('click',()=>{sfx('ui');startTestDrive();});
-const LIGHT_MODES=[['Dim',1.5,.012,.3],['Off',0,0,.42],['Bright',3.4,.035,.16]];
+const LIGHT_MODES=(typeof REAL!=='undefined'&&REAL)?[['Dim',1.7,.018,.38],['Off',0,0,.62],['Bright',3.2,.04,.3]]:[['Dim',1.5,.012,.3],['Off',0,0,.42],['Bright',3.4,.035,.16]];
 function setStudioLight(i){studio.lightMode=i;const m=LIGHT_MODES[i];if(studio.key){studio.key.intensity=m[1];studio.cone.material.opacity=m[2];studio.cone.visible=m[2]>0;studio.hemi.intensity=m[3];}$('#wsLight').textContent='Spotlight: '+m[0];store.set(SaveKey('studioLight'),i);}
 $('#wsLight').addEventListener('click',()=>{sfx('ui');setStudioLight(((studio.lightMode||0)+1)%LIGHT_MODES.length);});
 $('#wsWalk').addEventListener('click',()=>{studio.walk=!studio.walk;$('#wsWalk').textContent=studio.walk?'Stop walking':'Walk preview';sfx('ui');});
