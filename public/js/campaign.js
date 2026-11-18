@@ -17,7 +17,7 @@ const CAMPAIGN=[
     setup(m){placeAt(m.player,-30,mz(-30),Math.PI/2);m.cs={i:0,b:[addBeacon(-16,mz(-16)+3),addBeacon(-2,mz(-2)-4),addBeacon(14,mz(14)+3)]};m.cs.b.forEach((b,i)=>b.g.visible=i===0);},
     objective:m=>'Reach the glowing beacons · '+m.cs.i+' of 3',
     update(m){const b=m.cs.b[m.cs.i];if(!b)return;b.ring.rotation.z+=.03;if(Math.hypot(m.player.x-b.x,m.player.z-b.z)<2.6){b.g.visible=false;sfx('drop');emit(b.x,b.g.position.y+1,b.z,{n:30,color:'#8fffd0',speed:6,life:.8,size:.16,glow:2.5,up:4});m.cs.i++;if(m.cs.b[m.cs.i])m.cs.b[m.cs.i].g.visible=true;else return 'win';}}},
-  {id:'snack',name:'Snack Attack',xp:60,biome:'lotus',lesson:'Attacking and lock-on',desc:'Defeat three Snorflets. Left click attacks and Tab locks on. Snorflets give health or a mutation, but never DNA.',
+  {id:'snack',name:'Snack Attack',xp:60,biome:'lotus',lesson:'Attacking and lock-on',desc:'Defeat three Snorflets. Left click attacks and Tab locks on. Snorflets give health or a mutation, but never Sunlight.',
     setup(m){placeAt(m.player,-10,mz(-10),Math.PI/2);m.cs={n:0};for(let i=0;i<3;i++){const s=spawnNeutral('critter',4+i*4,mz(4+i*4)+(i-1)*5,world.map.biome);s.noRespawn=true;}},
     objective:m=>'Defeat the Snorflets · '+m.cs.n+' of 3',
     on(m,t,d){if(t==='neutral'&&d.by===m.player&&d.n.type==='critter'){m.cs.n++;if(m.cs.n>=3)return 'win';}}},
@@ -90,7 +90,7 @@ function showChallengeResults(){
   const t=$('#rTitle');t.textContent=win?'Challenge complete':'Challenge failed';t.className='restitle '+(win?'win':'lose');
   $('#rReason').textContent=match.reason+(win?'':' '+def.desc);$('#rBiome').textContent='Campaign '+(def.index+1)+' of '+CAMPAIGN.length+' · '+def.name;
   $('#rBoard').innerHTML='';
-  let h='';if(match.firstClear)h+='<span class="chip xp">+'+match.earned.xp+' XP</span>';else if(win)h+='<span class="chip dim">Already cleared · no XP this time</span>';
+  let h='';if(match.firstClear)h+='<span class="chip xp">+'+match.earned.xp+' Growth</span>';else if(win)h+='<span class="chip dim">Already cleared · no Growth this time</span>';
   for(const l of match.earned.levels)h+='<span class="chip lv">Unlocked: '+esc(l)+'</span>';if(match.earned.levels.length)h+='<span class="chip lv">Level '+progress.level+'</span>';
   $('#rEarn').innerHTML=h;$('#rNew').textContent=win&&next?'Next challenge':'Retry';$('#rMenu').textContent='All challenges';$('#results').hidden=false;
 }
@@ -123,10 +123,10 @@ function checkRotGoal(final){const r=match&&match.rot;if(!r||r.done)return;if(GO
 function openChallenges(){exitLock();hideTouch();match=null;build=null;if(!world||world.mode==='test'||world.creatures.length)buildWorld(newSeed());phase='menu';setRenderView(scene,camera,world.map.biome.bloom);showScreen('chal');clearAnnouncements();renderChallenges();}
 function renderChallenges(){
   $('#campList').innerHTML=CAMPAIGN.map((c,i)=>{const done=!!progress.campaign[c.id],open=campaignUnlocked(i);
-    return '<button class="camp'+(done?' done':'')+(open?'':' locked')+'" data-i="'+i+'"'+(open?'':' aria-disabled="true"')+'><span class="cn">'+(i+1)+'</span><span class="cb"><b>'+esc(c.name)+'</b><small>'+esc(open?c.lesson:'Clear the previous challenge to unlock')+'</small></span><span class="cx">'+(done?'Cleared':'+'+c.xp+' XP')+'</span></button>';}).join('');
+    return '<button class="camp'+(done?' done':'')+(open?'':' locked')+'" data-i="'+i+'"'+(open?'':' aria-disabled="true"')+'><span class="cn">'+(i+1)+'</span><span class="cb"><b>'+esc(c.name)+'</b><small>'+esc(open?c.lesson:'Clear the previous challenge to unlock')+'</small></span><span class="cx">'+(done?'Cleared':'+'+c.xp+' Growth')+'</span></button>';}).join('');
   $$('#campList .camp').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i;if(!campaignUnlocked(i)){sfx('deny');return;}sfx('ui');showCampDetail(i);}));
   for(const kind of ['daily','weekly']){const r=rotating(kind);const c=CONSTRAINTS[r.constraint],g=GOALS[r.goal];const done=!!progress.daily[r.key];
-    $('#'+kind+'Card').innerHTML='<div class="rotc'+(done?' done':'')+'"><div class="rothead"><b>'+esc(c.name)+'</b><span class="chip '+(done?'good':'xp')+'">'+(done?'Claimed':'+'+r.xp+' XP')+'</span></div><p>'+esc(c.desc)+'</p><p class="goal">Goal: '+esc(g.name)+'</p><div class="rotfoot"><small>Resets in '+untilReset(kind)+'</small><button class="btn small '+(done?'ghost':'primary')+'" data-rot="'+kind+'">'+(done?'Play anyway':'Play')+'</button></div></div>';}
+    $('#'+kind+'Card').innerHTML='<div class="rotc'+(done?' done':'')+'"><div class="rothead"><b>'+esc(c.name)+'</b><span class="chip '+(done?'good':'xp')+'">'+(done?'Claimed':'+'+r.xp+' Growth')+'</span></div><p>'+esc(c.desc)+'</p><p class="goal">Goal: '+esc(g.name)+'</p><div class="rotfoot"><small>Resets in '+untilReset(kind)+'</small><button class="btn small '+(done?'ghost':'primary')+'" data-rot="'+kind+'">'+(done?'Play anyway':'Play')+'</button></div></div>';}
   $$('[data-rot]').forEach(b=>b.addEventListener('click',()=>{sfx('ui');openBuild({rot:rotating(b.dataset.rot)});}));
   showCampDetail(Math.max(0,CAMPAIGN.findIndex((c,i)=>campaignUnlocked(i)&&!progress.campaign[c.id])));
 }

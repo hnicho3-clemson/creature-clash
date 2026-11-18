@@ -109,7 +109,7 @@ addEventListener('visibilitychange', () => { if (document.visibilityState === 'h
   // Dev commands only touch guest saves; the server ignores them for accounts.
   for (const k of ['addDNA', 'resetDNA', 'unlockAllParts', 'addXP']) {
     const f = COMMANDS[k]; if (!f) continue;
-    COMMANDS[k] = function () { if (Cloud.on) { dlog('You are signed in, so the server keeps your DNA, XP and parts. Sign out to test with dev commands.'); return; } return f.apply(this, arguments); };
+    COMMANDS[k] = function () { if (Cloud.on) { dlog('You are signed in, so the server keeps your Sunlight, Growth and parts. Sign out to test with dev commands.'); return; } return f.apply(this, arguments); };
   }
 }
 

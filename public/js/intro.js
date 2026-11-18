@@ -189,6 +189,9 @@ function updateIntro(rdt,now){
     else if(e.awake&&e.wk>2.9){e.yaw+=angDiff(e.yaw,Math.atan2(camera.position.x-e.x,camera.position.z-e.z))*Math.min(1,rdt*2.5);}
     if(e.emoteT>0)e.emoteT-=rdt;animateCreatureView(e,rdt,time);shiver(e,rdt,time);if(e.view.ring)e.view.ring.visible=e.awake&&e.sleep<.05&&intro.t>14.8;}
   for(const r of intro.rocks){stepWake(r,rdt);walkPath(r,rdt);if(r.emoteT>0)r.emoteT-=rdt;r.view.root.visible=!r.gone;if(!r.gone)animateCreatureView(r,rdt,time);}
+  // solid bodies: nobody phases through anybody; still-sleeping stones hold their ground like rocks
+  {const L=[];for(const e of st.ents){e.pinned=!e.awake||e.sleep>.5;L.push(e);}for(const r of intro.rocks){if(r.gone)continue;r.pinned=!r.awake||r.sleep>.5;L.push(r);}separateBodies(L,4);
+   for(const e of L){e.y=map.heightAt(e.x,e.z);}}
   // fixed shots: hard cut between them, gentle damping only within a shot
   const shot=intro.started?shotIndex(intro.t):-1;const cut=shot!==intro.shot;intro.shot=shot;
   const k=cut||!intro.lookInit?1:1-Math.exp(-rdt*(shot>=4?3:8));intro.lookInit=true;camera.position.lerp(_pose.P,k);intro.look.lerp(_pose.L,k);

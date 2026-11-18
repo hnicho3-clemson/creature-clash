@@ -435,6 +435,7 @@ function legBuild(def,s,side,skin,acc){
   const a1=def.leg.splay,a2=a1+(def.leg.knee||0);const reach=L*.5*Math.cos(a1)+L*.5*Math.cos(a2)+footH;
   return {hip,knee,foot,reach,len:L,th,footH,splay:def.leg.splay,spider:!!def.leg.knee};
 }
+const TUCK_BUILDS=new Set(['weapon','claw','paw','pincer','bigclaw','tail','fin','wing']);// pulled in when a spirit tucks into a rock mid-jump
 function buildCreatureView(d,opts){
   opts=opts||{};const b=d.body;const R=[b.w,b.h,b.l];
   const root=new T.Group();const pivot=new T.Group();root.add(pivot);const legRoot=new T.Group();root.add(legRoot);
@@ -460,7 +461,7 @@ function buildCreatureView(d,opts){
     const cr=COLLAR[def.build];if(cr&&def.mount!=='cover'){const c=new T.Mesh(sphereG(),solid);c.scale.set(cr,cr,cr*.38);c.position.z=-cr*.12;holder.add(c);}
     if(def.mount==='cover'){pivot.add(holder);}
     else{const fr=surfaceFrame(it.p,b);holder.position.copy(fr.pos);holder.quaternion.copy(fr.q).multiply(new T.Quaternion().setFromAxisAngle(_zAxis,it.r||0));holder.scale.set(it.mir?-it.s:it.s,it.s,it.s);pivot.add(holder);}
-    v.partGroups.push(holder);holder.userData.s0=holder.scale.clone();if(built.eye)v.eyeHolders.push(holder);else if(def.mount!=='cover')v.limbHolders.push(holder);
+    v.partGroups.push(holder);holder.userData.s0=holder.scale.clone();holder.userData.limb=TUCK_BUILDS.has(def.build);if(built.eye)v.eyeHolders.push(holder);else if(def.mount!=='cover')v.limbHolders.push(holder);
     if(built.weapon)v.weapons.push(built.weapon);if(built.eye)v.eyes.push(built.eye);if(built.jaw)v.jaws.push(built.jaw);if(built.arm){built.arm.side=it.mir?-1:1;v.arms.push(built.arm);}if(built.pincer)v.pincers.push(built.pincer);
     if(built.tail)v.tails.push(built.tail);if(built.wing)v.wings.push(built.wing);if(built.fin)v.fins.push(built.fin);if(built.gland)v.glands.push(built.gland);if(built.prop)v.props.push(built.prop);if(built.zap)v.zaps.push(built.zap);if(built.crest)v.crests.push(built.crest);}
   if(!expandParts(d).some(it=>it.def.build==='hat')){const sp=buildSprout(d,b);if(sp){pivot.add(sp.g);sp.base=sp.g.scale.x;v.sprout=sp;}}
@@ -505,6 +506,16 @@ function animateCreatureView(c,dt,time){
   if(c.state==='dead'&&c.deadT>9){r.visible=false;return;}
   const hidden=(c.camoT>0&&!c.showCamo);r.visible=!hidden;
   const alive=c.state==='alive';const grounded=c.grounded!==false;
+  // jump: tuck into a plain rock in the air (limbs pull in), tumble with the momentum, pop back out on landing
+  const wasAir=(v.airT||0)>0;v.airT=grounded?0:(v.airT||0)+dt;
+  if(!grounded&&!v.wasAirFrame&&(c.vy||0)>3)v.jv+=1.1;v.wasAirFrame=!grounded;// takeoff stretch
+  const gliding=!!(c.glideHeld&&c.st&&c.st.glide);const tuckOn=alive&&!grounded&&v.airT>.06&&!gliding;
+  v.tuck=dampTo(v.tuck||0,tuckOn?1:0,tuckOn?16:8,dt);
+  if(tuckOn&&!c.flop){const hs=Math.hypot((c.vx||0)+(c.kx||0),(c.vz||0)+(c.kz||0));v.rollV=(hs>1.2?2.4+hs*1.25:.9)*v.tuck;v.roll=(v.roll||0)+v.rollV*dt;}
+  else if(v.roll){const tgt=v.roll>TAU*.22?Math.ceil(v.roll/TAU-.05)*TAU:0;v.rollV=v.rollV||0;
+    const n=Math.max(1,Math.ceil(dt*120)),h=dt/n;for(let i=0;i<n;i++){v.rollV+=(196*(tgt-v.roll)-2*.75*14*v.rollV)*h;v.roll+=v.rollV*h;}
+    if(Math.abs(tgt-v.roll)<.004&&Math.abs(v.rollV)<.05){v.roll=0;v.rollV=0;}}
+  if(wasAir&&grounded)v.tuckLand=1;
   // facing: an angular spring, so instant aim changes read as a quick, weighty turn
   if(v.yaw==null){v.yaw=c.yaw;v.yawV=0;}
   {const n=Math.max(1,Math.ceil(dt*120)),h=dt/n,w=c.faceT>0?24:15;for(let i=0;i<n;i++){v.yawV+=(w*w*angDiff(v.yaw,c.yaw)-2*.92*w*v.yawV)*h;v.yaw+=v.yawV*h;}}
@@ -537,7 +548,7 @@ function animateCreatureView(c,dt,time){
   const awakeK=1-clamp(c.sleep||0,0,1);const breathe=alive?Math.sin(time*2.3+v.breathPh)*.014*awakeK:0;
   const sy=1+clamp((c.vy||0)*.016,-.18,.22)+v.j-(alive?bob*.35/L0:0)+(c.spitT>0?.08:0)+breathe;const sx=1/Math.sqrt(Math.max(.45,sy))+breathe*.6;
   const inf=c.inflateT>0?1.45:1;v.inf=lerp(v.inf||1,inf,1-Math.exp(-dt*10));
-  v.pivot.scale.set(sx*v.inf,sy*v.inf,sx*v.inf);
+  {const tk=v.tuck||0;const ball=1+tk*.06;v.pivot.scale.set(sx*v.inf*ball,lerp(sy,Math.max(sy,1),tk*.5)*v.inf*ball,sx*v.inf*ball);}
   let py=v.baseY*(v.inf>1.01?1+(v.inf-1)*.6:1)-crouch+bob-Math.max(0,-v.j)*L0*.25;let tz=0,tx=lean;
   if(c.state==='downed'){tz=1.35;py=v.R[0]*.72;tx=0;}
   else if(c.state==='dead'){tz=Math.PI;py=v.R[1]*.85+(v.legLen*.2)-Math.max(0,c.deadT-6)*.5;tx=0;}
@@ -549,9 +560,9 @@ function animateCreatureView(c,dt,time){
   v.tilt=lerp(v.tilt,tz,1-Math.exp(-dt*7));
   v.pyS=v.pyS==null?py:dampTo(v.pyS,py,alive?30:9,dt);py=v.pyS;
   const idleSway=alive?Math.sin(time*1.1+v.breathPh)*.02*(1-gw)*awakeK:0;
-  v.pivot.rotation.set(dampTo(v.pivot.rotation.x,tx,alive?20:6,dt),alive?twist:0,v.tilt+(alive?bank+shift+idleSway:0));v.pivot.position.y=py;
+  v.leanX=dampTo(v.leanX||0,tx,alive?20:6,dt);v.pivot.rotation.set(v.leanX+(v.roll||0),alive?twist:0,v.tilt+(alive?bank+shift+idleSway:0));v.pivot.position.y=py;
   // legs: hips ride on the body surface; feet are planted / swung with two-bone IK
-  v.legRoot.position.y=py;_eul.set(v.pivot.rotation.x,v.pivot.rotation.y,v.pivot.rotation.z,'XYZ');
+  v.legRoot.position.y=py;_eul.set(v.leanX,v.pivot.rotation.y,v.pivot.rotation.z,'XYZ');
   const ikOn=alive&&grounded&&(c.sleep||0)<.35;v.ikW=dampTo(v.ikW||0,ikOn?1:0,ikOn?14:9,dt);
   for(const L of v.legs){
     _hp.set(L.rest.x*v.pivot.scale.x,L.rest.y*v.pivot.scale.y,L.rest.z*v.pivot.scale.z).applyEuler(_eul);L.hip.position.copy(_hp);
@@ -584,7 +595,7 @@ function animateCreatureView(c,dt,time){
     v.ringMat.opacity=c.state==='downed'?.35+.3*Math.sin(time*8):.75;}
   // eyes: googly pupils wobble, real eyes look around and blink
   v.blinkT-=dt;if(v.blinkT<=0){v.blink=.16;v.blinkT=2+Math.random()*4.5;}if(v.blink>0)v.blink-=dt;
-  let bl=c.state==='dead'?1:c.state==='downed'?.7:(v.blink>0?Math.sin((1-v.blink/.16)*Math.PI):0);if(c.eyesShut)bl=Math.max(bl,c.eyesShut);
+  let bl=c.state==='dead'?1:c.state==='downed'?.7:(v.blink>0?Math.sin((1-v.blink/.16)*Math.PI):0);if(c.eyesShut)bl=Math.max(bl,c.eyesShut);bl=Math.max(bl,(v.tuck||0)*.72);
   for(const e of v.eyes){
     if(c.state==='dead'){e.x=Math.cos(time*14+e.er*40)*e.er*.3;e.y=Math.sin(time*14+e.er*40)*e.er*.3;}
     else{const tx2=clamp(-v.turn*.04,-.3,.3)*e.er+(e.kind!=='googly'?Math.sin(time*.7+v.phase*.05)*e.er*.12:0),ty2=clamp(-(c.vy||0)*.02,-.3,.3)*e.er+(c.state==='downed'?-e.er*.25:0);
@@ -614,13 +625,13 @@ function animateCreatureView(c,dt,time){
   v.shield.visible=(c.shield||0)>0;if(v.shield.visible){const s=Math.max(v.R[0],v.R[1],v.R[2])*1.75*(1+Math.sin(time*6)*.03);v.shield.scale.setScalar(s);}
   v.stars.visible=c.state==='downed';if(v.stars.visible)v.stars.rotation.y+=dt*4;
   // dormant stone -> spirit: colour flows in, eyes pop in, limbs grow out one by one (driven by the opening cutscene)
-  if(c.eyeK!=null||c.limbK!=null||c.colorK!=null||v.grew){v.grew=!(c.eyeK==null&&c.limbK==null&&c.colorK==null);
-    const bo=k=>k<=0?0:k>=1?1:1+2.2*Math.pow(k-1,3)+1.2*Math.pow(k-1,2);const eK=bo(c.eyeK==null?1:c.eyeK),lK=c.limbK==null?1:c.limbK;
+  if(c.eyeK!=null||c.limbK!=null||c.colorK!=null||v.grew||(v.tuck||0)>.001){v.grew=!(c.eyeK==null&&c.limbK==null&&c.colorK==null)||(v.tuck||0)>.001;
+    const bo=k=>k<=0?0:k>=1?1:1+2.2*Math.pow(k-1,3)+1.2*Math.pow(k-1,2);const eK=bo(c.eyeK==null?1:c.eyeK),lK0=c.limbK==null?1:c.limbK,lK=lK0*(1-(v.tuck||0));
     if(v.bodyU)v.bodyU.dorm.value=1-(c.colorK==null?1:c.colorK);
     for(const h of v.eyeHolders){const s0=h.userData.s0;h.scale.set(s0.x*Math.max(.001,eK),s0.y*Math.max(.001,eK),s0.z*Math.max(.001,eK));h.visible=eK>.01;}
     if(v.faceBits){v.faceBits.scale.setScalar(Math.max(.001,eK));v.faceBits.visible=eK>.01;}
-    v.limbHolders.forEach((h,i)=>{const k=bo(clamp(lK*1.6-.1-i*.12,0,1));const s0=h.userData.s0;h.scale.set(s0.x*Math.max(.001,k),s0.y*Math.max(.001,k),s0.z*Math.max(.001,k));h.visible=k>.01;});
-    v.legs.forEach((L,i)=>{const k=bo(clamp(lK*1.5-i*.1,0,1));L.hip.scale.setScalar(Math.max(.001,k));L.hip.visible=k>.01;});}
+    v.limbHolders.forEach((h,i)=>{const q=h.userData.limb?lK:lK0,st=Math.min(.12,.6/Math.max(1,v.limbHolders.length));const k=bo(clamp(q*(1+i*st)-i*st,0,1));/* staggered, always ends at full size */const s0=h.userData.s0;h.scale.set(s0.x*Math.max(.001,k),s0.y*Math.max(.001,k),s0.z*Math.max(.001,k));h.visible=k>.01;});
+    v.legs.forEach((L,i)=>{const k=bo(clamp(lK*(1+i*.1)-i*.1,0,1));L.hip.scale.setScalar(Math.max(.001,k));L.hip.visible=k>.01;});}
   v.flash=Math.max(0,(v.flash||0)-dt*5);const vn=c.venomT>0?.25+.15*Math.sin(time*10):0;const bls=c.blessT>0?.12+.08*Math.sin(time*4):0;const cm=c.camoT>0?.35+.25*Math.sin(time*15):0;
   const gK=c.glowK||0;v.bodyMat.emissive.setRGB(v.flash*.9+bls*1.2+gK*.008,v.flash*.9+vn+bls*.8+cm*.8+gK*.03,v.flash*.9+cm+gK*.022);
   if(c.state==='dead'&&c.deadT>6){const s=Math.max(.01,1-(c.deadT-6)/3);r.scale.setScalar(s);}else r.scale.setScalar(1);

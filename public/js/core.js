@@ -293,6 +293,18 @@ const PMAX=1400;
 const partMesh=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}),PMAX);
 partMesh.instanceMatrix.setUsage(T.DynamicDrawUsage);partMesh.setColorAt(0,new T.Color(1,1,1));partMesh.instanceColor.setUsage(T.DynamicDrawUsage);partMesh.frustumCulled=false;partMesh.count=0;scene.add(partMesh);
 const parts=[];const _m=new T.Matrix4(),_q=new T.Quaternion(),_s=new T.Vector3(),_p=new T.Vector3(),_c=new T.Color(),_e=new T.Euler();
+/* solid bodies: creatures push each other apart instead of passing through (several passes, so crowds settle).
+   Uses the larger of the physics radius and the visible body, and removes the closing speed so bodies stop rather than jitter. */
+function bodyR(m){return Math.max(m.radius||0,m.view&&m.view.radius?m.view.radius*.92:0)||.8;}
+function separateBodies(list,iters){const n=list.length;for(let it=0;it<(iters||3);it++){let moved=false;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const a=list[i],b=list[j];const dx=b.x-a.x,dz=b.z-a.z;const min=bodyR(a)+bodyR(b);if(Math.abs(dx)>min||Math.abs(dz)>min)continue;
+    {const ha=a.view&&a.view.height||1.4,hb=b.view&&b.view.height||1.4;const dy=(b.y||0)-(a.y||0);if(dy>ha*.8||-dy>hb*.8)continue;}// one is clearly above the other (jumping over)
+    let d=Math.hypot(dx,dz);let nx,nz;if(d<1e-4){const r=((i*7+j*13)%17)/17*TAU;nx=Math.cos(r);nz=Math.sin(r);d=0;}else{nx=dx/d;nz=dz/d;}if(d>=min)continue;
+    if(a.pinned&&b.pinned)continue;const wa=a.pinned?0:b.pinned?1:(a.isDummy||a.type==='boss')?.02:(b.isDummy||b.type==='boss')?.98:.5;
+    const push=min-d;a.x-=nx*push*wa;a.z-=nz*push*wa;b.x+=nx*push*(1-wa);b.z+=nz*push*(1-wa);moved=true;
+    // cancel the part of each velocity that drives them into each other
+    for(const [m,sg] of [[a,1],[b,-1]]){const vn=((m.vx||0)*nx+(m.vz||0)*nz)*sg;if(vn>0){m.vx-=nx*vn*sg;m.vz-=nz*vn*sg;}}}
+  if(!moved)break;}}
 function emit(x,y,z,o){const n=o.n||8;const c=col(o.color||'#ffffff');const glow=o.glow||1;
   for(let i=0;i<n&&parts.length<PMAX;i++){const a=Math.random()*TAU,u=o.flat?0:(Math.random()*2-1);const sp=(o.speed||5)*(.4+Math.random()*.8);const r=Math.sqrt(1-u*u);
     const p={x:x+(Math.random()-.5)*(o.jit||0),y:y+(Math.random()-.5)*(o.jit||0)*.5,z:z+(Math.random()-.5)*(o.jit||0),vx:Math.cos(a)*r*sp,vy:(o.flat?0:u*sp)+(o.up||0)*(.6+Math.random()*.6),vz:Math.sin(a)*r*sp,

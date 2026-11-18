@@ -195,7 +195,7 @@ function killCreature(c,killer){
   const k=killer&&killer.kind==='creature'&&killer.team!==c.team?killer:null;
   if(k){k.kills++;k.emoteT=1.4;
     const trait=traitOf(c);if(trait&&k.state==='alive'&&k.muts[trait]!==Infinity){k.muts[trait]=Infinity;if(k.isPlayer)banner('Mutation absorbed: '+trait,'mut');}
-    if(k.isPlayer){const report=makeKillReport(k,c);const dna=awardKillDNA(report);match.earned.dna+=dna;if(dna)floatText(k,'+'+dna+' DNA','dna',k.height+1.2);
+    if(k.isPlayer){const report=makeKillReport(k,c);const dna=awardKillDNA(report);match.earned.dna+=dna;if(dna)floatText(k,'+'+dna+' ☀','dna',k.height+1.2);
       if(report.fromMatch){const missing=[...new Set(c.d.parts.map(p=>p.id))].filter(p=>PARTS[p]&&PARTS[p].tier!=='Free'&&!progress.unlocked.includes(p));
         if(missing.length&&Math.random()<RW.dropChance){const p=pick(missing);grantDroppedPart(p);match.earned.drops.push(PARTS[p].name);banner('Part drop: '+PARTS[p].name,'drop');sfx('drop');}}}}
   killfeed(tname(k)+' clashed '+tname(c));
@@ -324,7 +324,8 @@ function updateCreature(c,dt){
   if(c.grounded&&c.burrowT<=0&&Math.hypot(c.vx,c.vz)>3&&Math.random()<dt*6)emit(c.x,c.y+.1,c.z,{n:1,color:map.biome.lane,speed:1,life:.45,size:.13,up:1.2,grav:4});
 }
 function land(c,vy){if(c.view)c.view.jv-=clamp(-vy*.06,0,.9);if(vy<-9)sfx('land',c);
-  emit(c.x,c.y+.1,c.z,{n:Math.min(14,Math.floor(-vy*.6)),color:world.map.biome.lane,speed:4,flat:true,life:.5,size:.18,up:1,grav:6});
+  // a small, soft ring of dust where it touches down (scaled by how hard it landed)
+  if(vy<-4)emit(c.x,c.y+.06,c.z,{n:clamp(Math.floor(-vy*.45),4,9),color:world.map.biome.lane,speed:2.2+Math.min(2,-vy*.08),flat:true,life:.42,size:.15,up:.4,grav:2});
   if(c.flop){c.flop=false;const mul=dmgMul(c);aoeHit(c,c.x,c.z,5.5,20*mul,'blunt',11,!!c.muts.Venom,false);emit(c.x,c.y+.2,c.z,{n:40,color:c.d.accent,speed:13,flat:true,life:.6,size:.25,glow:1.6,grav:0});
     sfx('flop',c);if(c.isPlayer||Math.hypot(c.x-cam.fx,c.z-cam.fz)<20)cam.shake=Math.max(cam.shake,.55);if(c.view)c.view.jv-=1.4;}}
 function trySpecial(c){
@@ -426,8 +427,7 @@ function updateRules(dt){
 }
 function resolveCollisions(){
   const W=world;const movers=[];for(const c of W.creatures)if(c.state!=='dead'&&c.burrowT<=0)movers.push(c);for(const n of W.neutrals)if(n.alive)movers.push(n);
-  for(let i=0;i<movers.length;i++)for(let j=i+1;j<movers.length;j++){const a=movers[i],b=movers[j];const dx=b.x-a.x,dz=b.z-a.z;const d=Math.hypot(dx,dz);const min=a.radius+b.radius;if(d<min&&d>1e-4){
-    const wa=a.isDummy||a.type==='boss'?.02:b.isDummy||b.type==='boss'?.98:.5;const push=min-d;const nx=dx/d,nz=dz/d;a.x-=nx*push*wa;a.z-=nz*push*wa;b.x+=nx*push*(1-wa);b.z+=nz*push*(1-wa);}}
+  separateBodies(movers,3);
   for(const m of W.creatures.concat(W.neutrals)){if(m.state==='dead'&&m.kind==='creature')continue;for(const o of W.colliders){const dx=m.x-o.x,dz=m.z-o.z;const d=Math.hypot(dx,dz);const min=m.radius+o.r;if(d<min&&d>1e-4){m.x=o.x+dx/d*min;m.z=o.z+dz/d*min;}}
     m.x=clamp(m.x,-W.map.xMax,W.map.xMax);m.z=clamp(m.z,-W.map.zMax,W.map.zMax);}
 }

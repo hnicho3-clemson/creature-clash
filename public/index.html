@@ -754,10 +754,10 @@ body,html{background:var(--void)}
     <div id="clock" class="panel"><div id="timer">10:00</div><div id="biomeName"></div></div>
     <div class="teamside red"><span class="tname" id="tnRed">Red nests</span><div class="pips" id="pipsRed"></div><span class="deaths" id="deathsRed"></span></div>
   </div>
-  <div id="tdBar" class="panel"><b>Test Drive</b><span style="font-size:12px;color:var(--ink-dim)">No DNA or XP here</span><button class="btn ghost small" id="tdBot">Add sparring bot</button><button class="btn primary small" id="tdBack">Back to Workshop</button></div>
+  <div id="tdBar" class="panel"><b>Test Drive</b><span style="font-size:12px;color:var(--ink-dim)">No Sunlight or Growth here</span><button class="btn ghost small" id="tdBot">Add sparring bot</button><button class="btn primary small" id="tdBack">Back to Workshop</button></div>
   <div id="objective" class="panel"></div>
   <div id="topleft" class="panel">
-    <div class="dnarow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2c0 6 10 6 10 12s-10 4-10 8M17 2c0 6-10 6-10 12s10 4 10 8M8 6h8M8 18h8M9.5 12h5" fill="none" stroke="#b8ff4f" stroke-width="1.8" stroke-linecap="round"/></svg><b id="dnaVal">0</b><span style="font-size:11px;letter-spacing:.14em;color:var(--ink-dim)">DNA</span></div>
+    <div class="dnarow"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="#ffd65a" stroke="none"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" fill="none" stroke="#ffd65a" stroke-width="2" stroke-linecap="round"/></svg><b id="dnaVal">0</b><span style="font-size:11px;letter-spacing:.14em;color:var(--ink-dim)">SUNLIGHT</span></div>
     <div class="lvrow">LV <b id="lvVal" style="color:var(--ink)">1</b><div class="xpbar"><i id="xpFill"></i></div></div>
   </div>
   <button id="pauseBtn" aria-label="Pause">II</button>
@@ -827,7 +827,7 @@ body,html{background:var(--void)}
 <g class="logoff"><circle cx="40" cy="120" r="14" fill="url(#lgAFf)"/><circle cx="604" cy="96" r="11" fill="url(#lgAFf)"/><circle cx="160" cy="40" r="9" fill="url(#lgAFf)"/><circle cx="612" cy="268" r="12" fill="url(#lgAFf)"/><circle cx="24" cy="262" r="10" fill="url(#lgAFf)"/></g></svg></h1><p class="logotag">Spirits of the Enchanted Forest</p></div>
       <div class="homechips">
         <div class="pchip" title="Your level"><span class="pico star" aria-hidden="true">★</span><span class="pc-t"><small>Level</small><b id="mLevel">1</b></span><div class="xpbar" aria-hidden="true"><i id="mXp"></i></div></div>
-        <div class="pchip dna" title="DNA for buying parts"><svg class="pico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2c0 6 10 6 10 12s-10 4-10 8M17 2c0 6-10 6-10 12s10 4 10 8M8 6h8M8 18h8M9.5 12h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="pc-t"><small>DNA</small><b id="mDna">0</b></span></div>
+        <div class="pchip dna" title="Sunlight: spend it to grow new parts"><svg class="pico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="pc-t"><small>Sunlight</small><b id="mDna">0</b></span></div>
         <button class="roundbtn" id="mA11y"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2.2" fill="currentColor"/><path d="M5 8.5l7 1.5 7-1.5M12 10v5l-3.5 6.5M12 15l3.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Settings</span></button>
         <button class="roundbtn" id="musicBtn" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.8" fill="currentColor"/><circle cx="17.5" cy="16" r="2.8" fill="currentColor"/></svg><span id="musicLbl">Music on</span></button>
       </div>
@@ -853,10 +853,10 @@ body,html{background:var(--void)}
 
 <div id="chal" class="screen" hidden>
   <div class="chal-wrap">
-    <header class="bhead"><div><div class="eyebrow">Solo</div><h2 class="btitle">Challenges</h2><div class="bmeta">Campaign levels teach the game and give XP on the first clear. Daily and weekly challenges twist the Lane Battle rules.</div></div><button class="btn ghost small" id="chalBack">Main menu</button></header>
+    <header class="bhead"><div><div class="eyebrow">Solo</div><h2 class="btitle">Challenges</h2><div class="bmeta">Campaign levels teach the game and give Growth on the first clear. Daily and weekly challenges twist the Lane Battle rules.</div></div><button class="btn ghost small" id="chalBack">Main menu</button></header>
     <section class="bcol panel" aria-label="Campaign"><h2>Campaign</h2><div id="campList"></div></section>
     <section class="bcol panel" aria-label="Selected challenge"><div id="campDetail"></div></section>
-    <section class="bcol panel" aria-label="Rotating challenges"><h2>Daily challenge</h2><div id="dailyCard"></div><h2>Weekly challenge</h2><div id="weeklyCard"></div><p class="note">DNA only comes from defeating creatures in Lane Battles. Challenges reward XP.</p></section>
+    <section class="bcol panel" aria-label="Rotating challenges"><h2>Daily challenge</h2><div id="dailyCard"></div><h2>Weekly challenge</h2><div id="weeklyCard"></div><p class="note">Sunlight only comes from defeating creatures in Lane Battles. Challenges reward Growth.</p></section>
   </div>
 </div>
 
@@ -876,7 +876,7 @@ body,html{background:var(--void)}
   <header id="wsTop" class="panel">
     <div class="wsTitle"><span class="eyebrow" id="wsMode">Workshop</span><input id="wsName" maxlength="24" aria-label="Creature name" spellcheck="false"></div>
     <div id="wsTimer" hidden></div>
-    <div class="wsDnaBox" title="DNA"><span id="wsDna">0</span><small>DNA</small></div>
+    <div class="wsDnaBox" title="Sunlight"><span id="wsDna">0</span><small>Sunlight</small></div>
     <div id="wsSlots" aria-label="Saved creature slots"></div>
     <div class="wsBtns">
       <button class="btn ghost small" id="wsUndo" title="Undo (Ctrl+Z)">Undo</button>
@@ -975,7 +975,7 @@ body,html{background:var(--void)}
       <li><b>Pick it in the build phase.</b> You have 2 minutes, then the battle starts.</li>
       <li><b>Crack the enemy nests.</b> Walk down a lane and attack the glowing egg nests. Break them all to win!</li>
       <li><b>Stay alive.</b> You only get one life per match. Teammates can revive you if you get knocked down.</li>
-      <li><b>Earn DNA.</b> Beating enemy creatures gives DNA, which buys new parts.</li>
+      <li><b>Gather Sunlight.</b> Beating enemy creatures releases Sunlight, which grows new parts.</li>
     </ol>
     <h2>Controls</h2><p id="controlsText"></p><p class="note">Every key can be changed in Settings.</p>
   </div>

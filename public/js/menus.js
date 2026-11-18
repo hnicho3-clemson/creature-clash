@@ -45,7 +45,7 @@ function updateMenuStage(rdt,now){
 const HOME_TIPS=['Long legs are fast, but wobbly creatures tip over easily!','Shells and bark plates shrug off bites and claws.','Venom stingers are great against armored creatures.','Hold your revive button next to a knocked-down teammate to save them.','Lure enemies onto puffball vents to launch them sky high!','Beating the Grand Gobbler gives your whole team a boost.','Mystery seeds sprout into new parts as you level up.','Try the Workshop Test Drive to practice with new parts.','Watch out for rolling mossballs crossing the lanes!','Pick a head sprout in the Workshop Body tab: twin leaf, flower bud, toadstool and more!','Big ears and wide eyes help you spot enemies on the minimap.'];
 function refreshMenu(){
   const total=Object.keys(PARTS).filter(k=>PARTS[k].tier!=='Free').length;const owned=progress.owned.filter(k=>PARTS[k]&&PARTS[k].tier!=='Free').length;const unl=Object.keys(PARTS).filter(k=>PARTS[k].tier!=='Free'&&isUnlocked(k)).length;
-  $('#mLevel').textContent=progress.level;$('#mXp').style.width=(progress.xp/xpNeeded(progress.level)*100).toFixed(1)+'%';$('#mXpText').textContent=progress.xp+' / '+xpNeeded(progress.level)+' XP';
+  $('#mLevel').textContent=progress.level;$('#mXp').style.width=(progress.xp/xpNeeded(progress.level)*100).toFixed(1)+'%';$('#mXpText').textContent=progress.xp+' / '+xpNeeded(progress.level)+' Growth';
   $('#mDna').textContent=progress.dna;$('#mParts').textContent=owned+' parts owned';
   $('#mTip').textContent=pick(HOME_TIPS);try{$('#mBuildArt').src=Portrait.design(BOT_PRESETS[5],false,384);$('#mChalArt').src=Portrait.design(BOSS,false,384);}catch(e){}
   $('#mRecord').textContent=progress.stats.wins+' wins · '+progress.stats.kills+' creatures beaten';
@@ -245,7 +245,7 @@ function renderPalette(){
   el.innerHTML='<div class="pgrid">'+ids.map(id=>{const d=PARTS[id];
     if(!isUnlocked(id))return '<div class="pc pod"><div class="podimg" aria-hidden="true"></div><span class="pn">Mystery seed</span><span class="pf">Level up to unlock</span></div>';
     const tier='<span class="pt t-'+d.tier+'">'+(d.tier==='Free'?'Free':d.tier)+'</span>';const img='<img alt="" src="'+Portrait.part(id)+'">';
-    if(!isOwned(id))return '<div class="pc buy" title="'+esc(d.desc)+'">'+img+'<span class="pn">'+esc(d.name)+'</span>'+tier+'<span class="pd">'+esc(d.desc)+'</span><button class="btn small buybtn" data-buy="'+id+'"'+(progress.dna<partPrice(id)?' disabled':'')+'>Buy · '+partPrice(id)+' DNA</button></div>';
+    if(!isOwned(id))return '<div class="pc buy" title="'+esc(d.desc)+'">'+img+'<span class="pn">'+esc(d.name)+'</span>'+tier+'<span class="pd">'+esc(d.desc)+'</span><button class="btn small buybtn" data-buy="'+id+'"'+(progress.dna<partPrice(id)?' disabled':'')+'>Grow · '+partPrice(id)+' Sunlight</button></div>';
     const used=ws.design.parts.filter(p=>p.id===id).length;
     return '<button class="pc'+(ws.placing===id?' on':'')+'" data-id="'+id+'" title="'+esc(d.desc)+'">'+img+'<span class="pn">'+esc(d.name)+'</span>'+tier+'<span class="pd">'+esc(d.desc)+'</span>'+(used?'<span class="used">×'+used+'</span>':'')+'</button>';}).join('')+'</div>';
   $$('#wsPal .pc[data-id]').forEach(b=>b.addEventListener('click',()=>pickPart(b.dataset.id)));
@@ -319,13 +319,13 @@ function renderStylePalette(el){
   h+='<div class="sect">Suggested parts for '+esc(S2.name)+'</div><div class="sugg">'+S2.suggest.map(id=>{const d=PARTS[id];
       if(!isUnlocked(id))return '<span class="sg pod" title="Locked: level up to unlock"><span class="podimg mini" aria-hidden="true"></span><small>Mystery seed</small></span>';
       const on=ws.design.parts.some(p=>p.id===id);
-      return '<button class="sg'+(on?' have':'')+'" data-sg="'+id+'" title="'+esc(d.desc)+'"><img alt="" src="'+Portrait.part(id)+'"><small>'+esc(d.name)+'</small>'+(on?'<em>on</em>':isOwned(id)?'':'<em class="buy">'+partPrice(id)+' DNA</em>')+'</button>';}).join('')+'</div>'+
+      return '<button class="sg'+(on?' have':'')+'" data-sg="'+id+'" title="'+esc(d.desc)+'"><img alt="" src="'+Portrait.part(id)+'"><small>'+esc(d.name)+'</small>'+(on?'<em>on</em>':isOwned(id)?'':'<em class="buy">'+partPrice(id)+' ☀</em>')+'</button>';}).join('')+'</div>'+
     '<div class="sect">Start fresh</div><p class="note">Builds a new '+esc(S2.name)+' from the best parts you own. Your current creature stays in its slot until you save over it.</p>'+
     '<button class="btn small" id="styTpl">New '+esc(S2.name)+' from template</button>';
   el.innerHTML=h;
   $$('#wsPal [data-style]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.style;pushUndo();if(id==='auto')delete ws.design.style;else ws.design.style=id;sfx('ui');changed(false);}));
   $$('#wsPal [data-sg]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.sg;const d=PARTS[id];sfx('ui');ws.tab=d.fam;renderTabs();renderPalette();
-    if(isOwned(id)){if(!ws.design.parts.some(p=>p.id===id)||d.fam==='Weapon')pickPart(id);else{ws.sel=ws.design.parts.findIndex(p=>p.id===id);renderSel();hint();}}else hint(d.name+' is unlocked. Buy it here for '+partPrice(id)+' DNA.');}));
+    if(isOwned(id)){if(!ws.design.parts.some(p=>p.id===id)||d.fam==='Weapon')pickPart(id);else{ws.sel=ws.design.parts.findIndex(p=>p.id===id);renderSel();hint();}}else hint(d.name+' is unlocked. Grow it here for '+partPrice(id)+' Sunlight.');}));
   $('#styTpl').addEventListener('click',()=>{pushUndo();const nd=styleTemplate(show);ws.design=nd;ws.sel=-1;ws.placing=null;ws.slot=slots.findIndex((x,i)=>!x&&i<slotCount());sfx('place');rebuildStudio(true);changed(false);renderSel();$('#wsName').value=nd.name;
     hint('Here is a starter '+STYLES[show].name+'. Tweak it, then Save.'+(ws.slot<0?' All slots are full, so saving replaces slot 1 unless you pick another.':''));});
 }
@@ -452,7 +452,7 @@ $('#wsStatsToggle').addEventListener('click',()=>{ws.statsOpen=!ws.statsOpen;$('
 let testSeed=newSeed();
 function startTestDrive(){
   closeStudio();buildWorld(testSeed,{mode:'test'});clearAnnouncements();
-  startMatch({mode:'test',player:ws.design,bots:[]});banner('Test Drive · no DNA here','good');
+  startMatch({mode:'test',player:ws.design,bots:[]});banner('Test Drive · no Sunlight here','good');
 }
 function endTestDrive(){exitLock();hideTouch();match=null;phase='workshop';openWorkshop(ws.mode,ws.design,ws.slot);}
 $('#tdBack').addEventListener('click',()=>{sfx('ui');endTestDrive();});
@@ -468,7 +468,7 @@ function showDeathScreen(k){
   $('#dStats').innerHTML=[[p.kills,'Kills'],[Math.round(p.dmgDealt),'Damage'],[p.nestsKilled,'Nests'],[fmtTime(match.time),'Survived']].map(([v,k])=>'<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>').join('');
   $('#dEarn').innerHTML=earnChips();$('#death').hidden=false;
 }
-function earnChips(){const e=match.earned;let h='<span class="chip xp">+'+e.xp+' XP</span><span class="chip dna">+'+e.dna+' DNA</span>';if(match.rot){const r=match.rot;const nm=r.kind==='daily'?'Daily':'Weekly';h+=e.rot?'<span class="chip lv">'+nm+' challenge complete · +'+r.xp+' XP</span>':(progress.daily[r.key]?'<span class="chip dim">'+nm+' challenge already claimed</span>':'<span class="chip bad">'+nm+' goal not met yet: '+esc(GOALS[r.goal].name)+'</span>');}for(const d of e.drops)h+='<span class="chip drop">Part drop: '+esc(d)+'</span>';for(const l of e.levels)h+='<span class="chip lv">Unlocked: '+esc(l)+'</span>';if(e.levels.length)h+='<span class="chip lv">Level '+progress.level+'</span>';return h;}
+function earnChips(){const e=match.earned;let h='<span class="chip xp">+'+e.xp+' Growth</span><span class="chip dna">+'+e.dna+' Sunlight</span>';if(match.rot){const r=match.rot;const nm=r.kind==='daily'?'Daily':'Weekly';h+=e.rot?'<span class="chip lv">'+nm+' challenge complete · +'+r.xp+' Growth</span>':(progress.daily[r.key]?'<span class="chip dim">'+nm+' challenge already claimed</span>':'<span class="chip bad">'+nm+' goal not met yet: '+esc(GOALS[r.goal].name)+'</span>');}for(const d of e.drops)h+='<span class="chip drop">Part drop: '+esc(d)+'</span>';for(const l of e.levels)h+='<span class="chip lv">Unlocked: '+esc(l)+'</span>';if(e.levels.length)h+='<span class="chip lv">Level '+progress.level+'</span>';return h;}
 function showResults(){
   match.resultsShown=true;$('#death').hidden=true;$('#spectbar').hidden=true;hideTouch();
   if(match.mode==='challenge'&&typeof showChallengeResults==='function'){showChallengeResults();return;}
@@ -515,11 +515,11 @@ const devlog=$('#devlog'),devin=$('#devin');
 function dlog(s){devlog.textContent+=s+'\n';devlog.scrollTop=devlog.scrollHeight;}
 function toggleDev(force){if(!DEV_BUILD){DEV.open=false;return;}DEV.open=force==null?!DEV.open:force;$('#devcon').hidden=!DEV.open;if(DEV.open){exitLock();for(const k in keys)keys[k]=false;setTimeout(()=>devin.focus(),0);if(!devlog.textContent)dlog('Creature Clash dev console. Type help for commands.');}else{devin.blur();if(phase==='battle'&&match&&!match.over&&!match.eliminated&&!paused&&!isCoarse)requestLock();}}
 const COMMANDS={
-  help:()=>dlog('addDNA [n]      add DNA (default 10)\nresetDNA        set DNA to 0\nunlockAllParts  unlock every creature part\nspawnBot [team] spawn a test bot in front of the camera (red or blue)\ngodMode         toggle invincibility\naddXP [n]       SUGGESTION: add XP (default 100)\nclear           clear this log'),
+  help:()=>dlog('addDNA [n]      add Sunlight (DNA, default 10)\nresetDNA        set Sunlight to 0\nunlockAllParts  unlock every creature part\nspawnBot [team] spawn a test bot in front of the camera (red or blue)\ngodMode         toggle invincibility\naddXP [n]       SUGGESTION: add XP (default 100)\nclear           clear this log'),
   clear:()=>{devlog.textContent='';},
-  addDNA:a=>{const v=Sec.devAmount(a,10,1,100000);if(v==null){dlog('addDNA takes a whole number from 1 to 100000.');return;}progress.dna=Math.min(Sec.DNA_MAX,progress.dna+v);saveProgress();dlog('DNA +'+v+' → '+progress.dna);if(phase==='workshop')renderPalette();refreshMenu();},
-  resetDNA:()=>{progress.dna=0;saveProgress();dlog('DNA reset to 0');if(phase==='workshop')renderPalette();refreshMenu();},
-  unlockAllParts:()=>{for(const k in PARTS){if(PARTS[k].tier!=='Free'&&!progress.unlocked.includes(k))progress.unlocked.push(k);}saveProgress();dlog('All parts unlocked. They still cost DNA to buy.');if(phase==='workshop')renderPalette();refreshMenu();},
+  addDNA:a=>{const v=Sec.devAmount(a,10,1,100000);if(v==null){dlog('addDNA takes a whole number from 1 to 100000.');return;}progress.dna=Math.min(Sec.DNA_MAX,progress.dna+v);saveProgress();dlog('Sunlight +'+v+' → '+progress.dna);if(phase==='workshop')renderPalette();refreshMenu();},
+  resetDNA:()=>{progress.dna=0;saveProgress();dlog('Sunlight reset to 0');if(phase==='workshop')renderPalette();refreshMenu();},
+  unlockAllParts:()=>{for(const k in PARTS){if(PARTS[k].tier!=='Free'&&!progress.unlocked.includes(k))progress.unlocked.push(k);}saveProgress();dlog('All parts unlocked. They still cost Sunlight to grow.');if(phase==='workshop')renderPalette();refreshMenu();},
   spawnBot:a=>{if(phase!=='battle'||!match){dlog('Start a battle first.');return;}const team=(a||'red').toLowerCase()==='blue'?'blue':'red';const c=spawnCreature(pick(BOT_PRESETS),team,false,pick(BOT_NAMES)+' (test)',0,1,pick(BOT_COLORS));
     c.x=clamp(cam.fx+Math.sin(cam.yaw)*6,-90,90);c.z=clamp(cam.fz+Math.cos(cam.yaw)*6,-world.map.zMax,world.map.zMax);c.y=world.map.heightAt(c.x,c.z)+2;c.lane=world.map.laneAt(c.x,c.z);dlog('Spawned '+c.name+' on '+team+'.');},
   godMode:()=>{DEV.god=!DEV.god;dlog('God mode '+(DEV.god?'ON':'OFF'));},
