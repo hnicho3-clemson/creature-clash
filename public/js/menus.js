@@ -1,7 +1,7 @@
 'use strict';
 /* Creature Clash — menus, build phase, Workshop editor, Test Drive, results, dev console, main loop */
 const OVERLAYS=['death','results','pause'];
-function showScreen(name){if(name!=='menu')clearMenuStage();for(const s of ['menu','build','workshop','hud','chal'])$('#'+s).hidden=s!==name;for(const o of OVERLAYS)$('#'+o).hidden=true;paused=false;}
+function showScreen(name){document.body.classList.remove('vicmode');if(name!=='menu')clearMenuStage();for(const s of ['menu','build','workshop','hud','chal'])$('#'+s).hidden=s!==name;for(const o of OVERLAYS)$('#'+o).hidden=true;paused=false;}
 function newSeed(){return Math.floor(Math.random()*999999)+1;}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
@@ -471,15 +471,21 @@ function showDeathScreen(k){
 function earnChips(){const e=match.earned;let h='<span class="chip xp">+'+e.xp+' Growth</span><span class="chip dna">+'+e.dna+' Sunlight</span>';if(match.rot){const r=match.rot;const nm=r.kind==='daily'?'Daily':'Weekly';h+=e.rot?'<span class="chip lv">'+nm+' challenge complete · +'+r.xp+' Growth</span>':(progress.daily[r.key]?'<span class="chip dim">'+nm+' challenge already claimed</span>':'<span class="chip bad">'+nm+' goal not met yet: '+esc(GOALS[r.goal].name)+'</span>');}for(const d of e.drops)h+='<span class="chip drop">Part drop: '+esc(d)+'</span>';for(const l of e.levels)h+='<span class="chip lv">Unlocked: '+esc(l)+'</span>';if(e.levels.length)h+='<span class="chip lv">Level '+progress.level+'</span>';return h;}
 function showResults(){
   match.resultsShown=true;$('#death').hidden=true;$('#spectbar').hidden=true;hideTouch();
-  if(match.mode==='challenge'&&typeof showChallengeResults==='function'){showChallengeResults();return;}
+  if(match.mode==='challenge'&&typeof showChallengeResults==='function'){showChallengeResults();decorateResults();return;}
   if(match.rot&&typeof checkRotGoal==='function')checkRotGoal(true);
   const me=match.player;const won=me&&match.winner===me.team;
   const t=$('#rTitle');t.textContent=match.winner?(won?'Victory':'Defeat'):'Draw';t.className='restitle '+(match.winner?(won?'win':'lose'):'draw');
   $('#rReason').textContent=match.reason;$('#rBiome').textContent=world.map.biome.name+' · seed '+world.seed;
   let h='<tr><th>Creature</th><th>Role</th><th>Kills</th><th>Damage</th><th>Trees</th><th>Status</th></tr>';
   for(const c of world.creatures.slice().sort((a,b)=>a.team===b.team?b.kills-a.kills:a.team==='blue'?-1:1)){h+='<tr class="'+c.team+(c.isPlayer?' me':'')+'"><td>'+esc(c.isPlayer?'You ('+c.d.name+')':c.name)+'</td><td>'+c.st.role+'</td><td>'+c.kills+'</td><td>'+Math.round(c.dmgDealt)+'</td><td>'+c.nestsKilled+'</td><td class="'+(c.state==='dead'?'dead':'')+'">'+(c.state==='dead'?'Fossil':'Alive')+'</td></tr>';}
-  $('#rBoard').innerHTML=h;$('#rEarn').innerHTML=earnChips();$('#rNew').textContent='Play again';$('#rMenu').textContent='Main menu';$('#results').hidden=false;
+  $('#rBoard').innerHTML=h;$('#rEarn').innerHTML=earnChips();$('#rNew').textContent='Play again';$('#rMenu').textContent='Main menu';$('#results').hidden=false;decorateResults();
 }
+/* results pop-in: a win gets the celebration layout (card to the side, the dance stays visible), bouncing title letters and staggered rows */
+function decorateResults(){const el=$('#results');const won=!!(match&&match.player&&match.winner===match.player.team);const t=$('#rTitle');
+  el.classList.remove('victory','defeat');void el.offsetWidth;el.classList.add(won?'victory':'defeat');el.classList.toggle('vicside',won&&!!match.vic);
+  if(won){const txt=t.textContent.replace(/!*$/,'!');t.setAttribute('aria-label',txt);t.innerHTML='<span class="rays" aria-hidden="true"></span>'+[...txt].map((ch,i)=>'<span class="ltr" aria-hidden="true" style="--i:'+i+'">'+(ch===' '?'&nbsp;':esc(ch))+'</span>').join('');
+    setTimeout(()=>{if(el.hidden)return;sfx('drop');},380);}
+  $$('#rBoard tr').forEach((r,i)=>r.style.setProperty('--i',i));$$('#rEarn .chip').forEach((c,i)=>c.style.setProperty('--i',i));}
 const optMap={optTimer:'timerIsHardLimit',optMain:'mainNestNeedsClearedLane',optFinish:'downedCanBeFinishedOff',optSpit:'nestsSpitGoo'};
 for(const id in optMap){const el=$('#'+id);el.checked=!!S[optMap[id]];el.addEventListener('change',()=>{S[optMap[id]]=el.checked;});}
 const savedSet=Sec.settings(store.get(SETTINGS_KEY,{}),Object.values(optMap));

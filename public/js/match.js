@@ -49,7 +49,7 @@ function startMatch(opts){
   if(match.mode==='test'){const p=match.player;p.x=-14;p.z=world.map.laneZ(0,-14);p.y=world.map.heightAt(p.x,p.z);
     [[-2,-3],[2,2.5],[6,-1]].forEach(([dx,dz],i)=>{const d=spawnCreature(DUMMY,'red',false,'Training Dummy',0,1);d.isDummy=true;d.brain=null;d.x=dx;d.z=world.map.laneZ(0,dx)+dz;d.y=world.map.heightAt(d.x,d.z);d.yaw=-Math.PI/2;});}
   if(opts.setup)opts.setup(match);
-  cam.yaw=Math.PI/2;cam.lock=null;cam.spect=null;cam.cine=null;timeScale=1;ffMul=1;cam.fx=match.player.x;cam.fz=match.player.z;
+  document.body.classList.remove('vicmode');cam.yaw=Math.PI/2;cam.lock=null;cam.spect=null;cam.cine=null;timeScale=1;ffMul=1;cam.fx=match.player.x;cam.fz=match.player.z;
   phase='battle';setRenderView(scene,camera,world.map.biome.bloom);
   showScreen('hud');$('#biomeName').textContent=world.map.biome.name;
   $('#hud').classList.toggle('test',match.mode==='test');$('#hud').classList.toggle('challenge',match.mode==='challenge');
@@ -286,8 +286,47 @@ function simulate(dt){
   resolveCollisions();
   if(!match.over)updateRules(dt);
   if(match.mode==='challenge'&&typeof updateChallenge==='function'&&!match.over)updateChallenge(dt);
-  if(match.over){match.endT+=dt/Math.max(timeScale,.01);if(match.endT>2.2&&!match.resultsShown){timeScale=1;showResults();}}
+  if(match.over){match.endT+=dt/Math.max(timeScale,.01);
+    if(!match.vic&&!match.noVic&&match.endT>1&&match.player&&match.winner===match.player.team&&!startVictory())match.noVic=true;
+    if(match.vic)updateVictory(dt);
+    if(match.endT>(match.vic?4.6:2.2)&&!match.resultsShown){timeScale=1;showResults();}}
 }
+/* ---------- victory celebration: the camera swings round to the front and your rock dances ---------- */
+function startVictory(){const me=match.player;const h=me&&me.state==='alive'?me:world.creatures.find(c=>c.team===match.winner&&c.state==='alive'&&c.kind==='creature');if(!h||!h.view)return false;
+  const vw=h.view;const D=Math.max(4.2,vw.height*1.55+vw.radius*1.3);const lookY=vw.height*.62;const gy=world.map.heightAt(h.x,h.z);
+  const L=new T.Vector3(h.x,gy+lookY,h.z);let base=Math.atan2(camera.position.x-h.x,camera.position.z-h.z);let a0=null;
+  // with a tree close by, stand the camera on the far side of the hero so the (withered) tree becomes the backdrop
+  {let nn=null,nd=1e9;for(const n of world.nests){const d=Math.hypot(n.x-h.x,n.z-h.z);if(d<nd){nd=d;nn=n;}}if(nn&&nd<16)base=Math.atan2(h.x-nn.x,h.z-nn.z);}
+  for(const off of [0,.35,-.35,.7,-.7,1.1,-1.1,1.6,-1.6,2.2,-2.2,2.8,-2.8,Math.PI])for(const dd of [1,.8,1.25]){const a=base+off;const P=new T.Vector3(h.x+Math.sin(a)*D*dd,gy+lookY+D*.28,h.z+Math.cos(a)*D*dd);
+    if(P.y<world.map.heightAt(P.x,P.z)+.7)P.y=world.map.heightAt(P.x,P.z)+.7;
+    if(world.nests.some(n=>Math.hypot(P.x-n.x,P.z-n.z)<(n.main?7:4)))continue;
+    if((typeof camClear!=='function'||camClear(P,L,h,false))&&!world.creatures.some(c=>c!==h&&c.state!=='dead'&&Math.hypot(c.x-P.x,c.z-P.z)<(c.radius||1)+.8)){a0=a;match.vicD=D*dd;break;}if(a0!=null)break;}
+  if(a0==null){a0=base;match.vicD=D;match.vicFb=true;}
+  match.vic={t:0,hero:h,a0,turn:0,beat:0,cyc:0,wasAir:false,fw:0,gy,lookY,P:camera.position.clone(),L:new T.Vector3(cam.fx,cam.fy,cam.fz)};
+  timeScale=1;h.emoteT=0;h.spinT=0;h.vx=h.vz=h.kx=h.kz=0;h.yaw=a0;h.faceT=0;document.body.classList.add('vicmode');
+  if(typeof voice==='function')voice(h,'happy');return true;}
+const VIC_BEATS=[[.25,'flip'],[1.65,'hopL'],[2.25,'hopR'],[3.05,'twirl'],[4.05,'wiggle']];const VIC_CYCLE=4.9;
+function updateVictory(dt){const v=match.vic;const h=v.hero;v.t+=dt;if(h.state!=='alive')return;
+  const ct=v.t-v.cyc*VIC_CYCLE;if(ct>=VIC_CYCLE){v.cyc++;v.beat=0;}
+  const b=VIC_BEATS[v.beat];if(b&&ct>=b[0]&&h.grounded){v.beat++;const jm=h.st&&h.st.jump?Math.min(1.3,h.st.jump):1;
+    if(b[1]==='flip'){h.vy=11*jm;h.grounded=false;h.hopSpin=5.5;sfx('boing',h);voice(h,'happy');}
+    else if(b[1]==='hopL'||b[1]==='hopR'){h.vy=6.6*jm;h.grounded=false;h.hopSpin=0;v.turn+=b[1]==='hopL'?Math.PI*.999:Math.PI*.999;sfx('jump',h);}
+    else if(b[1]==='twirl'){h.vy=9*jm;h.grounded=false;h.spinT=.5;h.hopSpin=0;sfx('jump',h);}
+    else if(b[1]==='wiggle'){h.emoteT=.75;if(Math.random()<.6)voice(h,'happy');}}
+  h.yaw=v.a0+v.turn;h.vx=h.vz=0;h.kx*=.8;h.kz*=.8;
+  if(v.wasAir&&h.grounded){const tc=TEAMS[h.team].hex;emit(h.x,h.y+.4,h.z,{n:26,color:pick(['#ffd84a',tc,'#ff8ad8','#8fffd0']),speed:6.5,life:1.1,size:.14,glow:2,up:6,grav:7});if(h.view)h.view.jv-=.25;}
+  v.wasAir=!h.grounded;if(h.grounded&&h.hopSpin)h.hopSpin=0;
+  // fireworks overhead and sunlight drifting up around the winner
+  v.fw-=dt;if(v.fw<=0&&!A11Y.reduceMotion){v.fw=.42+Math.random()*.3;const a=Math.random()*TAU,r=1.5+Math.random()*2.5;emit(h.x+Math.cos(a)*r,v.gy+h.view.height+3+Math.random()*2.5,h.z+Math.sin(a)*r,{n:30,color:pick(['#ffd84a',TEAMS[h.team].hex,'#ff8ad8','#8fffd0','#ffffff']),speed:5.5,life:1.2,size:.12,glow:2.6,up:0,grav:2.5,drag:.6});if(Math.random()<.5)sfx('popup',h);}
+  if(Math.random()<dt*8){const a=Math.random()*TAU,r=Math.random()*2.6;emit(h.x+Math.cos(a)*r,v.gy+.2,h.z+Math.sin(a)*r,{n:1,color:'#ffe9a0',glow:2.2,speed:.3,up:1.4,life:1.8,size:.09,grav:-.5,drag:.8});}
+  // teammates bounce along
+  for(const c of world.creatures){if(c===h||c.team!==h.team||c.state!=='alive'||!c.grounded)continue;if(Math.random()<dt*.9){c.vy=6.5+Math.random()*2.5;c.grounded=false;c.hopSpin=Math.random()<.4?4:0;c.emoteT=0;}}}
+function vicCamera(rdt){const v=match.vic,h=v.hero;const narrow=innerWidth/innerHeight<1.15;const sway=A11Y.reduceMotion?0:Math.sin(v.t*.35)*.14;const a=v.a0+sway;const D=match.vicD;
+  const L=_vcL.set(h.x,v.gy+v.lookY+Math.max(0,h.y-v.gy)*.35,h.z);const P=_vcP.set(h.x+Math.sin(a)*D,v.gy+v.lookY+D*.28,h.z+Math.cos(a)*D);P.y=Math.max(P.y,world.map.heightAt(P.x,P.z)+.7);
+  const fx=L.x-P.x,fz=L.z-P.z,fl=Math.hypot(fx,fz)||1;const rx=-fz/fl,rz=fx/fl;
+  if(narrow)L.y-=D*.22;else{L.x+=rx*D*.42;L.z+=rz*D*.42;}// keep the dancer clear of the results card
+  const k=1-Math.exp(-rdt*(v.t<1.4?3.2:6));v.P.lerp(P,k);v.L.lerp(L,k);camera.position.copy(v.P);camera.lookAt(v.L);cam.fx=h.x;cam.fz=h.z;sunFollow(h.x,h.y,h.z);}
+const _vcL=new T.Vector3(),_vcP=new T.Vector3();
 function updateCreature(c,dt){
   const map=world.map;
   for(let i=0;i<c.cds.length;i++)if(c.cds[i]>0)c.cds[i]-=dt;
@@ -606,6 +645,7 @@ function updateCamera(rdt){
   const map=world.map;let tgt=null;
   if(phase==='menu'&&menuStage.active&&!$('#menu').hidden){updateMenuStage(rdt,performance.now());return;}
   if(phase!=='battle'||!match){const t=performance.now()*.00005;cam.fx=Math.cos(t)*20;cam.fz=Math.sin(t)*10;const r=78;camera.position.set(Math.cos(t*1.6)*r,48,Math.sin(t*1.6)*r*.55+8);camera.lookAt(0,0,0);sunFollow(0,0,0);return;}
+  if(match.vic){vicCamera(rdt);return;}
   if(cam.cine&&$('#death').hidden&&!match.resultsShown){cam.cine.t+=rdt;const p=cam.cine.target;const a=cam.yaw+Math.PI+cam.cine.t*.6;const d=7.5;
     const fx=p.x,fy=p.y+1.2,fz=p.z;camera.position.set(fx+Math.sin(a)*d,fy+3.2,fz+Math.cos(a)*d);camera.lookAt(fx,fy,fz);cam.fx=fx;cam.fz=fz;sunFollow(fx,fy,fz);return;}
   if(match.player.state!=='dead')tgt=match.player;
