@@ -438,17 +438,17 @@ function legBuild(def,s,side,skin,acc){
 function buildCreatureView(d,opts){
   opts=opts||{};const b=d.body;const R=[b.w,b.h,b.l];
   const root=new T.Group();const pivot=new T.Group();root.add(pivot);const legRoot=new T.Group();root.add(legRoot);
-  const v={root,pivot,legRoot,R,b,legs:[],eyes:[],jaws:[],arms:[],weapons:[],pincers:[],tails:[],wings:[],fins:[],glands:[],props:[],zaps:[],crests:[],phase:Math.random()*TAU,j:0,jv:0,tilt:0,flash:0,legLen:.6,turn:0,lastYaw:0,disp:[],partGroups:[],blinkT:1+Math.random()*4,blink:0};
+  const v={root,pivot,legRoot,R,b,eyeHolders:[],limbHolders:[],legs:[],eyes:[],jaws:[],arms:[],weapons:[],pincers:[],tails:[],wings:[],fins:[],glands:[],props:[],zaps:[],crests:[],phase:Math.random()*TAU,j:0,jv:0,tilt:0,flash:0,legLen:.6,turn:0,lastYaw:0,disp:[],partGroups:[],blinkT:1+Math.random()*4,blink:0};
   const vown=x=>{v.disp.push(x);return x;};_viewOwn=v.disp;
   const kind=d.pattern==='stripes'?'scales':'pebble';const tx=skinTex(kind);
   const fiP=d.face===true?faceInfo(d):null;const patId=d.pattern==='hood'?1:d.pattern==='skirt'?2:0;const fdir=fiP?new T.Vector3(fiP.c[0],fiP.c[1],fiP.c[2]).normalize():new T.Vector3(0,.1,1);
-  const bodyU={pat:{value:patId},ph:{value:((d.seed||1)%7)*.9},hasFace:{value:fiP?1:0},faceTop:{value:fdir.y-.1},faceC:{value:col(d.color).lerp(col('#fff6e6'),.62)},accC:{value:col(d.accent)},faceDir:{value:fdir},faceR:{value:new T.Vector2(fiP?fiP.rx:.4,fiP?fiP.ry:.34)}};
+  const bodyU={pat:{value:patId},ph:{value:((d.seed||1)%7)*.9},hasFace:{value:fiP?1:0},faceTop:{value:fdir.y-.1},faceC:{value:col(d.color).lerp(col('#fff6e6'),.62)},accC:{value:col(d.accent)},faceDir:{value:fdir},faceR:{value:new T.Vector2(fiP?fiP.rx:.4,fiP?fiP.ry:.34)},dorm:{value:0}};v.bodyU=bodyU;
   const bodyMat=vown(REAL?tpMat({tex:'rock',space:'object',vertexColors:true,scale:.5,nStr:2.2,rough:.82,moss:.18,mossLo:.55,mossHi:.9,mossCol:d.accent,uniforms:bodyU,key:'body',
-      fsHead:'uniform float pat,ph,hasFace,faceTop;uniform vec3 faceC,accC,faceDir;uniform vec2 faceR;',
-      paint:'{vec3 vd=normalize(vTP);float fm=0.;if(hasFace>.5){float fd=dot(vd,faceDir);vec2 q2=vec2(vd.x/faceR.x,(vd.y-faceDir.y)/faceR.y);float q=dot(q2,q2);fm=(1.-smoothstep(.85,1.15,q))*smoothstep(.2,.35,fd);}'+
+      fsHead:'uniform float pat,ph,hasFace,faceTop,dorm;uniform vec3 faceC,accC,faceDir;uniform vec2 faceR;',
+      paint:'{vec3 vd=normalize(vTP);float fm=0.;if(hasFace>.5){float fd=dot(vd,faceDir);vec2 q2=vec2(vd.x/faceR.x,(vd.y-faceDir.y)/faceR.y);float q=dot(q2,q2);fm=(1.-smoothstep(.85,1.15,q))*smoothstep(.2,.35,fd);}fm*=1.-dorm;'+
         'float ang=atan(vd.z,vd.x);float sp=0.;float wob=.07*sin(ang*5.+ph)+.04*sin(ang*11.+ph*2.3+vd.y*6.)+(tpNz-.5)*.25;'+
         'if(pat>.5&&pat<1.5){sp=smoothstep(.3+wob-.04,.3+wob+.04,vd.y);}else if(pat>1.5){sp=1.-smoothstep(-.42+wob-.04,-.42+wob+.04,vd.y);}'+
-        'tpM=max(tpM,sp*(1.-fm));tpMA=tpTri(tpMossA,tpP*1.4,tpW)*2.*accC;diffuseColor.rgb=mix(diffuseColor.rgb,faceC,fm*.85);}'})
+        'tpM=max(tpM,sp*(1.-fm));tpMA=tpTri(tpMossA,tpP*1.4,tpW)*2.*mix(accC,vec3(.11,.19,.05),dorm*.8);diffuseColor.rgb=mix(diffuseColor.rgb,faceC,fm*.85);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.3,.59,.11)))*vec3(1.,.97,.9),dorm*.85);}'})
    :paintBody(new T.MeshPhysicalMaterial({vertexColors:true,roughness:.66,clearcoat:.22,clearcoatRoughness:.5,envMapIntensity:1.25,flatShading:true,emissive:new T.Color(0,0,0)}),bodyU));v.bodyMat=bodyMat;
   const solid=skinMat(d.color,kind);const acc=skinMat(d.accent,'pebble',{clearcoat:.55,clearcoatRoughness:.2});
   const fi=d.face===true?faceInfo(d):null;const body=new T.Mesh(vown(bodyGeometry(d.color,d.accent,d.seed||1,d.pattern||'spots',fi,true)),bodyMat);body.scale.set(b.w,b.h,b.l);body.userData.body=true;pivot.add(body);v.body=body;
@@ -460,7 +460,7 @@ function buildCreatureView(d,opts){
     const cr=COLLAR[def.build];if(cr&&def.mount!=='cover'){const c=new T.Mesh(sphereG(),solid);c.scale.set(cr,cr,cr*.38);c.position.z=-cr*.12;holder.add(c);}
     if(def.mount==='cover'){pivot.add(holder);}
     else{const fr=surfaceFrame(it.p,b);holder.position.copy(fr.pos);holder.quaternion.copy(fr.q).multiply(new T.Quaternion().setFromAxisAngle(_zAxis,it.r||0));holder.scale.set(it.mir?-it.s:it.s,it.s,it.s);pivot.add(holder);}
-    v.partGroups.push(holder);
+    v.partGroups.push(holder);holder.userData.s0=holder.scale.clone();if(built.eye)v.eyeHolders.push(holder);else if(def.mount!=='cover')v.limbHolders.push(holder);
     if(built.weapon)v.weapons.push(built.weapon);if(built.eye)v.eyes.push(built.eye);if(built.jaw)v.jaws.push(built.jaw);if(built.arm){built.arm.side=it.mir?-1:1;v.arms.push(built.arm);}if(built.pincer)v.pincers.push(built.pincer);
     if(built.tail)v.tails.push(built.tail);if(built.wing)v.wings.push(built.wing);if(built.fin)v.fins.push(built.fin);if(built.gland)v.glands.push(built.gland);if(built.prop)v.props.push(built.prop);if(built.zap)v.zaps.push(built.zap);if(built.crest)v.crests.push(built.crest);}
   if(!expandParts(d).some(it=>it.def.build==='hat')){const sp=buildSprout(d,b);if(sp){pivot.add(sp.g);sp.base=sp.g.scale.x;v.sprout=sp;}}
@@ -468,7 +468,7 @@ function buildCreatureView(d,opts){
     for(const sd of [-1,1]){const fr=surfaceFrame(norm3([sd*.95,-.14,.12]),b);const h=new T.Group();h.position.copy(fr.pos);h.quaternion.copy(fr.q);const arm=new T.Group();arm.rotation.x=.55;h.add(arm);
       const a=new T.Mesh(ag,solid);a.userData.noInk=true;arm.add(a);const hand=new T.Mesh(sphereG(),solid);hand.scale.set(.1,.09,.11);hand.position.set(0,-.15,.26);arm.add(hand);
       h.scale.setScalar(clamp(Math.min(b.w,b.h)*.95,.75,1.4));pivot.add(h);v.arms.push({g:arm,side:sd});}}
-  {const fiB=faceInfo(d);if(fiB)pivot.add(buildFaceBits(d,b,fiB,expandParts(d).some(it=>it.def.build==='jaw'||it.def.build==='beak')));}
+  {const fiB=faceInfo(d);if(fiB)pivot.add(v.faceBits=buildFaceBits(d,b,fiB,expandParts(d).some(it=>it.def.build==='jaw'||it.def.build==='beak')));}
   _viewOwn=null;
   const bySide={'-1':[],'1':[]};for(const L of v.legs)bySide[L.side].push(L);
   for(const k in bySide){bySide[k].sort((a,b)=>b.z-a.z);bySide[k].forEach((L,i)=>{L.phase=(i%2)*Math.PI+(L.side>0?Math.PI:0);L.ph=L.phase/TAU;});}
@@ -534,25 +534,25 @@ function animateCreatureView(c,dt,time){
   // squash: landing spring and a light stretch at the top of each step (legs are not squashed)
   v.jv+=(-v.j*170-v.jv*8)*dt;v.j+=v.jv*dt;v.j=clamp(v.j,-.5,.5);
   if(v.breathPh==null)v.breathPh=Math.random()*6;
-  const breathe=alive?Math.sin(time*2.3+v.breathPh)*.014:0;
+  const awakeK=1-clamp(c.sleep||0,0,1);const breathe=alive?Math.sin(time*2.3+v.breathPh)*.014*awakeK:0;
   const sy=1+clamp((c.vy||0)*.016,-.18,.22)+v.j-(alive?bob*.35/L0:0)+(c.spitT>0?.08:0)+breathe;const sx=1/Math.sqrt(Math.max(.45,sy))+breathe*.6;
   const inf=c.inflateT>0?1.45:1;v.inf=lerp(v.inf||1,inf,1-Math.exp(-dt*10));
   v.pivot.scale.set(sx*v.inf,sy*v.inf,sx*v.inf);
   let py=v.baseY*(v.inf>1.01?1+(v.inf-1)*.6:1)-crouch+bob-Math.max(0,-v.j)*L0*.25;let tz=0,tx=lean;
   if(c.state==='downed'){tz=1.35;py=v.R[0]*.72;tx=0;}
   else if(c.state==='dead'){tz=Math.PI;py=v.R[1]*.85+(v.legLen*.2)-Math.max(0,c.deadT-6)*.5;tx=0;}
-  if(c.sleep)py=lerp(py,v.R[1]*.88,clamp(c.sleep,0,1));
+  if(c.sleep)py=lerp(py,v.R[1]*(.88-.16*(1-(c.colorK==null?1:c.colorK))),clamp(c.sleep,0,1));// asleep: settled into the ground like any other stone
   if(c.emoteT>0&&alive)py+=Math.abs(Math.sin(c.emoteT*9))*.8;
   if(c.slamT>0)py+=(.85-c.slamT)*2.2;
   if(c.burrowT>0)v.bur=lerp(v.bur||0,1,1-Math.exp(-dt*8));else v.bur=lerp(v.bur||0,0,1-Math.exp(-dt*10));
   py-=(v.bur||0)*(v.baseY+v.R[1]*2.2);
   v.tilt=lerp(v.tilt,tz,1-Math.exp(-dt*7));
   v.pyS=v.pyS==null?py:dampTo(v.pyS,py,alive?30:9,dt);py=v.pyS;
-  const idleSway=alive?Math.sin(time*1.1+v.breathPh)*.02*(1-gw):0;
+  const idleSway=alive?Math.sin(time*1.1+v.breathPh)*.02*(1-gw)*awakeK:0;
   v.pivot.rotation.set(dampTo(v.pivot.rotation.x,tx,alive?20:6,dt),alive?twist:0,v.tilt+(alive?bank+shift+idleSway:0));v.pivot.position.y=py;
   // legs: hips ride on the body surface; feet are planted / swung with two-bone IK
   v.legRoot.position.y=py;_eul.set(v.pivot.rotation.x,v.pivot.rotation.y,v.pivot.rotation.z,'XYZ');
-  const ikOn=alive&&grounded&&!c.sleep;v.ikW=dampTo(v.ikW||0,ikOn?1:0,ikOn?14:9,dt);
+  const ikOn=alive&&grounded&&(c.sleep||0)<.35;v.ikW=dampTo(v.ikW||0,ikOn?1:0,ikOn?14:9,dt);
   for(const L of v.legs){
     _hp.set(L.rest.x*v.pivot.scale.x,L.rest.y*v.pivot.scale.y,L.rest.z*v.pivot.scale.z).applyEuler(_eul);L.hip.position.copy(_hp);
     // state pose (in the air, downed, dead or asleep)
@@ -613,8 +613,16 @@ function animateCreatureView(c,dt,time){
   if(v.sprout){const w=v.sprout.sway;w.rotation.x=sprStep(v,'spx',Math.sin(time*1.9)*.05-v.af*.05-sp*.04-clamp((c.vy||0)*.03,-.35,.35)+bob*1.5,dt,9,.22);w.rotation.y=Math.sin(time*1.7+1)*.05-clamp(v.yawV*.05,-.35,.35);w.rotation.z=sprStep(v,'spz',v.ar*.04-bank*.6,dt,9,.25);if(v.sprout.k==='wisp')w.position.z=Math.sin(time*2.6)*.05;}
   v.shield.visible=(c.shield||0)>0;if(v.shield.visible){const s=Math.max(v.R[0],v.R[1],v.R[2])*1.75*(1+Math.sin(time*6)*.03);v.shield.scale.setScalar(s);}
   v.stars.visible=c.state==='downed';if(v.stars.visible)v.stars.rotation.y+=dt*4;
+  // dormant stone -> spirit: colour flows in, eyes pop in, limbs grow out one by one (driven by the opening cutscene)
+  if(c.eyeK!=null||c.limbK!=null||c.colorK!=null||v.grew){v.grew=!(c.eyeK==null&&c.limbK==null&&c.colorK==null);
+    const bo=k=>k<=0?0:k>=1?1:1+2.2*Math.pow(k-1,3)+1.2*Math.pow(k-1,2);const eK=bo(c.eyeK==null?1:c.eyeK),lK=c.limbK==null?1:c.limbK;
+    if(v.bodyU)v.bodyU.dorm.value=1-(c.colorK==null?1:c.colorK);
+    for(const h of v.eyeHolders){const s0=h.userData.s0;h.scale.set(s0.x*Math.max(.001,eK),s0.y*Math.max(.001,eK),s0.z*Math.max(.001,eK));h.visible=eK>.01;}
+    if(v.faceBits){v.faceBits.scale.setScalar(Math.max(.001,eK));v.faceBits.visible=eK>.01;}
+    v.limbHolders.forEach((h,i)=>{const k=bo(clamp(lK*1.6-.1-i*.12,0,1));const s0=h.userData.s0;h.scale.set(s0.x*Math.max(.001,k),s0.y*Math.max(.001,k),s0.z*Math.max(.001,k));h.visible=k>.01;});
+    v.legs.forEach((L,i)=>{const k=bo(clamp(lK*1.5-i*.1,0,1));L.hip.scale.setScalar(Math.max(.001,k));L.hip.visible=k>.01;});}
   v.flash=Math.max(0,(v.flash||0)-dt*5);const vn=c.venomT>0?.25+.15*Math.sin(time*10):0;const bls=c.blessT>0?.12+.08*Math.sin(time*4):0;const cm=c.camoT>0?.35+.25*Math.sin(time*15):0;
-  v.bodyMat.emissive.setRGB(v.flash*.9+bls*1.2,v.flash*.9+vn+bls*.8+cm*.8,v.flash*.9+cm);
+  const gK=c.glowK||0;v.bodyMat.emissive.setRGB(v.flash*.9+bls*1.2+gK*.008,v.flash*.9+vn+bls*.8+cm*.8+gK*.03,v.flash*.9+cm+gK*.022);
   if(c.state==='dead'&&c.deadT>6){const s=Math.max(.01,1-(c.deadT-6)/3);r.scale.setScalar(s);}else r.scale.setScalar(1);
 }
 
