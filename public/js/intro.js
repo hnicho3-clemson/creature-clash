@@ -164,6 +164,8 @@ function restoreIntroLight(){const L=intro.light;if(!L)return;sun.intensity=L.su
 
 /* ---------- start / skip / finish ---------- */
 function startIntro(){
+  // presentation link: index.html#quick (or ?quick) skips the intro and drops straight into a Quick Play round
+  if(/quick/i.test(location.hash+location.search)&&typeof startQuickPlay==='function'){finishIntro(true);setTimeout(startQuickPlay,60);return;}
   if(A11Y.reduceMotion||isAutomation()){finishIntro(true);return;}
   buildWorld(newSeed(),{biome:pick(['grove','glow','autumn','lotus'])});
   setRenderView(scene,camera,world.map.biome.bloom);

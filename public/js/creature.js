@@ -600,7 +600,7 @@ function animateCreatureView(c,dt,time){
     if(L.foot&&!L.spider){L.foot.rotation.x=L.fx;L.foot.rotation.z=-L.hz*.9;}}
   const gh=typeof world!=='undefined'&&world&&c.kind?world.map.heightAt(c.x,c.z):0;const above=Math.max(0,c.y-gh);
   if(v.cshadow){v.cshadow.position.y=gh-c.y+.04;v.cshadow.visible=c.state!=='dead'&&!hidden&&(v.bur||0)<.5;const k=1/(1+above*.25);v.csMat.opacity=.62*k;const s=1+above*.08;v.cshadow.scale.set(v.radius*2.7*s,1,Math.max(v.R[2],v.R[0])*2.9*s);}
-  if(v.ring){v.ring.position.y=gh-c.y+.07;v.ring.visible=c.state!=='dead';if(c.blessT>0)v.ringMat.color.setRGB(2.4,1.6,.3);else v.ringMat.color.copy(v.teamCol);
+  if(v.ring){v.ring.position.y=gh-c.y+.07;v.ring.visible=c.state!=='dead';if(c.blessT>0||c.surge)v.ringMat.color.setRGB(2.4,1.6,.3);else v.ringMat.color.copy(v.teamCol);
     v.ringMat.opacity=c.state==='downed'?.35+.3*Math.sin(time*8):.75;}
   // eyes: googly pupils wobble, real eyes look around and blink
   v.blinkT-=dt;if(v.blinkT<=0){v.blink=.16;v.blinkT=2+Math.random()*4.5;}if(v.blink>0)v.blink-=dt;
@@ -641,7 +641,7 @@ function animateCreatureView(c,dt,time){
     if(v.faceBits){v.faceBits.scale.setScalar(Math.max(.001,eK));v.faceBits.visible=eK>.01;}
     v.limbHolders.forEach((h,i)=>{const q=h.userData.limb?lK:lK0,st=Math.min(.12,.6/Math.max(1,v.limbHolders.length));const k=bo(clamp(q*(1+i*st)-i*st,0,1));/* staggered, always ends at full size */const s0=h.userData.s0;h.scale.set(s0.x*Math.max(.001,k),s0.y*Math.max(.001,k),s0.z*Math.max(.001,k));h.visible=k>.01;});
     v.legs.forEach((L,i)=>{const k=bo(clamp(lK*(1+i*.1)-i*.1,0,1));L.hip.scale.setScalar(Math.max(.001,k));L.hip.visible=k>.01;});}
-  v.flash=Math.max(0,(v.flash||0)-dt*5);const vn=c.venomT>0?.25+.15*Math.sin(time*10):0;const bls=c.blessT>0?.12+.08*Math.sin(time*4):0;const cm=c.camoT>0?.35+.25*Math.sin(time*15):0;
+  v.flash=Math.max(0,(v.flash||0)-dt*5);const vn=c.venomT>0?.25+.15*Math.sin(time*10):0;const bls=c.blessT>0||c.surge?.12+.08*Math.sin(time*4):0;const cm=c.camoT>0?.35+.25*Math.sin(time*15):0;
   const gK=c.glowK||0;v.bodyMat.emissive.setRGB(v.flash*.9+bls*1.2+gK*.008,v.flash*.9+vn+bls*.8+cm*.8+gK*.03,v.flash*.9+cm+gK*.022);
   if(c.state==='dead'&&c.deadT>6){const s=Math.max(.01,1-(c.deadT-6)/3);r.scale.setScalar(s);}else r.scale.setScalar(1);
 }

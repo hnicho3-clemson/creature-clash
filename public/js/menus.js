@@ -504,7 +504,7 @@ $('#pauseBtn').addEventListener('click',()=>{if(paused)closePause();else openPau
 $('#newBtn').addEventListener('click',()=>{sfx('ui');openBuild();});
 $('#dMenu').addEventListener('click',()=>{sfx('ui');openMenu();});
 $('#rNew').addEventListener('click',()=>{sfx('ui');if(match&&match.mode==='challenge')retryChallenge();else openBuild(match&&match.rot?{rot:match.rot}:{});});
-$('#rMenu').addEventListener('click',()=>{sfx('ui');if(match&&match.mode==='challenge')openChallenges();else openMenu();});
+$('#rMenu').addEventListener('click',()=>{sfx('ui');if(match&&match.mode==='challenge'&&!(match.challenge&&match.challenge.kind==='quick'))openChallenges();else openMenu();});
 $('#spectNew').addEventListener('click',()=>{sfx('ui');openBuild();});
 $('#spectBtn').addEventListener('click',()=>{sfx('ui');$('#death').hidden=true;cam.spect=null;cycleSpect(0);});
 $('#spectPrev').addEventListener('click',()=>cycleSpect(-1));$('#spectNext').addEventListener('click',()=>cycleSpect(1));

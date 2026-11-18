@@ -59,12 +59,13 @@ function startMatch(opts){
 }
 function buildPips(){for(const team of ['blue','red']){const el=$(team==='blue'?'#pipsBlue':'#pipsRed');el.innerHTML='';const ns=world.nests.filter(n=>n.team===team);const ordered=team==='blue'?ns.slice().sort((a,b)=>(a.main?-1:0)-(b.main?-1:0)):ns.slice().sort((a,b)=>(a.main?1:0)-(b.main?1:0));
   for(const n of ordered){const p=document.createElement('i');p.className='pip'+(n.main?' main':'');el.appendChild(p);n.pip=p;}}}
-function nestAttackable(n){if(!n.alive)return false;if(n.main&&S.mainNestNeedsClearedLane){return [-1,0,1].some(k=>world.nests.filter(m=>m.team===n.team&&m.lane===k).every(m=>!m.alive));}return true;}
+function nestAttackable(n){if(!n.alive)return false;if(match&&match.challenge&&match.challenge.kind==='quick'&&match.cs&&n===match.cs.t2&&match.cs.t1.alive)return false;if(n.main&&S.mainNestNeedsClearedLane){return [-1,0,1].some(k=>world.nests.filter(m=>m.team===n.team&&m.lane===k).every(m=>!m.alive));}return true;}
 function inkAt(x,z,enemyOf){for(const k of world.inks){if(k.team===enemyOf)continue;if(dist2(x,z,k.x,k.z)<k.r*k.r)return k;}return null;}
 function canSee(obs,t){if(!t||t.kind!=='creature')return true;const d=Math.hypot(t.x-obs.x,t.z-obs.z);if(t.burrowT>0)return false;if(t.camoT>0&&d>3)return false;
   if(d>2.5&&(inkAt(t.x,t.z,t.team)||inkAt(obs.x,obs.z,obs.team)))return false;return true;}
 function targetsFor(c){const out=[];for(const e of world.creatures){if(e.team===c.team||e.burrowT>0)continue;if(e.state==='alive'||(e.state==='downed'&&S.downedCanBeFinishedOff))out.push(e);}
   for(const n of world.nests)if(n.team!==c.team&&n.alive)out.push(n);for(const n of world.neutrals)if(n.alive)out.push(n);return out;}
+function isGod(c){return !!(c&&c.isPlayer&&(DEV.god||(match&&match.rules&&match.rules.god)));}
 function dmgMul(c){return (.55+c.st.damage*.06)*(c.muts['Big Bite']?1.15:1)*(c.blessT>0?1.15:1)*(match&&match.rules.dmgMul&&c.isPlayer?match.rules.dmgMul:1);}
 function tryAttack(c,i,aimYaw){
   if(!c.alive||c.dashT>0||c.reviving||c.burrowT>0)return false;const a=c.attacks[i];if(!a||c.cds[i]>0||c.stamina<a.st)return false;
@@ -168,7 +169,7 @@ function hurtCreature(c,amt,type,src,dx,dz,kb,venom){
   if(c.state==='downed'){if(match.mode==='test'&&c.isPlayer)return;if(S.downedCanBeFinishedOff&&src&&src.kind==='creature'&&src.team!==c.team)killCreature(c,src);return;}
   if(c.burrowT>0)return;
   if(c.invulnT>0){floatText(c,'dodged','miss');return;}
-  if(c.isPlayer&&DEV.god){floatText(c,'god mode','miss');return;}
+  if(isGod(c)){if(!(c.shieldTxt>match.time)){c.shieldTxt=match.time+1.4;floatText(c,match.rules.god?'sun shield':'god mode','miss');}return;}
   let m=1;if(c.st.armor){if(venom||type==='venom')m*=1.4;else if(type==='bite'||type==='slash')m*=.7;}
   if(c.muts['Thick Hide'])m*=.85;if(c.inflateT>0)m*=.4;
   let dmg=amt*m;
@@ -209,7 +210,7 @@ function revive(c,by){c.state='alive';c.hp=Math.round(c.maxHp*S.reviveHpFrac);c.
   killfeed(tname(by)+' revived '+tname(c));sfx('revive',c);emit(c.x,c.y+1,c.z,{n:24,color:'#62ff9a',speed:4,life:1,size:.16,glow:2,up:5,grav:-2});if(c.isPlayer)banner('Revived!','good');}
 function hurtNest(n,amt,src){
   if(!n.alive||match.over)return;
-  if(!nestAttackable(n)){if(src&&src.isPlayer&&Math.random()<.3)floatText(n,'clear a lane first','miss');return;}
+  if(!nestAttackable(n)){if(src&&src.isPlayer&&Math.random()<.3)floatText(n,match.challenge&&match.challenge.kind==='quick'?'wither the Life Tree first':'clear a lane first','miss');return;}
   n.hp-=amt;n.lastHurt=match.time;if(src&&src.kind==='creature')src.nestDmg+=amt;n.view.hitT=.25;
   if(src&&src.isPlayer)floatText(n,Math.round(amt),'nest');
   emit(n.x,n.y+n.height*.5,n.z,{n:4,color:'#c8a070',speed:5,life:.5,size:.12});
@@ -297,7 +298,7 @@ function updateCreature(c,dt){
   if(c.isDummy){c.dummyT=(c.dummyT||0)-dt;if(c.dummyT<=0&&c.hp<c.maxHp){c.hp=c.maxHp;emit(c.x,c.y+1.5,c.z,{n:10,color:'#62ff9a',speed:2,life:.7,size:.12,glow:2,up:3,grav:-2});}}
   for(const k in c.muts){if(c.muts[k]!==Infinity){c.muts[k]-=dt;if(c.muts[k]<=0)delete c.muts[k];}}
   if(c.state==='dead'){c.deadT+=dt;const kd=Math.exp(-3*dt);c.kx*=kd;c.kz*=kd;c.x+=c.kx*dt;c.z+=c.kz*dt;c.vy-=30*dt;c.y+=c.vy*dt;const gh=map.heightAt(c.x,c.z);if(c.y<gh){c.y=gh;c.vy=0;}return;}
-  if(c.venomT>0){c.venomT-=dt;if(c.state==='alive'&&!(c.isPlayer&&DEV.god)&&!c.isDummy){c.hp-=4*dt;if(Math.random()<dt*3)emit(c.x,c.y+c.height*.6,c.z,{n:1,color:'#b8ff4f',speed:1,life:.6,size:.1,glow:2,up:2,grav:-1});if(c.hp<=0){c.hp=0;downCreature(c,c.venomSrc&&c.venomSrc.kind==='creature'?c.venomSrc:c.lastHitBy);}}}
+  if(c.venomT>0){c.venomT-=dt;if(c.state==='alive'&&!isGod(c)&&!c.isDummy){c.hp-=4*dt;if(Math.random()<dt*3)emit(c.x,c.y+c.height*.6,c.z,{n:1,color:'#b8ff4f',speed:1,life:.6,size:.1,glow:2,up:2,grav:-1});if(c.hp<=0){c.hp=0;downCreature(c,c.venomSrc&&c.venomSrc.kind==='creature'?c.venomSrc:c.lastHitBy);}}}
   if(c.state==='downed'){c.moveX=c.moveZ=0;const kd=Math.exp(-5*dt);c.kx*=kd;c.kz*=kd;c.vx*=kd;c.vz*=kd;c.x+=(c.vx+c.kx)*dt;c.z+=(c.vz+c.kz)*dt;c.vy-=30*dt;c.y+=c.vy*dt;const gh=map.heightAt(c.x,c.z);if(c.y<gh){c.y=gh;c.vy=0;}return;}
   if(c.burrowT>0){c.burrowT-=dt;if(Math.random()<dt*14)emit(c.x,c.y+.2,c.z,{n:2,color:map.biome.lane,speed:2,life:.6,size:.2,up:2});
     if(c.burrowT<=0){aoeHit(c,c.x,c.z,3+c.radius,14*dmgMul(c),'blunt',9,false,false);emit(c.x,c.y+.3,c.z,{n:30,color:map.biome.lane,speed:9,life:.7,size:.24,up:6});sfx('popup',c);c.vy=9;c.grounded=false;if(c.view)c.view.jv+=1.5;}}
@@ -354,7 +355,7 @@ function updateGeyser(g,dt){
   if(ph<dt*1.01&&g.t>1){g.erupting=.9;g.hit.clear();sfx('geyser',g);}
   if(g.erupting>0){g.erupting-=dt;emit(g.x,g.y+.6,g.z,{n:4,color:world.map.biome.geyser,speed:2.5,life:.9,size:.3,glow:1.8,up:16,grav:10,jit:.6});
     for(const c of world.creatures){if(c.state!=='alive'||g.hit.has(c)||c.isDummy||c.burrowT>0)continue;if(Math.hypot(c.x-g.x,c.z-g.z)<2.3+c.radius*.5){g.hit.add(c);c.vy=17;c.grounded=false;if(c.view)c.view.jv+=1.5;
-      if(!(c.isPlayer&&DEV.god)){c.hp-=6;c.lastHurt=match.time;floatText(c,'6','');if(c.hp<=0){c.hp=0;downCreature(c,c.lastHitBy);}}
+      if(!isGod(c)){c.hp-=6;c.lastHurt=match.time;floatText(c,'6','');if(c.hp<=0){c.hp=0;downCreature(c,c.lastHitBy);}}
       if(typeof onChallengeEvent==='function')onChallengeEvent('geyser',{c});}}}
   g.view.userData.disc.scale.setScalar(1+(g.erupting>0?.3:0)+Math.sin(g.t*6)*.04);
 }
@@ -369,7 +370,7 @@ function updateBoulder(b,dt){
   if(Math.abs(b.z)>zM+1||(ph>travel+1)){b.active=false;b.view.visible=false;return;}
   for(const c of world.creatures){if(c.state!=='alive'||b.hit.has(c)||c.burrowT>0||c.isDummy)continue;if(Math.hypot(c.x-b.x,c.z-b.z)<b.r+c.radius*.8&&c.y<b.y+b.r*2){b.hit.add(c);const sx=Math.sign(c.x-b.x)||1;
     c.kx+=sx*14;c.kz+=b.dir*8;c.vy=13;c.grounded=false;if(c.view)c.view.jv+=2;sfx('flop',c);emit(c.x,c.y+1,c.z,{n:20,color:'#fff3c0',speed:9,life:.5,size:.18,glow:2});
-    if(!(c.isPlayer&&DEV.god)){const dm=c.inflateT>0?7:18;c.hp-=dm;c.lastHurt=match.time;floatText(c,String(dm),'crit');voice(c,'hurt');if(c.hp<=0){c.hp=0;downCreature(c,c.lastHitBy);}}
+    if(!isGod(c)){const dm=c.inflateT>0?7:18;c.hp-=dm;c.lastHurt=match.time;floatText(c,String(dm),'crit');voice(c,'hurt');if(c.hp<=0){c.hp=0;downCreature(c,c.lastHitBy);}}
     if(c.isPlayer)cam.shake=Math.max(cam.shake,.6);}}
 }
 function updateInks(dt){let w=0;for(const k of world.inks){k.t-=dt;if(k.t<=0)continue;if(Math.random()<dt*20){const a=Math.random()*TAU,r=Math.random()*k.r;emit(k.x+Math.cos(a)*r,world.map.heightAt(k.x,k.z)+.5+Math.random()*2,k.z+Math.sin(a)*r,{n:1,color:'#2a1640',speed:.4,life:1.2,size:.7,grav:-.2,drag:1});}world.inks[w++]=k;}world.inks.length=w;
@@ -398,7 +399,7 @@ function updateNeutral(n,dt){
   if(n.type==='boss'){
     n.slamCd-=dt;const home=Math.hypot(n.x-n.hx,n.z-n.hz);
     if(n.slamT>0){n.slamT-=dt;if(n.slamT<=0){emit(n.x,n.y+.3,n.z,{n:50,color:'#c08aff',speed:15,flat:true,life:.7,size:.3,glow:1.8,grav:0});sfx('flop',n);if(Math.hypot(n.x-cam.fx,n.z-cam.fz)<25)cam.shake=Math.max(cam.shake,.6);
-        for(const c of world.creatures){if(c.state!=='alive'||c.burrowT>0)continue;const d=Math.hypot(c.x-n.x,c.z-n.z);if(d<6.5+c.radius){const k=d||1;if(!(c.isPlayer&&DEV.god)){const dm=c.inflateT>0?9:22;c.hp-=dm;c.lastHurt=match.time;floatText(c,String(dm),'');}c.kx+=(c.x-n.x)/k*14/Math.max(.6,c.st.stability/5);c.kz+=(c.z-n.z)/k*14/Math.max(.6,c.st.stability/5);c.vy=6;c.grounded=false;if(c.hp<=0){c.hp=0;downCreature(c,c.lastHitBy);}}}}}
+        for(const c of world.creatures){if(c.state!=='alive'||c.burrowT>0)continue;const d=Math.hypot(c.x-n.x,c.z-n.z);if(d<6.5+c.radius){const k=d||1;if(!isGod(c)){const dm=c.inflateT>0?9:22;c.hp-=dm;c.lastHurt=match.time;floatText(c,String(dm),'');}c.kx+=(c.x-n.x)/k*14/Math.max(.6,c.st.stability/5);c.kz+=(c.z-n.z)/k*14/Math.max(.6,c.st.stability/5);c.vy=6;c.grounded=false;if(c.hp<=0){c.hp=0;downCreature(c,c.lastHitBy);}}}}}
     else if(near&&nd<12&&home<12){const d=nd;if(d>4){mx=(near.x-n.x)/d;mz=(near.z-n.z)/d;}if(d<6&&n.slamCd<=0){n.slamT=.85;n.slamCd=3.6;}n.yaw+=angDiff(n.yaw,Math.atan2(near.x-n.x,near.z-n.z))*Math.min(1,dt*4);}
     else if(home>1){mx=(n.hx-n.x)/home;mz=(n.hz-n.z)/home;}
   } else {
@@ -659,7 +660,7 @@ function updateHUD(dt){
   setText(H.dna,'dna',String(progress.dna));setText(H.lv,'lv',String(progress.level));const xpf=(progress.xp/xpNeeded(progress.level)*100).toFixed(1)+'%';if(cache.xpf!==xpf){cache.xpf=xpf;H.xp.style.width=xpf;}
   if(phase!=='battle'||!match)return;
   if(match.mode==='battle'){const left=S.battleSec-match.time;setText(H.timer,'tm',fmtTime(left));H.timer.classList.toggle('low',left<60);}
-  else if(match.mode==='challenge'&&match.challenge&&match.challenge.time){const left=match.challenge.time-match.time;setText(H.timer,'tm',fmtTime(left));H.timer.classList.toggle('low',left<20);}
+  else if(match.mode==='challenge'&&match.challenge&&(match.challenge.time||match.challenge.softTime)){const left=Math.max(0,(match.challenge.time||match.challenge.softTime)-match.time);setText(H.timer,'tm',fmtTime(left));H.timer.classList.toggle('low',left<20);}
   else setText(H.timer,'tm','∞');
   setText(H.dB,'db',match.deaths.blue+' fossils');setText(H.dR,'dr',match.deaths.red+' fossils');
   const p=match.player;
@@ -668,7 +669,7 @@ function updateHUD(dt){
   setText(H.hpt,'hpt',Math.ceil(p.hp)+' / '+p.maxHp+(p.shield>0?'  +'+Math.ceil(p.shield):''));
   const stP=p.stamina.toFixed(0)+'%';if(cache.st!==stP){cache.st=stP;H.st.style.width=stP;}
   const st=[];for(const k in p.muts)st.push('<span class="chip">'+esc(k)+(p.muts[k]===Infinity?'':' · '+Math.ceil(p.muts[k])+'s')+'</span>');
-  if(p.blessT>0)st.push('<span class="chip bless">Boss Blessing · '+Math.ceil(p.blessT)+'s</span>');if(p.venomT>0)st.push('<span class="chip bad">Poisoned</span>');if(p.slowT>0)st.push('<span class="chip bad">Pinched</span>');
+  if(p.surge)st.push('<span class="chip bless">☀ Sunlight Surge</span>');if(p.blessT>0)st.push('<span class="chip bless">Boss Blessing · '+Math.ceil(p.blessT)+'s</span>');if(p.venomT>0)st.push('<span class="chip bad">Poisoned</span>');if(p.slowT>0)st.push('<span class="chip bad">Pinched</span>');
   if(p.camoT>0)st.push('<span class="chip good">Hidden · '+Math.ceil(p.camoT)+'s</span>');if(p.burrowT>0)st.push('<span class="chip good">Burrowed</span>');if(p.inflateT>0)st.push('<span class="chip good">Inflated</span>');if(inkAt(p.x,p.z,p.team))st.push('<span class="chip bad">Inked</span>');
   const mk=st.join('');if(cache.mk!==mk){cache.mk=mk;H.muts.innerHTML=mk;}
   for(const s of abSlots){const [cd,max]=s.get();const f=Math.max(0,cd)/max;const k=f.toFixed(3);if(s.k!==k){s.k=k;s.cd.style.setProperty('--cd',f);s.n.textContent=cd>0.05?(cd>=1?Math.ceil(cd):cd.toFixed(1)):'';s.el.classList.toggle('ready',cd<=0);}}

@@ -56,6 +56,30 @@ const CAMPAIGN=[
     on(m,t,d){if(t==='kill'&&m.cs.es.includes(d.victim)){m.cs.n++;if(m.cs.n>=2)return 'win';}}},
 ];
 CAMPAIGN.forEach((c,i)=>{c.kind='campaign';c.index=i;});
+
+/* ---------- Quick Play: a one-minute showcase round (for demos and presentations) ----------
+   You are powered up by a Sunlight Surge (can't be hurt, hits three times as hard, runs faster). Walk down one lane,
+   bonk a couple of red creatures, wither the red Life Tree, then their Great Tree. Built to be won in about a minute.
+   No Sunlight, Growth or parts are earned, so it can't be used to farm progress. */
+const QUICK={id:'quick',kind:'quick',name:'Quick Play',softTime:60,biome:'grove',rules:{god:true,dmgMul:3,speedMul:1.35},
+  desc:'A one-minute round: wither the red Life Tree, then their Great Tree.',
+  setup(m){const p=m.player;placeAt(p,-30,mz(-30),Math.PI/2);p.surge=true;
+    const t1=addNest({team:'red',lane:0,x:-4,z:mz(-4),main:false,outer:true},380);
+    const t2=addNest({team:'red',lane:0,x:24,z:mz(24),main:true,outer:false},820);
+    m.cs={t1,t2,stage:0};
+    // two easy red creatures guard the first tree (they do come for you, but they can't hurt you)
+    for(const [dx,dz] of [[-9,-2.5],[-8,2.8]]){const e=cBot(pick(BOT_PRESETS),'red',pick(BOT_NAMES),dx,mz(dx)+dz,b=>{b.slow=1.6;b.brave=true;b.fixedTarget=p;});e.maxHp=e.hp=Math.round(e.maxHp*.45);}
+    setTimeout(()=>{if(match===m&&!m.over)banner('Sunlight Surge! Nothing can hurt you','gold');},1300);},
+  objective:m=>m.cs.stage===0?'Wither the red Life Tree ▸ then their Great Tree':'Now wither their Great Tree!',
+  on(m,t,d){if(t!=='nest')return;
+    if(d.nest===m.cs.t1&&m.cs.stage===0){m.cs.stage=1;banner('Life Tree withered! On to the Great Tree','gold');
+      for(const dz of [-3,3]){const e=cBot(pick(BOT_PRESETS),'red',pick(BOT_NAMES),18,mz(18)+dz,b=>{b.slow=1.6;b.brave=true;b.fixedTarget=m.player;});e.maxHp=e.hp=Math.round(e.maxHp*.45);}}
+    if(d.nest===m.cs.t2)return 'win';}};
+function startQuickPlay(){
+  exitLock();hideTouch();build=null;clearAnnouncements();
+  buildWorld(newSeed(),{mode:'test',biome:pick(['grove','glow','autumn','lotus'])});
+  startMatch({mode:'challenge',challenge:QUICK,player:playerDesignForChallenge(),bots:[],rules:QUICK.rules,setup:m=>QUICK.setup(m)});
+  banner('Quick Play','gold');}
 const campaignUnlocked=i=>i===0||!!progress.campaign[CAMPAIGN[i-1].id];
 
 function startCampaign(def){
@@ -80,13 +104,17 @@ function handleChallengeResult(r){if(!r)return;if(r==='win')finishChallenge(true
 function finishChallenge(win,reason){
   if(match.over)return;match.over=true;match.winner=win?'blue':'red';match.reason=reason;match.endT=0;match.chWin=win;
   const def=match.challenge;let xp=0,levels=[];match.firstClear=false;
-  if(win&&!progress.campaign[def.id]){progress.campaign[def.id]=true;xp=def.xp;levels=grantXP(xp);match.firstClear=true;}
+  if(def.kind==='quick'&&win)match.reason='You withered both red trees in '+fmtTime(match.time)+'!';
+  if(def.kind!=='quick'&&win&&!progress.campaign[def.id]){progress.campaign[def.id]=true;xp=def.xp;levels=grantXP(xp);match.firstClear=true;}
   saveProgress();match.earned.xp=xp;match.earned.levels=levels;
   timeScale=.35;sfx(win?'win':'lose');exitLock();hideTouch();
   if(win)for(const c of world.creatures)if(c.team==='blue'&&c.state==='alive')c.emoteT=4;
 }
 function showChallengeResults(){
-  const def=match.challenge,win=match.chWin;const next=CAMPAIGN[def.index+1];
+  const def=match.challenge,win=match.chWin;
+  if(def.kind==='quick'){const t=$('#rTitle');t.textContent=win?'Victory!':'Round over';t.className='restitle '+(win?'win':'lose');
+    $('#rReason').textContent=match.reason;$('#rBiome').textContent='Quick Play · '+world.map.biome.name;$('#rBoard').innerHTML='';
+    $('#rEarn').innerHTML='<span class="chip dim">Quick Play is just for fun: no Sunlight or Growth</span>';$('#rNew').textContent='Play again';$('#rMenu').textContent='Main menu';$('#results').hidden=false;return;}const next=CAMPAIGN[def.index+1];
   const t=$('#rTitle');t.textContent=win?'Challenge complete':'Challenge failed';t.className='restitle '+(win?'win':'lose');
   $('#rReason').textContent=match.reason+(win?'':' '+def.desc);$('#rBiome').textContent='Campaign '+(def.index+1)+' of '+CAMPAIGN.length+' · '+def.name;
   $('#rBoard').innerHTML='';
@@ -94,8 +122,9 @@ function showChallengeResults(){
   for(const l of match.earned.levels)h+='<span class="chip lv">Unlocked: '+esc(l)+'</span>';if(match.earned.levels.length)h+='<span class="chip lv">Level '+progress.level+'</span>';
   $('#rEarn').innerHTML=h;$('#rNew').textContent=win&&next?'Next challenge':'Retry';$('#rMenu').textContent='All challenges';$('#results').hidden=false;
 }
-function retryChallenge(){const def=match.challenge;const next=CAMPAIGN[def.index+1];startCampaign(match.chWin&&next?next:def);}
-function quitChallenge(){openChallenges();}
+function retryChallenge(){const def=match.challenge;if(def.kind==='quick'){startQuickPlay();return;}const next=CAMPAIGN[def.index+1];startCampaign(match.chWin&&next?next:def);}
+function quitChallenge(){if(match&&match.challenge&&match.challenge.kind==='quick')openMenu();else openChallenges();}
+$('#mQuick').addEventListener('click',()=>{AudioFX.init();sfx('ui');startQuickPlay();});
 
 /* ---------- daily & weekly challenges (Lane Battle with a twist) ---------- */
 function trimTo(d,ok){for(let guard=0;guard<40&&!ok(d);guard++){const i=d.parts.map((p,k)=>[p,k]).reverse().find(([p])=>PARTS[p.id].mount!=='leg'&&PARTS[p.id].fam!=='Offense'&&PARTS[p.id].fam!=='Weapon');if(!i)break;d.parts.splice(i[1],1);}return d;}

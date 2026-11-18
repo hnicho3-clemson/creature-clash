@@ -581,6 +581,8 @@ h2{font-family:var(--f-body);font-weight:700;font-size:15px;letter-spacing:.1em}
 .bigcard.play{grid-row:span 2;min-height:360px;background:radial-gradient(120% 90% at 80% 10%,rgba(255,255,255,.55),transparent 55%),linear-gradient(160deg,#b8ff6a 0%,#3fe0b0 55%,#1fb6d6 100%)}
 .bigcard.build{background:radial-gradient(120% 90% at 90% 0%,rgba(255,255,255,.5),transparent 55%),linear-gradient(160deg,#ffd36b 0%,#ff9a3d 60%,#ff6a52 100%)}
 .bigcard.chal{background:radial-gradient(120% 90% at 90% 0%,rgba(255,255,255,.5),transparent 55%),linear-gradient(160deg,#e0b0ff 0%,#b07aff 50%,#ff6fae 100%)}
+.bigcard.quick{min-height:120px;background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.4),transparent 50%),linear-gradient(135deg,#ffe36a 0%,#ffb13d 55%,#ff7a3d 100%)}
+.bigcard.quick b{font-size:clamp(28px,3.4vw,40px)}
 .bc-text{display:flex;flex-direction:column;gap:4px;position:relative;z-index:1}
 .bigcard.play b{font-size:clamp(48px,7vw,84px)}
 .bc-go{position:absolute;right:24px;bottom:22px;width:72px;height:72px;border-radius:50%;background:#140a2a;color:#b8ff6a;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 6px 0 rgba(0,0,0,.35)}
@@ -632,6 +634,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .bigcard.build{min-height:210px;background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.3),transparent 50%),linear-gradient(150deg,#ff9e3d 0%,#e2572e 60%,#9a2a3a 100%)}
 .bigcard.chal{min-height:210px;background:radial-gradient(120% 120% at 100% 0%,rgba(255,255,255,.3),transparent 50%),linear-gradient(150deg,#b07aff 0%,#7a3ad8 55%,#3a1a7a 100%)}
 .bigcard.build b,.bigcard.chal b{font-size:clamp(26px,2.8vw,36px)}
+.bigcard.quick{min-height:112px;padding-right:110px;background:radial-gradient(120% 140% at 100% 0%,rgba(255,255,255,.35),transparent 50%),linear-gradient(135deg,#ffd84a 0%,#ff9a2e 55%,#d8541e 100%)}
+.bigcard.quick b{font-size:clamp(26px,2.8vw,36px)}
+.bigcard.quick .bc-go{color:#d8541e;width:64px;height:64px;font-size:30px}
 .bc-art{position:absolute;right:-14px;top:-10px;width:72%;max-width:220px;aspect-ratio:1;height:auto;animation:none;filter:drop-shadow(0 10px 12px rgba(0,0,0,.45))}
 .bigcard:hover .bc-art{transform:scale(1.06) rotate(-3deg);transition:transform .25s}
 .bc-go{background:rgba(255,255,255,.95);color:#0b6f9e;width:76px;height:76px;font-size:32px}
@@ -733,6 +738,10 @@ body,html{background:var(--void)}
 .bigcard.play{background:radial-gradient(90% 120% at 100% 0%,rgba(255,250,220,.22),transparent 55%),radial-gradient(60% 80% at 0% 100%,rgba(0,0,0,.25),transparent 70%),linear-gradient(140deg,#6a8f5a 0%,#3f6a4a 48%,#24443a 100%)}
 .bigcard.build{background:radial-gradient(90% 120% at 100% 0%,rgba(255,250,220,.22),transparent 55%),linear-gradient(150deg,#b48a5a 0%,#8a5a3a 55%,#4a2e1e 100%)}
 .bigcard.chal{background:radial-gradient(90% 120% at 100% 0%,rgba(255,250,220,.2),transparent 55%),linear-gradient(150deg,#7f8aa0 0%,#545e78 55%,#2a3048 100%)}
+.bigcard.quick{min-height:76px;justify-content:center;padding:24px 90px 12px 22px;background:radial-gradient(90% 140% at 100% 0%,rgba(255,250,220,.3),transparent 55%),linear-gradient(140deg,#e8b84a 0%,#c07a2a 52%,#6e3a1a 100%)}
+.bigcard.quick .bc-text>b{font-size:clamp(24px,2.4vw,32px)}.bigcard.quick .bc-text>span:not(.bc-kicker){font-size:14px}
+.bigcard.quick .bc-go{width:56px;height:56px;font-size:26px;bottom:14px;color:#c07a2a}
+@media (max-height:860px) and (min-width:821px){.bigcard.play{min-height:128px;padding-top:26px;padding-bottom:14px}.bigcard.play .bc-text>b{font-size:clamp(40px,4.6vw,60px)}.bigcard.build,.bigcard.chal{min-height:138px}.cardcol{gap:10px}.cardrow{gap:10px}.bigcard.quick{min-height:66px}}
 .bigcard .bc-text>b{font-family:var(--f-serif);font-weight:700;letter-spacing:.02em;text-shadow:0 3px 0 rgba(0,0,0,.35)}
 .bc-go{background:radial-gradient(circle at 35% 30%,#fffdf2,#efe2bf 60%,#cdb383);color:#2f5a3a;border:3px solid #2a1d12}
 .pchip,.roundbtn{background:linear-gradient(180deg,rgba(64,72,62,.92),rgba(28,34,28,.94));border:2px solid rgba(200,210,190,.28);box-shadow:inset 0 1px 0 rgba(255,255,240,.12),0 6px 14px rgba(0,0,0,.4)}
@@ -840,6 +849,7 @@ body,html{background:var(--void)}
           <button class="bigcard build" id="mWorkshop"><img class="bc-art" id="mBuildArt" alt=""><span class="bc-text"><b>Build</b><span>Grow your forest spirit</span></span></button>
           <button class="bigcard chal" id="mChal"><img class="bc-art" id="mChalArt" alt=""><span class="bc-text"><b>Challenges</b><span id="mChalSub">Missions and daily goals</span></span></button>
         </div>
+        <button class="bigcard quick" id="mQuick"><span class="bc-text"><b>Quick Play</b><span>A one-minute round, powered up by a Sunlight Surge</span></span><span class="bc-go" aria-hidden="true">☀</span></button>
       </div>
     </main>
     <footer class="homefoot">
