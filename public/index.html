@@ -615,7 +615,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 @keyframes pulse{50%{transform:scale(1.05)}}
 #introUI{align-items:flex-end;justify-content:center;pointer-events:none;padding-bottom:max(40px,env(safe-area-inset-bottom,0px))}
 .introsub{margin:0 0 60px;padding:12px 24px;border-radius:16px;background:rgba(0,0,0,.6);font-family:var(--f-display);font-weight:600;font-size:clamp(20px,3vw,30px);text-align:center;max-width:min(900px,92vw)}.introsub:empty{display:none}
-#introSkip{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:max(18px,env(safe-area-inset-bottom,0px));pointer-events:auto}
+.introbtns{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:max(18px,env(safe-area-inset-bottom,0px));display:flex;gap:8px;pointer-events:auto}
+#introSkip,#introVoice{pointer-events:auto}
 #introFade{position:fixed;inset:0;z-index:80;background:#fff;opacity:0;pointer-events:none}
 .rm .mascot,.rm .bc-art,.rm .playbig{animation:none}
 
@@ -1001,7 +1002,7 @@ body.rm #results .sheet,body.rm #results *{animation:none!important}
 <g stroke="none"><ellipse cx="526" cy="218" rx="8" ry="10.5" fill="#160e0c"/><ellipse cx="556" cy="214" rx="8" ry="10.5" fill="#160e0c"/><circle cx="529" cy="213" r="3" fill="#fff"/><circle cx="559" cy="209" r="3" fill="#fff"/></g></g>
 <g class="logoff"><circle cx="40" cy="120" r="14" fill="url(#lgBFf)"/><circle cx="604" cy="96" r="11" fill="url(#lgBFf)"/><circle cx="160" cy="40" r="9" fill="url(#lgBFf)"/><circle cx="612" cy="268" r="12" fill="url(#lgBFf)"/><circle cx="24" cy="262" r="10" fill="url(#lgBFf)"/></g></svg></h1><p class="logotag">Spirits of the Enchanted Forest</p></div><button class="playbig" id="introPlay">Press to play <span aria-hidden="true">▶</span></button><p>Sound on for the full show!</p></div>
 </div>
-<div id="introUI" class="introlayer" hidden><p id="introSub" class="introsub"></p><button class="btn ghost small" id="introSkip">Skip intro</button></div>
+<div id="introUI" class="introlayer" hidden><p id="introSub" class="introsub"></p><div class="introbtns"><button class="btn ghost small" id="introVoice" title="Change the narrator voice">Narrator: Babble</button><button class="btn ghost small" id="introSkip">Skip intro</button></div></div>
 <div id="introFade" aria-hidden="true"></div>
 <div id="howto" class="overlay" hidden role="dialog" aria-modal="true" aria-labelledby="howtoTitle">
   <div class="sheet panel wide">

@@ -561,8 +561,8 @@ function animateCreatureView(c,dt,time){
   if(!grounded&&!v.wasAirFrame&&(c.vy||0)>3)v.jv+=1.1;v.wasAirFrame=!grounded;// takeoff stretch
   const gliding=!!(c.glideHeld&&c.st&&c.st.glide);const tuckOn=alive&&!grounded&&v.airT>.06&&!gliding;
   v.tuck=dampTo(v.tuck||0,tuckOn?1:0,tuckOn?16:8,dt);
-  if(tuckOn&&!c.flop){const hs=Math.hypot((c.vx||0)+(c.kx||0),(c.vz||0)+(c.kz||0))+(c.hopSpin||0);v.rollV=(hs>1.2?2.4+hs*1.25:.9)*v.tuck;v.roll=(v.roll||0)+v.rollV*dt;}
-  else if(v.roll){const tgt=v.roll>TAU*.22?Math.ceil(v.roll/TAU-.05)*TAU:0;v.rollV=v.rollV||0;
+  if(tuckOn&&!c.flop){const hs=Math.hypot((c.vx||0)+(c.kx||0),(c.vz||0)+(c.kz||0))+(c.hopSpin||0);v.rollV=(c.hopSpin<0?c.hopSpin:hs>1.2?2.4+hs*1.25:.9)*v.tuck;v.roll=(v.roll||0)+v.rollV*dt;}
+  else if(v.roll){const tgt=v.roll>TAU*.22?Math.ceil(v.roll/TAU-.05)*TAU:v.roll<-TAU*.22?Math.floor(v.roll/TAU+.05)*TAU:0;v.rollV=v.rollV||0;
     const n=Math.max(1,Math.ceil(dt*120)),h=dt/n;for(let i=0;i<n;i++){v.rollV+=(196*(tgt-v.roll)-2*.75*14*v.rollV)*h;v.roll+=v.rollV*h;}
     if(Math.abs(tgt-v.roll)<.004&&Math.abs(v.rollV)<.05){v.roll=0;v.rollV=0;}}
   if(wasAir&&grounded)v.tuckLand=1;
